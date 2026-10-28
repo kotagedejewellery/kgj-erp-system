@@ -58,6 +58,7 @@ jobs:
       # Delete lockfile and do a fresh install to ensure Linux-specific
       # optional dependencies (rolldown, lightningcss) are resolved,
       # since the committed lockfile was generated on Windows.
+      - run: npm install --global npm@11.19.0
       - run: rm package-lock.json && npm install
 
       - run: npm test
@@ -77,6 +78,7 @@ jobs:
       # Delete lockfile and do a fresh install to ensure Linux-specific
       # optional dependencies (rolldown, lightningcss) are resolved,
       # since the committed lockfile was generated on Windows.
+      - run: npm install --global npm@11.19.0
       - run: rm package-lock.json && npm install
 
       - name: Create .env.local
