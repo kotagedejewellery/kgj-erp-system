@@ -131,7 +131,7 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header userEmail={userName} role={role} logoutPath={loginPath} onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
-          <div className="mx-auto max-w-6xl space-y-5">
+          <div className="min-w-0 space-y-5">
             <div>
               <h1 className="text-xl font-bold text-ivory sm:text-2xl">Garansi</h1>
               <p className="mt-1 text-sm text-white/55">Cari Contract aktif berdasarkan pelanggan, telepon, nomor order, atau referensi Contract.</p>

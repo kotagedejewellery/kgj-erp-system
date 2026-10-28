@@ -58,7 +58,7 @@ export default function AfterSalesActivationPage() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header userEmail={userName} role="after_sales" logoutPath="/login" onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
-          <div className="mx-auto max-w-3xl space-y-5">
+          <div className="min-w-0 space-y-5">
             <div>
               <h1 className="text-xl font-bold text-ivory sm:text-2xl">Aktivasi Garansi</h1>
               <p className="mt-1 text-sm text-white/55">Cari nomor order untuk menyiapkan unit cincin, mengirim Candidate, lalu mengaktifkan Contract.</p>

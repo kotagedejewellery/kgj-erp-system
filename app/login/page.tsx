@@ -250,9 +250,10 @@ export default function LoginPage() {
                 Pilih Role
               </p>
               {/* Role selection - responsive grid with per-role colors */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                {visibleRoles.map((config) => {
+              <div className="grid grid-cols-2 gap-3 mb-3 min-[420px]:grid-cols-3">
+                {visibleRoles.map((config, index) => {
                   const isActive = role === config.value;
+                  const isFinalOddRole = visibleRoles.length % 2 !== 0 && index === visibleRoles.length - 1;
                   return (
                     <button
                       key={config.value}
@@ -260,7 +261,7 @@ export default function LoginPage() {
                       onClick={() => setRole(config.value)}
                       disabled={isLoading}
                       aria-pressed={isActive}
-                      className={`flex min-h-[84px] flex-col items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border-2 text-[13px] font-medium transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed w-full ${
+                      className={`flex min-h-[84px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-4 py-2.5 text-[13px] font-medium transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-30 ${isFinalOddRole ? "col-span-2 min-[420px]:col-span-1" : ""} ${
                         isActive
                           ? "text-white"
                           : "border-white/10 bg-white/[0.03] text-white/50 hover:bg-white/[0.06]"
