@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
 
           deploy_sha="$1"
-          cd /opt/apps/sistem-erp/main-erp
+          cd /opt/apps/sistem-erp-kgj
 
           test -z "$(git status --porcelain)"
           git fetch --prune origin main

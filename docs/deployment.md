@@ -7,7 +7,7 @@ Konfigurasi ini menjalankan Main-ERP sebagai satu container Next.js di jaringan 
 - DNS `erp.kotagedejewellery.tech` sudah mengarah ke IP VPS 1.
 - Jaringan Docker `proxy` dan Traefik sudah berjalan.
 - URL Supabase dapat diakses browser pada `NEXT_PUBLIC_SUPABASE_URL`, termasuk endpoint Auth, REST, Realtime, dan Storage.
-- Repository sudah tersedia pada `/opt/apps/sistem-erp/main-erp` dan user VPS dapat melakukan `git fetch origin`.
+- Repository sudah tersedia pada `/opt/apps/sistem-erp-kgj` dan user VPS dapat melakukan `git fetch origin`.
 
 ## Konfigurasi VPS
 
