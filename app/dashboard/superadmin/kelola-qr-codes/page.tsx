@@ -18,48 +18,30 @@ import QRCodeLib from "qrcode";
 import { Download, Eye, MapPin, Plus, Power, QrCode, Trash2 } from "lucide-react";
 import type { Role, QRCode } from "@/types/qr-code";
 
-interface ScanEvent {
-  id: string;
-  order_id: string;
-  order_number: string;
-  user_name: string;
-  stage_label: string;
-  action: string;
-  action_label: string;
-  scanned_at: string;
-  scanned_at_formatted: string;
-}
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ROLE_GROUP_STYLES: Record<
   string,
-  { label: string; bg: string; border: string }
+  { label: string; bg: string; border: string; text: string }
 > = {
   management: {
     label: "Manajemen",
-    bg: "bg-purple-50",
-    border: "border-purple-200",
+    bg: "bg-purple-500/20",
+    border: "border-purple-400/20",
+    text: "text-purple-300",
   },
   operational: {
     label: "Operasional",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
+    bg: "bg-blue-500/20",
+    border: "border-blue-400/20",
+    text: "text-blue-300",
   },
   production: {
     label: "Produksi",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
+    bg: "bg-amber-500/20",
+    border: "border-amber-400/20",
+    text: "text-amber-300",
   },
-};
-
-const ACTION_STYLES: Record<string, { label: string; color: string }> = {
-  open: { label: "Buka", color: "bg-blue-50 text-blue-700" },
-  submit: { label: "Submit", color: "bg-green-50 text-green-700" },
-  edit: { label: "Edit", color: "bg-yellow-50 text-yellow-700" },
-  read: { label: "Baca", color: "bg-[#26211c] text-gray-700" },
-  delete: { label: "Hapus", color: "bg-red-50 text-red-700" },
-  reject: { label: "Tolak", color: "bg-orange-50 text-orange-700" },
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -114,7 +96,7 @@ function QRCodeImage({
         width: size,
         margin: 2,
         color: {
-          dark: "#1e293b",
+          dark: "#111111",
           light: "#ffffff",
         },
         errorCorrectionLevel: "M",
@@ -140,9 +122,6 @@ const DownloadIcon = () => <Download className="w-4 h-4" />;
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function KelolaQRPage() {
-  const [activeTab, setActiveTab] = useState<"workstations" | "scan-logs">(
-    "workstations",
-  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedQR, setSelectedQR] = useState<QRCode | null>(null);
@@ -210,36 +189,6 @@ export default function KelolaQRPage() {
       ),
   });
   const roles = Array.isArray(rolesData) ? rolesData : [];
-
-  const { data: scansToday = 0 } = useQuery<number>({
-    queryKey: ["scans-today"],
-    queryFn: () => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      return fetcher<{ total: number }>(
-        `/api/scan-events?start_date=${todayStart.toISOString()}&limit=1`,
-      ).then((r) => r.total ?? 0);
-    },
-  });
-
-  const { data: scanEvents = [] } = useQuery<ScanEvent[]>({
-    queryKey: ["scan-events"],
-    queryFn: () =>
-      fetcher<{ data: Record<string, unknown>[] }>("/api/scan-events?limit=100").then((r) =>
-        (r.data ?? []).map((e) => ({
-          id: e.id as string,
-          order_id: e.order_id as string,
-          order_number: (e.order_number as string) ?? "—",
-          user_name: (e.user_name as string) ?? "—",
-          stage_label: (e.stage_label as string) ?? "—",
-          action: e.action as string,
-          action_label: (e.action_label as string) ?? "—",
-          scanned_at: e.scanned_at as string,
-          scanned_at_formatted: e.scanned_at_formatted as string,
-        })),
-      ),
-    enabled: activeTab === "scan-logs",
-  });
 
   const isLoading = isQrLoading || isRolesLoading;
 
@@ -397,12 +346,12 @@ export default function KelolaQRPage() {
   const getStatusBadge = (qr: QRCode) => {
     const config = qr.is_active
       ? {
-          bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          bg: "bg-emerald-500/10 text-emerald-300 border-emerald-200",
           label: "Aktif",
-          dot: "bg-emerald-500",
+          dot: "bg-emerald-500/100",
         }
       : {
-          bg: "bg-[#26211c] text-slate-600 border-slate-200",
+          bg: "bg-[#26211c] text-white/70 border-gold/15",
           label: "Nonaktif",
           dot: "bg-slate-400",
         };
@@ -421,25 +370,12 @@ export default function KelolaQRPage() {
     const config = ROLE_GROUP_STYLES[group] || {
       label: group,
       bg: "bg-[#26211c]",
-      border: "border-gray-200",
+      border: "border-gold/15",
+      text: "text-white/70",
     };
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border ${config.bg} ${config.border}`}
-      >
-        {config.label}
-      </span>
-    );
-  };
-
-  const getActionBadge = (action: string) => {
-    const config = ACTION_STYLES[action] || {
-      label: action,
-      color: "bg-[#26211c] text-gray-700",
-    };
-    return (
-      <span
-        className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${config.color}`}
+        className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border ${config.bg} ${config.border} ${config.text}`}
       >
         {config.label}
       </span>
@@ -501,10 +437,10 @@ export default function KelolaQRPage() {
             {/* Page header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-1.5">
+                <h2 className="text-2xl font-semibold text-cream mb-1.5">
                   Manajemen QR Code
                 </h2>
-                <p className="text-gray-500 text-sm">
+                <p className="text-white/50 text-sm">
                   Kelola QR Code untuk setiap posisi dan workstation produksi
                 </p>
               </div>
@@ -532,63 +468,35 @@ export default function KelolaQRPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-              <div className="bg-white rounded-xl p-5 border border-stone-200 border-l-4 border-l-stone-400 shadow-sm">
-                <p className="text-gray-500 text-xs mb-1.5">
+              <div className="bg-cocoa rounded-xl p-5 border border-gold/10 border-t-2 border-t-stone-400">
+                <p className="text-white/50 text-xs mb-1.5">
                   Total Workstation
                 </p>
-                <p className="text-2xl font-semibold text-gray-800">
+                <p className="text-2xl font-semibold text-cream">
                   {workstationStats.total}
                 </p>
               </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <p className="text-gray-500 text-xs mb-1.5">Aktif</p>
-                <p className="text-2xl font-semibold text-emerald-600">
+              <div className="bg-cocoa rounded-xl p-4 border border-gold/10 border-t-2 border-t-emerald-400">
+                <p className="text-white/50 text-xs mb-1.5">Aktif</p>
+                <p className="text-2xl font-semibold text-emerald-300">
                   {workstationStats.active}
                 </p>
               </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-t-2 border-t-blue-400">
-                <p className="text-gray-500 text-xs mb-1.5">Operasional</p>
-                <p className="text-2xl font-semibold text-blue-600">
+              <div className="bg-cocoa rounded-xl p-4 border border-gold/10 border-t-2 border-t-blue-400">
+                <p className="text-white/50 text-xs mb-1.5">Operasional</p>
+                <p className="text-2xl font-semibold text-blue-300">
                   {workstationStats.operational}
                 </p>
               </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 border-t-2 border-t-amber-400">
-                <p className="text-gray-500 text-xs mb-1.5">Produksi</p>
-                <p className="text-2xl font-semibold text-amber-600">
+              <div className="bg-cocoa rounded-xl p-4 border border-gold/10 border-t-2 border-t-amber-400">
+                <p className="text-white/50 text-xs mb-1.5">Produksi</p>
+                <p className="text-2xl font-semibold text-amber-300">
                   {workstationStats.production}
                 </p>
               </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <p className="text-gray-500 text-xs mb-1.5">Scan Hari Ini</p>
-                <p className="text-2xl font-semibold text-indigo-600">
-                  {scansToday}
-                </p>
-              </div>
             </div>
 
-            {/* Tabs */}
-            <div className="border-b border-gray-200 mb-5">
-              <nav className="flex gap-8">
-                {(["workstations", "scan-logs"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`pb-3.5 px-1 font-medium text-sm transition-colors ${
-                      activeTab === tab
-                        ? "text-indigo-600 border-b-2 border-indigo-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {tab === "workstations" ? "QR Code" : "Riwayat Aktivitas"}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Tab: QR Workstation */}
-            {activeTab === "workstations" && (
-              <>
-                {/* Filters */}
+            {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3 mb-5">
                   <div className="relative flex-1 min-w-[200px]">
                     <input
@@ -596,8 +504,8 @@ export default function KelolaQRPage() {
                       placeholder="Cari workstation, role, atau lokasi..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg 
-                        focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 outline-none"
+                      className="w-full px-4 py-2 text-sm border border-gold/15 rounded-lg bg-carbon text-cream placeholder:text-white/30
+                        focus:ring-2 focus:ring-gold/30 focus:border-gold/50 outline-none transition-colors"
                     />
                   </div>
 
@@ -606,8 +514,8 @@ export default function KelolaQRPage() {
                     onChange={(e) =>
                       setFilterStatus(e.target.value as typeof filterStatus)
                     }
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white
-                      focus:ring-2 focus:ring-indigo-200 outline-none"
+                    className="px-3 py-2 text-sm border border-gold/15 rounded-lg bg-carbon text-cream
+                      focus:ring-2 focus:ring-gold/30 outline-none"
                   >
                     <option value="all">Semua Status</option>
                     <option value="active">Aktif</option>
@@ -617,7 +525,7 @@ export default function KelolaQRPage() {
                   <select
                     value={filterRoleGroup}
                     onChange={(e) => setFilterRoleGroup(e.target.value)}
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white
+                    className="px-3 py-2 text-sm border border-gold/15 rounded-lg bg-cocoa
                       focus:ring-2 focus:ring-indigo-200 outline-none min-w-[140px]"
                   >
                     <option value="">Semua Grup Role</option>
@@ -643,8 +551,8 @@ export default function KelolaQRPage() {
 
                 {/* QR Code Cards Grid */}
                 {filteredQRCodes.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-                    <p className="text-gray-500 text-sm">
+                  <div className="bg-cocoa rounded-xl shadow-sm border border-gold/10 p-12 text-center">
+                    <p className="text-white/50 text-sm">
                       {searchTerm || filterStatus !== "all" || filterRoleGroup
                         ? "Tidak ada QR Code yang sesuai dengan filter."
                         : "Belum ada QR Code. Klik 'Buat QR Code' untuk membuat."}
@@ -654,7 +562,7 @@ export default function KelolaQRPage() {
                   <div className="space-y-6">
                     {groupedQRCodes.operational.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-medium text-gray-600 mb-3">
+                        <h3 className="text-sm font-medium text-white/70 mb-3">
                           Operasional
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -678,7 +586,7 @@ export default function KelolaQRPage() {
 
                     {groupedQRCodes.production.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-medium text-gray-600 mb-3">
+                        <h3 className="text-sm font-medium text-white/70 mb-3">
                           Produksi
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -701,75 +609,6 @@ export default function KelolaQRPage() {
                     )}
                   </div>
                 )}
-              </>
-            )}
-
-            {/* Tab: Riwayat Aktivitas */}
-            {activeTab === "scan-logs" && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-[#26211c]/80 border-b border-gray-100">
-                      <tr>
-                        {["Waktu", "Workstation", "Order", "User", "Aksi"].map(
-                          (header) => (
-                            <th
-                              key={header}
-                              className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              {header}
-                            </th>
-                          ),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {scanEvents.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-5 py-12 text-center text-gray-400 text-sm"
-                          >
-                            Belum ada aktivitas scan.
-                          </td>
-                        </tr>
-                      ) : (
-                        scanEvents.map((event) => (
-                          <tr key={event.id} className="hover:bg-[#26211c]/50">
-                            <td className="px-5 py-3.5">
-                              <div className="text-sm text-gray-700">
-                                {formatDate(event.scanned_at)}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                {formatRelativeTime(event.scanned_at)}
-                              </div>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <span className="text-sm font-medium text-gray-800">
-                                {event.stage_label}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <span className="text-sm font-mono text-gray-700">
-                                {event.order_number}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <span className="text-sm text-gray-700">
-                                {event.user_name}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              {getActionBadge(event.action)}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </main>
         </div>
       </div>
@@ -783,7 +622,7 @@ export default function KelolaQRPage() {
       >
         <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-cream mb-1.5">
               Role / Posisi
             </label>
             <select
@@ -791,8 +630,8 @@ export default function KelolaQRPage() {
               onChange={(e) =>
                 setGenerateForm({ ...generateForm, role_id: e.target.value })
               }
-              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg 
-                focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 outline-none bg-white"
+              className="w-full px-4 py-2.5 text-sm border border-gold/15 rounded-lg 
+                focus:ring-2 focus:ring-gold/30 focus:border-gold/50 outline-none bg-carbon text-cream"
               disabled={isGenerating}
             >
               <option value="">Pilih Role</option>
@@ -817,7 +656,7 @@ export default function KelolaQRPage() {
               return (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {stages.map((s) => (
-                    <span key={s} className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    <span key={s} className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-indigo-500/[0.12] text-indigo-300 border border-indigo-400/20">
                       {STAGE_LABELS[s] ?? s}
                     </span>
                   ))}
@@ -849,13 +688,13 @@ export default function KelolaQRPage() {
             disabled={isGenerating}
           />
 
-          <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">
+          <div className="bg-blue-500/[0.08] rounded-lg p-3 text-xs text-blue-300">
             <span className="font-medium">Info:</span> QR Code ini akan
             digunakan di workstation. Pekerja akan scan QR ini untuk mencatat
             aktivitas pengerjaan order.
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+          <div className="flex justify-end gap-3 pt-3 border-t border-gold/10">
             <Button
               variant="secondary"
               onClick={() => setIsModalOpen(false)}
@@ -882,14 +721,14 @@ export default function KelolaQRPage() {
         isOpen={!!selectedQR}
         onClose={() => { setSelectedQR(null); setCopiedLink(false); }}
         title="Detail QR Code"
-        size="sm"
+        size="md"
       >
         {selectedQR && (
           <div className="space-y-5">
             {/* QR Code Image */}
             <div id="qr-detail-canvas">
               <div className="flex justify-center">
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-cocoa p-6 rounded-xl border border-gold/15 shadow-sm">
                   <QRCodeImage
                     data={selectedQR.qr_payload || selectedQR.qr_token}
                     size={220}
@@ -901,27 +740,27 @@ export default function KelolaQRPage() {
             {/* Detail Info */}
             <div className="space-y-2.5 text-sm">
               <div className="flex justify-between py-2 px-3 bg-[#26211c] rounded-lg">
-                <span className="text-gray-500">Workstation</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-white/50">Workstation</span>
+                <span className="font-medium text-cream">
                   {selectedQR.workstation_name}
                 </span>
               </div>
               <div className="flex justify-between py-2 px-3">
-                <span className="text-gray-500">Role</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-white/50">Role</span>
+                <span className="font-medium text-cream">
                   {selectedQR.role_name}
                 </span>
               </div>
               <div className="flex justify-between py-2 px-3 bg-[#26211c] rounded-lg">
-                <span className="text-gray-500">Grup Role</span>
+                <span className="text-white/50">Grup Role</span>
                 {getRoleGroupBadge(selectedQR.role_group || "")}
               </div>
               {selectedQR.allowed_stages && selectedQR.allowed_stages.length > 0 && (
                 <div className="py-2 px-3">
-                  <p className="text-gray-500 text-sm mb-2">Tahap yang Ditangani</p>
+                  <p className="text-white/50 text-sm mb-2">Tahap yang Ditangani</p>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedQR.allowed_stages.map((s) => (
-                      <span key={s} className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      <span key={s} className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-indigo-500/[0.12] text-indigo-300 border border-indigo-400/20">
                         {STAGE_LABELS[s] ?? s}
                       </span>
                     ))}
@@ -930,42 +769,42 @@ export default function KelolaQRPage() {
               )}
               {selectedQR.location && (
                 <div className="flex justify-between py-2 px-3">
-                  <span className="text-gray-500">Lokasi</span>
-                  <span className="text-gray-700">{selectedQR.location}</span>
+                  <span className="text-white/50">Lokasi</span>
+                  <span className="text-cream">{selectedQR.location}</span>
                 </div>
               )}
               <div className="py-2.5 px-3 bg-[#26211c] rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500">Link QR</span>
+                  <span className="text-sm text-white/50">Link QR</span>
                   <button
                     onClick={() => handleCopyLink(selectedQR.qr_payload)}
                     className={`text-xs font-medium px-2.5 py-1 rounded-md transition-colors ${
                       copiedLink
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-white text-indigo-600 border border-gray-200 hover:bg-indigo-50"
+                        ? "bg-emerald-500/10 text-emerald-300"
+                        : "bg-cocoa text-indigo-300 border border-gold/15 hover:bg-indigo-500/10"
                     }`}
                   >
                     {copiedLink ? "✓ Tersalin!" : "Salin"}
                   </button>
                 </div>
-                <p className="text-[11px] font-mono text-gray-600 break-all leading-relaxed">
+                <p className="text-[11px] font-mono text-white/70 break-all leading-relaxed">
                   {selectedQR.qr_payload}
                 </p>
               </div>
               <div className="flex justify-between py-2 px-3">
-                <span className="text-gray-500">Status</span>
+                <span className="text-white/50">Status</span>
                 {getStatusBadge(selectedQR)}
               </div>
               <div className="flex justify-between py-2 px-3 bg-[#26211c] rounded-lg">
-                <span className="text-gray-500">Dibuat</span>
-                <span className="text-gray-700">
+                <span className="text-white/50">Dibuat</span>
+                <span className="text-cream">
                   {formatDate(selectedQR.generated_at)}
                 </span>
               </div>
               {selectedQR.expired_at && (
                 <div className="flex justify-between py-2 px-3">
-                  <span className="text-gray-500">Kadaluarsa</span>
-                  <span className="text-gray-700">
+                  <span className="text-white/50">Kadaluarsa</span>
+                  <span className="text-cream">
                     {formatDate(selectedQR.expired_at)}
                   </span>
                 </div>
@@ -973,7 +812,7 @@ export default function KelolaQRPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
+            <div className="flex gap-3 pt-4 border-t border-gold/10">
               <Button
                 variant="secondary"
                 onClick={handleDownloadQR}
@@ -1064,23 +903,23 @@ function QRCodeCard({
   stageLabels,
 }: QRCodeCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+    <div className="bg-cocoa rounded-xl shadow-sm border border-gold/10 hover:shadow-md transition-all duration-200">
       <div className="p-5">
         {/* Header dengan QR preview */}
         <div className="flex items-start gap-3 mb-4">
           {/* Icon QR sebagai ganti preview */}
-          <div className="flex-shrink-0 w-10 h-10 bg-[#26211c] rounded-lg border border-gray-200 flex items-center justify-center">
-            <QrCode className="w-5 h-5 text-gray-400" />
+          <div className="flex-shrink-0 w-10 h-10 bg-[#26211c] rounded-lg border border-gold/15 flex items-center justify-center">
+            <QrCode className="w-5 h-5 text-white/40" />
           </div>
 
           {/* Info dan Status */}
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start gap-2">
               <div className="min-w-0">
-                <h4 className="font-medium text-gray-800 truncate text-sm">
+                <h4 className="font-medium text-cream truncate text-sm">
                   {qr.workstation_name}
                 </h4>
-                <p className="text-xs text-gray-500 mt-0.5">{qr.role_name}</p>
+                <p className="text-xs text-white/50 mt-0.5">{qr.role_name}</p>
               </div>
               {getStatusBadge(qr)}
             </div>
@@ -1097,7 +936,7 @@ function QRCodeCard({
               {qr.allowed_stages.map((s) => (
                 <span
                   key={s}
-                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded bg-slate-100 text-slate-600"
+                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded bg-white/10 text-white/70"
                 >
                   {stageLabels[s] ?? s}
                 </span>
@@ -1105,21 +944,21 @@ function QRCodeCard({
             </div>
           )}
           {qr.location && (
-            <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+            <p className="text-xs text-white/50 truncate flex items-center gap-1">
               <MapPin className="w-3 h-3 flex-shrink-0" />
               {qr.location}
             </p>
           )}
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-white/40">
             Dibuat {formatRelativeTime(qr.generated_at)}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-2 pt-3 border-t border-gold/10">
           <button
             onClick={onView}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/70 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
             title="Lihat detail"
             disabled={isProcessing}
           >
@@ -1131,8 +970,8 @@ function QRCodeCard({
             onClick={onToggleStatus}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors ${
               qr.is_active
-                ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                ? "text-amber-300 hover:text-amber-300 hover:bg-amber-500/100/10"
+                : "text-emerald-300 hover:text-emerald-300 hover:bg-emerald-500/100/10"
             }`}
             title={qr.is_active ? "Nonaktifkan" : "Aktifkan"}
             disabled={isProcessing}
@@ -1143,7 +982,7 @@ function QRCodeCard({
 
           <button
             onClick={onDelete}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-rose-300 hover:bg-rose-500/100/10 rounded-lg transition-colors ml-auto"
             title="Hapus QR"
             disabled={isProcessing}
           >

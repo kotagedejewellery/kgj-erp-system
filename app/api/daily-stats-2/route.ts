@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
+import { calculateWorkshopPulse } from "@/lib/workshop-pulse";
 
 // ============================================================
 // Config & Initialization
@@ -92,6 +93,16 @@ interface DailyStatsResponse {
     experts: { total: number; aktif: number; totalOrders: number };
     microSetting: { total: number; inProgress: number; waiting: number };
   };
+  workshopPulse: {
+    today: {
+      ordersReceived: number;
+      ordersCompleted: number;
+      reworksLogged: number;
+      activeUsers: number;
+    };
+    workInProgress: { activeOrders: number; overdueOrders: number };
+    afterProduction: { customerCare: number; packing: number; shipping: number };
+  };
   recentActivities: Array<{
     id: string;
     type: "scan" | "qc" | "approval" | "rework";
@@ -125,6 +136,7 @@ async function calculateAverageCycleTime(
   const { data, error } = await admin
     .from("legacy_orders")
     .select("tgl_order, tgl_selesai")
+    .is("deleted_at", null)
     .not("tgl_selesai", "is", null)
     .gte("tgl_selesai", thirtyDaysAgo.toISOString().split("T")[0]);
 
@@ -152,6 +164,19 @@ function mapStageToActivityType(
   return "scan";
 }
 
+function getJakartaDate(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+
+  return `${getPart("year")}-${getPart("month")}-${getPart("day")}`;
+}
+
 // ============================================================
 // Main API Handler
 // ============================================================
@@ -177,6 +202,10 @@ export async function GET(_request: NextRequest) {
   }
 
   try {
+    const jakartaDate = getJakartaDate();
+    const jakartaTodayStart = new Date(
+      `${jakartaDate}T00:00:00+07:00`,
+    ).toISOString();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
@@ -220,6 +249,10 @@ export async function GET(_request: NextRequest) {
       adminTasksQuery,
       stageDistributionQuery,
       recentActivitiesQuery,
+      workshopOrdersTodayQuery,
+      workshopReworksTodayQuery,
+      workshopUserActivityQuery,
+      workshopStagesQuery,
     ] = await Promise.all([
       admin
         .from("tracking_stages")
@@ -228,6 +261,7 @@ export async function GET(_request: NextRequest) {
       admin
         .from("legacy_orders")
         .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
         .not("tgl_selesai", "is", null)
         .lte("tgl_selesai", todayDateStr),
       admin
@@ -239,6 +273,7 @@ export async function GET(_request: NextRequest) {
       admin
         .from("legacy_orders")
         .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
         .gte("created_at", todayISO),
       admin
         .from("tracking_stages")
@@ -257,10 +292,12 @@ export async function GET(_request: NextRequest) {
       admin
         .from("legacy_orders")
         .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
         .gte("created_at", startOfWeek.toISOString()),
       admin
         .from("legacy_orders")
         .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
         .gte("created_at", startOfLastWeek.toISOString())
         .lt("created_at", startOfWeek.toISOString()),
       admin
@@ -315,12 +352,29 @@ export async function GET(_request: NextRequest) {
         .from("tracking_stages")
         .select("current_stage")
         .neq("current_stage", "selesai"),
-      // No legacy scan_events — recent activities come from latest stage_history
+      // Recent activities come from latest stage_history.
       admin
         .from("stage_history")
         .select("id, stage, note, created_at, legacy_orders!stage_history_order_id_fkey(kode_order), users!stage_history_changed_by_fkey(full_name)")
         .order("created_at", { ascending: false })
         .limit(30),
+      admin
+        .from("legacy_orders")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .eq("tgl_order", jakartaDate),
+      admin
+        .from("legacy_rework_logs")
+        .select("id", { count: "exact", head: true })
+        .gte("logged_at", jakartaTodayStart),
+      admin
+        .from("stage_history")
+        .select("changed_by")
+        .gte("created_at", jakartaTodayStart)
+        .not("changed_by", "is", null),
+      admin
+        .from("tracking_stages")
+        .select("current_stage, updated_at, legacy_orders!tracking_stages_order_id_fkey(deleted_at, tgl_selesai)"),
     ]);
 
     // ============================================================
@@ -434,7 +488,7 @@ export async function GET(_request: NextRequest) {
       (e) => e.status === "active",
     ).length;
 
-    // Legacy: no scan_events to count expert orders from. Use stage_history count
+    // Use stage_history to count expert orders.
     // for active experts as a rough proxy.
     const activeExpertIds = expertData
       .filter((e) => e.status === "active")
@@ -507,7 +561,7 @@ export async function GET(_request: NextRequest) {
     );
 
     // ============================================================
-    // Top Performers (from stage_results aggregation)
+    // Top performers from the active tracking history.
     // ============================================================
     const { data: performerData } = await admin
       .from("stage_history")
@@ -542,6 +596,21 @@ export async function GET(_request: NextRequest) {
         ordersCompleted: p.count,
         avgTime: 2.5,
       }));
+
+    const workshopPulse = calculateWorkshopPulse({
+      today: jakartaDate,
+      todayStart: jakartaTodayStart,
+      ordersReceived: workshopOrdersTodayQuery.count || 0,
+      reworksLogged: workshopReworksTodayQuery.count || 0,
+      activeUserIds: (workshopUserActivityQuery.data || []).map(
+        (activity) => activity.changed_by,
+      ),
+      stages: (workshopStagesQuery.data || []).map((stage) => ({
+        current_stage: stage.current_stage,
+        updated_at: stage.updated_at,
+        order: (stage as any).legacy_orders ?? null,
+      })),
+    });
 
     // ============================================================
     // Response
@@ -607,6 +676,7 @@ export async function GET(_request: NextRequest) {
           waiting: microSettingTotal - microInProgress,
         },
       },
+      workshopPulse,
       recentActivities,
       topPerformers,
       stageDistribution,

@@ -56,7 +56,7 @@ export function ManagementUserForm({
           <ArrowLeft className="w-3.5 h-3.5" /> Ganti tipe akun
         </button>
       )}
-      <div className="bg-violet-50 border border-violet-200 rounded-lg p-3 text-xs text-violet-700">
+      <div className="bg-violet-500/10 border border-violet-200 rounded-lg p-3 text-xs text-violet-300">
         Akun Management dapat login melalui halaman login dengan kartu Management dan memiliki akses ke dashboard tugas.
       </div>
       <Input label="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })}
@@ -69,9 +69,9 @@ export function ManagementUserForm({
         value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
         placeholder="Minimal 6 karakter" disabled={isSaving} />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Leader Role</label>
+        <label className="block text-sm font-medium text-cream mb-1">Leader Role</label>
         <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="w-full px-3 py-2 border border-gold/25 rounded-lg focus:ring-2 focus:ring-gold/30 bg-carbon text-cream"
           disabled={isSaving}>
           <option value="">Pilih tipe leader...</option>
           {roleOptions.map(([value, label]) => (

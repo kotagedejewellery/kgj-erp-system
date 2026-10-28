@@ -92,15 +92,15 @@ export function DeactivateModal({
           >
             {account.full_name}
           </p>
-          <p className="text-xs text-stone-500">@{account.username}</p>
+          <p className="text-xs text-white/50">@{account.username}</p>
           {account.role && (
-            <p className="mt-0.5 text-xs text-stone-400">
+            <p className="mt-0.5 text-xs text-white/40">
               {roleLabel(account.role.name)}
             </p>
           )}
         </div>
 
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-white/70">
           {isActivating
             ? "Akun akan diaktifkan kembali dan dapat login ke sistem seperti biasa."
             : "Akun akan dinonaktifkan. Pengguna tidak dapat login sampai akun diaktifkan kembali."}
@@ -109,7 +109,7 @@ export function DeactivateModal({
         <div className="flex gap-3 pt-1">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors"
+            className="flex-1 rounded-lg border border-gold/15 px-4 py-2.5 text-sm font-medium text-cream hover:bg-carbon transition-colors"
           >
             Batal
           </button>

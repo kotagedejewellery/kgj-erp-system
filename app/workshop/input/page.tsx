@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import BrandHeader from "@/components/qr/BrandHeader";
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatAddsOnList } from "@/lib/adds-on";
 import { getStageDeadlineStatus } from "@/lib/stage-deadlines";
+import { getBrandFilterCode } from "@/lib/legacy/brands";
 import type { Field } from "@/components/fields/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -46,6 +47,13 @@ interface WorkshopOrderInfo {
   tgl_order: string | null;
   updated_at: string | null;
   customer_name: string | null;
+  proses_produksi: string | null;
+}
+
+interface WorkshopOrdersPage {
+  data: WorkshopOrderInfo[];
+  total: number;
+  next_offset: number | null;
 }
 
 interface WorkshopWorkOrder {
@@ -53,6 +61,9 @@ interface WorkshopWorkOrder {
   customer_name: string | null;
   customer_wa: string | null;
   customer_email: string | null;
+  produk_nama: string | null;
+  produk_sku: string | null;
+  produk_spesifikasi: string | null;
   catatan: string | null;
   acara: string | null;
   kebutuhan_acara: string | null;
@@ -80,6 +91,7 @@ interface WorkshopWorkOrder {
     microsetting: string[] | null;
     detail_laser: string[] | null;
     detail_finishing: string[] | null;
+    keterangan: string | null;
     reference_image_url: string | null;
   } | null;
   wanita: {
@@ -90,6 +102,7 @@ interface WorkshopWorkOrder {
     microsetting: string[] | null;
     detail_laser: string[] | null;
     detail_finishing: string[] | null;
+    keterangan: string | null;
     reference_image_url: string | null;
   } | null;
 }
@@ -160,6 +173,8 @@ type Phase = "loading" | "list" | "form" | "success";
 const ROLE_STAGE_MAP: Record<string, string[]> = {
   customer_care: ["konfirmasi"],
 };
+
+const WORKSHOP_ORDERS_PAGE_SIZE = 50;
 
 const STAGE_LABELS: Record<string, string> = {
   penerimaan_order: "Penerimaan Order",
@@ -269,6 +284,7 @@ function PhaseOrderList({
   theme,
   search,
   sortBy,
+  brandFilter,
   onSelect,
   _onLogout,
 }: {
@@ -276,6 +292,7 @@ function PhaseOrderList({
   theme: Theme;
   search: string;
   sortBy: "newest" | "deadline";
+  brandFilter: string;
   onSelect: (order: WorkshopOrderInfo) => Promise<void>;
   _onLogout: () => void;
 }) {
@@ -289,18 +306,29 @@ function PhaseOrderList({
   }, [search]);
 
   const {
-    data: orders = [],
-    isFetching,
+    data: orderPages,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     error: fetchError,
     refetch,
-  } = useQuery<WorkshopOrderInfo[]>({
+  } = useInfiniteQuery({
     queryKey: ["workshop-orders", debouncedSearch],
-    queryFn: async () => {
-      const url = `/api/workshop/orders${debouncedSearch ? `?q=${encodeURIComponent(debouncedSearch)}` : ""}`;
-      const res = await fetcher<{ data: WorkshopOrderInfo[] }>(url);
-      return res.data ?? [];
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({
+        limit: String(WORKSHOP_ORDERS_PAGE_SIZE),
+        offset: String(pageParam),
+      });
+      if (debouncedSearch) params.set("q", debouncedSearch);
+      return fetcher<WorkshopOrdersPage>(`/api/workshop/orders?${params}`);
     },
+    getNextPageParam: (lastPage) => lastPage.next_offset,
   });
+
+  const orders = orderPages?.pages.flatMap((page) => page.data) ?? [];
+  const totalOrders = orderPages?.pages[0]?.total ?? 0;
 
   const roleStages = (
     user.role.allowed_stages.length > 0
@@ -317,7 +345,8 @@ function PhaseOrderList({
         (roleStages.length === 0 || roleStages.includes(o.current_stage)) &&
         o.status !== "completed" &&
         o.status !== "cancelled" &&
-        o.status !== "waiting_approval",
+        o.status !== "waiting_approval" &&
+        (brandFilter === "all" || getBrandFilterCode(o.order_number) === brandFilter),
     )
     .sort((a, b) => {
       if (sortBy === "deadline") {
@@ -366,7 +395,7 @@ function PhaseOrderList({
       )}
 
       <div className="rounded-2xl border border-stone-200/80 bg-white/90 backdrop-blur-sm shadow-sm overflow-hidden">
-        {isFetching ? (
+        {isLoading ? (
           <div className="flex flex-col items-center justify-center gap-3 py-14">
             <div
               className={`h-8 w-8 rounded-full border-2 border-stone-100 animate-spin ${theme.spinner}`}
@@ -442,6 +471,11 @@ function PhaseOrderList({
                         <p className="text-[14px] font-semibold text-stone-800 truncate leading-snug">
                           {order.customer_name ?? "—"}
                         </p>
+                        {order.proses_produksi && (
+                          <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                            Proses: {order.proses_produksi}
+                          </span>
+                        )}
                       </div>
 
                       {/* Right side: deadline + chevron */}
@@ -472,14 +506,28 @@ function PhaseOrderList({
         )}
       </div>
 
-      {/* Refresh hint */}
-      {!isFetching && !fetchError && displayOrders.length > 0 && (
-        <button
-          onClick={() => refetch()}
-          className="mt-3 w-full text-center text-[12px] text-stone-300 hover:text-stone-500 transition-colors py-1"
-        >
-          Refresh daftar
-        </button>
+      {!isLoading && !fetchError && (
+        <div className="mt-3 space-y-2">
+          {hasNextPage && (
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className={`w-full rounded-lg border border-stone-200 px-4 py-2 text-[13px] font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60 ${theme.ring}`}
+            >
+              {isFetchingNextPage
+                ? "Memuat order..."
+                : `Muat lebih banyak (${orders.length} dari ${totalOrders})`}
+            </button>
+          )}
+          {displayOrders.length > 0 && (
+            <button
+              onClick={() => refetch()}
+              className="w-full py-1 text-center text-[12px] text-stone-300 transition-colors hover:text-stone-500"
+            >
+              Refresh daftar
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -583,6 +631,31 @@ function WorkshopWorkOrderCard({
         />
       </div>
 
+      {/* Produk (checkout dari katalog) */}
+      {wo.produk_nama && (
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+            Produk
+          </p>
+          <div className="rounded-lg border border-stone-200 bg-stone-50 p-2.5 space-y-1">
+            <p className="text-[13px] font-semibold text-stone-800">
+              {wo.produk_nama}
+            </p>
+            {wo.produk_sku && (
+              <p className="font-mono text-[11px] text-stone-500">
+                SKU: {wo.produk_sku}
+              </p>
+            )}
+            {wo.produk_spesifikasi && (
+              <div
+                className="text-xs text-stone-600 leading-relaxed max-w-none [&_h2]:text-[10px] [&_h2]:font-semibold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-stone-400 [&_h2]:mb-1 [&_blockquote]:mb-0.5 [&_p]:mb-1 [&_strong]:text-stone-800"
+                dangerouslySetInnerHTML={{ __html: wo.produk_spesifikasi }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Catatan / Order Notes */}
       {wo.catatan && (
         <div className="space-y-1">
@@ -644,6 +717,7 @@ function WorkshopWorkOrderCard({
             <Row label="Jenis cincin" value={wo.pria!.jenis_cincin} />
             <Row label="Ukiran nama" value={wo.pria!.ukiran} />
             <Row label="Ukiran cincin" value={wo.ukiran_cincin_pria} />
+            <Row label="Keterangan" value={wo.pria!.keterangan} />
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <DetailCard
@@ -664,7 +738,7 @@ function WorkshopWorkOrderCard({
             <DetailCard
               title="Finishing"
               items={wo.pria!.detail_finishing ?? []}
-              color="border-violet-200 bg-violet-50/70"
+              color="border-blue-200 bg-blue-50/70"
             />
           </div>
         </div>
@@ -699,6 +773,7 @@ function WorkshopWorkOrderCard({
             <Row label="Jenis cincin" value={wo.wanita!.jenis_cincin} />
             <Row label="Ukiran nama" value={wo.wanita!.ukiran} />
             <Row label="Ukiran cincin" value={wo.ukiran_cincin_wanita} />
+            <Row label="Keterangan" value={wo.wanita!.keterangan} />
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <DetailCard
@@ -810,6 +885,11 @@ function PhaseForm({
         <span className="text-[12px] text-stone-400">
           #{order.order_number}
         </span>
+        {order.proses_produksi && (
+          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+            Proses: {order.proses_produksi}
+          </span>
+        )}
         {order.status === "rework" && (
           <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
             Rework
@@ -1473,6 +1553,7 @@ function WorkshopInputContent() {
   const [listSearch, setListSearch] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "deadline">("deadline");
   const [listTab, setListTab] = useState<"orders" | "history">("orders");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
 
   const { data: workerHistory = [], refetch: refetchHistory } = useQuery<
     WorkerHistoryItem[]
@@ -1686,6 +1767,16 @@ function WorkshopInputContent() {
               <option value="deadline">Deadline ⬆</option>
               <option value="newest">Terbaru</option>
             </select>
+            <select
+              value={brandFilter}
+              onChange={(e) => setBrandFilter(e.target.value)}
+              className={`rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 focus:outline-none focus:ring-2 transition-all ${theme.ring}`}
+            >
+              <option value="all">Semua Brand</option>
+              <option value="KGJ">KGJ</option>
+              <option value="HJZ">Hijaz</option>
+              <option value="MP">MP</option>
+            </select>
           </div>
         </div>
 
@@ -1719,6 +1810,7 @@ function WorkshopInputContent() {
             theme={theme}
             search={listSearch}
             sortBy={sortBy}
+            brandFilter={brandFilter}
             onSelect={handleSelect}
             _onLogout={handleLogout}
           />

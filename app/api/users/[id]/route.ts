@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperadmin, mapUserResponse } from "../route";
 
-const BMS_ROLE_NAMES = ["superadmin", "customer_service", "marketing"] as const;
-const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
+const BMS_ROLE_NAMES = ["superadmin", "after_sales"] as const;
+const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
 type BmsRoleName = (typeof BMS_ROLE_NAMES)[number];
 
 function isBmsRoleName(v: unknown): v is BmsRoleName {
@@ -40,12 +40,11 @@ export async function GET(
       .select(
         `
         id, email, full_name, username, phone, pin_hash,
-        branch_id, role_id, status, last_login,
+        role_id, status, last_login,
         created_at, updated_at,
         role:roles!users_role_id_fkey (
           id, name, role_group, description, permissions, allowed_stages
-        ),
-        branches:branches!users_branch_id_fkey (id, name, code)
+        )
       `,
       )
       .eq("id", id)
@@ -72,13 +71,11 @@ export async function GET(
 // ════════════════════════════════════════════════════════════════════════════
 // PUT /api/users/[id]
 // Body (semua optional):
-//   - full_name, email, phone, password, branch_id
+//   - full_name, email, phone, password
 //   - role (BMS mode) ATAU role_id (untuk ganti role ke apa saja)
 //
 // Catatan: username tidak bisa diubah setelah create (design choice).
 // ════════════════════════════════════════════════════════════════════════════
-const admin = createAdminClient();
-
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -88,9 +85,10 @@ export async function PUT(
     const supabase = await createClient();
     const auth = await requireSuperadmin(supabase);
     if ("error" in auth) return auth.error;
+    const admin = createAdminClient();
 
     const body = await request.json();
-    const { full_name, email, phone, password, branch_id, role, role_id } =
+    const { full_name, email, phone, password, role, role_id } =
       body;
 
     const updatePayload: Record<string, unknown> = {};
@@ -141,7 +139,7 @@ export async function PUT(
         return NextResponse.json(
           {
             error:
-              "Role harus: superadmin, customer_service, marketing, operational_supervisor, atau production_supervisor",
+              "Role harus: superadmin, after_sales, operational_supervisor, production_supervisor, atau customer_service_supervisor",
           },
           { status: 400 },
         );
@@ -162,10 +160,6 @@ export async function PUT(
 
       updatePayload.role_id = roleRec.id;
 
-      // customer_service keeps branch; all others clear it
-      if (roleRec.name !== "customer_service") {
-        updatePayload.branch_id = null;
-      }
     }
 
     // role_id — bisa dipakai untuk set role apa saja (termasuk non-BMS)
@@ -185,16 +179,8 @@ export async function PUT(
 
       updatePayload.role_id = roleRec.id;
 
-      // Kalau role baru bukan Customer Service, clear branch_id
-      if (roleRec.name !== "customer_service") {
-        updatePayload.branch_id = null;
-      }
     }
 
-    // branch_id explicit
-    if (branch_id !== undefined) {
-      updatePayload.branch_id = branch_id || null;
-    }
 
     // Password update via auth admin
     if (password) {
@@ -264,12 +250,11 @@ export async function PUT(
       .select(
         `
         id, email, full_name, username, phone, pin_hash,
-        branch_id, role_id, status, last_login,
+        role_id, status, last_login,
         created_at, updated_at,
         role:roles!users_role_id_fkey (
           id, name, role_group, description, permissions, allowed_stages
-        ),
-        branches:branches!users_branch_id_fkey (id, name, code)
+        )
       `,
       )
       .eq("id", id)

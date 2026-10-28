@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { STAGE_SEQUENCE } from "@/lib/stages";
 import {
   legacyToOrderDetail,
   type LegacyOrderRow,
@@ -43,6 +44,13 @@ export async function GET(request: Request) {
       .eq("order_id", orderId)
       .maybeSingle();
 
+    // ── 2b. Deliveries (shipping) ──────────────────────────────────────────────
+    const { data: deliveryRows } = await admin
+      .from("legacy_deliveries")
+      .select("id, delivery_method, status, courier_name, tracking_number, dispatched_at, delivered_at")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: true });
+
     // ── 3. Stage history → mapped into the transitions shape ───────────────────
     const { data: history, error: histErr } = await admin
       .from("stage_history")
@@ -52,24 +60,70 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: true });
     if (histErr) console.error("[OrderDetail] stage_history error:", histErr);
 
-    const transitions = (history ?? []).map((h) => ({
-      from_stage: null,
-      to_stage: h.stage,
-      reason: h.note ?? null,
-      transitioned_at: h.created_at,
-      users: (h as { users?: { full_name?: string } }).users ?? null,
-    }));
+    const prodToGate: Record<string, string> = {};
+    STAGE_SEQUENCE.forEach((s, i) => {
+      if (s.startsWith("approval_") && i > 0) {
+        prodToGate[STAGE_SEQUENCE[i - 1]] = s;
+      }
+    });
 
-    const stageResults = (history ?? []).map((h, i) => ({
-      id: `${orderId}-${i}`,
-      stage: h.stage,
-      attempt_number: (h as { attempt_number?: number }).attempt_number ?? 1,
-      data: (h as { data?: unknown }).data ?? {},
-      notes: h.note ?? null,
-      started_at: h.created_at,
-      finished_at: h.created_at,
-      users: (h as { users?: { full_name?: string } }).users ?? null,
-    }));
+    const approvals = (history ?? [])
+      .filter((h) => {
+        const d = (h as { data?: Record<string, unknown> }).data;
+        return d && typeof d._sv_action === "string";
+      })
+      .map((h) => {
+        const d = (h as { data?: Record<string, unknown> }).data!;
+        const action = d._sv_action as string;
+        const gate = prodToGate[h.stage] ?? h.stage;
+        return {
+          id: `${orderId}-approval-${h.stage}-${h.created_at}`,
+          stage: action === "cancel" ? "selesai" : gate,
+          decision: action === "approve" ? "approved" : "rejected",
+          remarks: (d._sv_notes as string) ?? null,
+          decided_at: (d._sv_at as string) ?? h.created_at,
+          users: { full_name: (d._sv_by as string) ?? "Supervisor" },
+        };
+      });
+
+    const transitions = (history ?? [])
+      .filter((h) => (h as { status?: string }).status !== "rework")
+      .map((h) => ({
+        from_stage: null,
+        to_stage: h.stage,
+        reason: h.note ?? null,
+        transitioned_at: h.created_at,
+        users: (h as { users?: { full_name?: string } }).users ?? null,
+      }));
+
+    // Derived scan events (legacy has no QR-scan table): surface supervisor
+    // rejections (status "rework") as proper "Tolak" scan events instead of the
+    // misleading "Dimulai" transition they would otherwise become.
+    const scanEvents = (history ?? [])
+      .filter((h) => (h as { status?: string }).status === "rework")
+      .map((h) => ({
+        id: `${orderId}-scan-${h.stage}-${h.created_at}`,
+        stage: h.stage,
+        action: "reject",
+        scanned_at: h.created_at,
+        users: (h as { users?: { full_name?: string } }).users ?? null,
+      }));
+
+    const stageResults = (history ?? [])
+      .filter((h) => {
+        const d = (h as { data?: Record<string, unknown> }).data;
+        return d && typeof d === "object" && Object.keys(d).length > 0;
+      })
+      .map((h, i) => ({
+        id: `${orderId}-${i}`,
+        stage: h.stage,
+        attempt_number: (h as { attempt_number?: number }).attempt_number ?? 1,
+        data: (h as { data?: unknown }).data ?? {},
+        notes: h.note ?? null,
+        started_at: h.created_at,
+        finished_at: h.created_at,
+        users: (h as { users?: { full_name?: string } }).users ?? null,
+      }));
 
     return NextResponse.json({
       success: true,
@@ -80,9 +134,17 @@ export async function GET(request: Request) {
         ),
         transitions,
         stageResults,
-        deliveries: [],
-        scanEvents: [],
-        approvals: [],
+        deliveries: (deliveryRows ?? []).map((d) => ({
+          id: (d as { id: string }).id,
+          delivery_method: (d as { delivery_method?: string }).delivery_method ?? "Pengiriman",
+          status: (d as { status?: string }).status ?? "pending",
+          courier_name: (d as { courier_name?: string }).courier_name ?? null,
+          tracking_number: (d as { tracking_number?: string }).tracking_number ?? null,
+          dispatched_at: (d as { dispatched_at?: string }).dispatched_at ?? null,
+          delivered_at: (d as { delivered_at?: string }).delivered_at ?? null,
+        })),
+        scanEvents,
+        approvals,
       },
     });
   } catch (error) {

@@ -10,7 +10,7 @@ interface SupervisorFormState {
   full_name: string;
   email: string;
   password: string;
-  role: "operational_supervisor" | "production_supervisor";
+  role: "operational_supervisor" | "production_supervisor" | "customer_service_supervisor";
 }
 
 interface SupervisorUserFormProps {
@@ -44,7 +44,7 @@ export function SupervisorUserForm({
           Ganti tipe akun
         </button>
       )}
-      <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs text-rose-700">
+      <div className="bg-rose-500/10 border border-rose-400/20 rounded-lg p-3 text-xs text-rose-300">
         Hanya boleh satu akun aktif per tipe supervisor. Jika sudah ada, pembuatan akan ditolak.
       </div>
       <Input
@@ -78,7 +78,7 @@ export function SupervisorUserForm({
         disabled={isSaving}
       />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-cream mb-1">
           Tipe Supervisor
         </label>
         <select
@@ -89,16 +89,19 @@ export function SupervisorUserForm({
               role: e.target.value as SupervisorFormState["role"],
             })
           }
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="w-full px-3 py-2 border border-gold/25 rounded-lg focus:ring-2 focus:ring-gold/30 bg-carbon text-cream"
           disabled={isSaving}
         >
           <option value="operational_supervisor">Supervisor Operasional</option>
           <option value="production_supervisor">Supervisor Produksi</option>
+          <option value="customer_service_supervisor">Supervisor Customer Service</option>
         </select>
-        <p className="mt-1.5 text-xs text-gray-500 italic">
+        <p className="mt-1.5 text-xs text-white/50 italic">
           {form.role === "operational_supervisor"
             ? "Approval: Penerimaan Order, Persiapan Bahan, QC Awal, QC Akhir"
-            : "Approval: Produksi (Finishing)"}
+            : form.role === "production_supervisor"
+              ? "Approval: Produksi (Finishing)"
+              : "Validasi intake order sebelum Approval Penerimaan Order"}
         </p>
       </div>
       <div className="flex justify-end gap-3 mt-6">

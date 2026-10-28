@@ -63,7 +63,6 @@ export default function Header({
     email: string | null;
     status: string;
     role: { id: string; name: string; role_group: string; description: string | null };
-    branch: { id: string; name: string; code: string } | null;
   }
 
   const { data: profile } = useQuery<ProfileData>({
@@ -219,17 +218,24 @@ export default function Header({
   };
 
   const getUserInitials = () => {
-    if (!userEmail) return "??";
-    return userEmail.split("@")[0].substring(0, 2).toUpperCase();
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(" ")
+        .filter((w) => w.length > 0)
+        .map((w) => w[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
+    }
+    if (userEmail) {
+      return userEmail.split("@")[0].substring(0, 2).toUpperCase();
+    }
+    return "??";
   };
 
   const getRoleBadgeColor = () => {
     switch (role) {
       case "superadmin":
-        return "from-[#e8c547] to-[#c9a227]";
-      case "customer_service":
-        return "from-[#e8c547] to-[#c9a227]";
-      case "marketing":
         return "from-[#e8c547] to-[#c9a227]";
       case "supervisor":
         return "from-[#e8c547] to-[#c9a227]";
@@ -243,8 +249,6 @@ export default function Header({
   const getRoleLabel = () => {
     switch (role) {
       case "superadmin": return "Super Admin";
-      case "customer_service": return "Customer Service";
-      case "marketing": return "Marketing";
       case "supervisor": return "Supervisor";
       case "management": return "Management";
       default: return role;

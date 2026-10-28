@@ -12,6 +12,8 @@ export interface BottleneckItem {
   tgl_order?: string | null;
   last_worker: string | null;
   last_submission?: string | null;
+  proses_produksi?: string | null;
+  proses_produksi_label?: string | null;
   approval_decision: string | null;
   approved_by: string | null;
   approved_at?: string | null;
@@ -26,16 +28,17 @@ export interface StageBottleneck {
   in_progress_orders: number;
   avg_hours: number | null;
   longest_hours: number | null;
-  bottlenecks: BottleneckItem[];
   orders: BottleneckItem[];
 }
+
+export type BottleneckStageSummary = Omit<StageBottleneck, "orders">;
 
 export interface BottleneckData {
   bottlenecks: StageBottleneck[];
   summary: {
     total_stages_with_orders: number;
     total_orders: number;
-    busiest_stage: StageBottleneck | null;
-    slowest_stage: StageBottleneck | null;
+    busiest_stage: BottleneckStageSummary | null;
+    slowest_stage: BottleneckStageSummary | null;
   };
 }

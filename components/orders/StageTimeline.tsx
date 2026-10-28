@@ -108,11 +108,11 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const SCAN_ACTION_COLORS: Record<string, string> = {
-  open: "text-blue-500 bg-[#c9a227]/10",
-  submit: "text-emerald-500 bg-emerald-500/[0.08]",
-  edit: "text-amber-500 bg-[#c9a227]/10",
-  read: "text-white/40 bg-[#1C1917]",
-  reject: "text-rose-500 bg-rose-50",
+  open: "text-blue-400 bg-blue-500/[0.12]",
+  submit: "text-emerald-400 bg-emerald-500/[0.12]",
+  edit: "text-amber-400 bg-amber-500/[0.12]",
+  read: "text-white/30 bg-white/[0.04]",
+  reject: "text-rose-400 bg-rose-500/[0.12]",
 };
 
 function formatDateTime(iso: string): string {
@@ -214,7 +214,7 @@ function getKonfirmasiPhotos(stage: string, data?: Record<string, unknown>): Rea
           href={pria}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-100 transition-colors"
+          className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/[0.10] px-2 py-1 text-[10px] font-medium text-violet-300 hover:bg-violet-500/[0.16] transition-colors"
         >
           Foto Pria ↗
         </a>
@@ -224,7 +224,7 @@ function getKonfirmasiPhotos(stage: string, data?: Record<string, unknown>): Rea
           href={wanita}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg border border-pink-200 bg-pink-50 px-2 py-1 text-[10px] font-medium text-pink-700 hover:bg-pink-100 transition-colors"
+          className="inline-flex items-center gap-1 rounded-lg border border-pink-500/20 bg-pink-500/[0.10] px-2 py-1 text-[10px] font-medium text-pink-300 hover:bg-pink-500/[0.16] transition-colors"
         >
           Foto Wanita ↗
         </a>
@@ -250,26 +250,26 @@ function StageProgressBar({ currentStage }: { currentStage: string }) {
         <div className="relative w-full flex items-center">
           {globalI > 0 && (
             <div
-              className={`h-0.5 flex-1 ${isCompleted || isActive ? "bg-[#c9a227]/100" : "bg-stone-200"}`}
+              className={`h-0.5 flex-1 ${isCompleted || isActive ? "bg-[#c9a227]/100" : "bg-white/[0.06]"}`}
             />
           )}
           <div
             className={`h-2.5 w-2.5 rounded-full shrink-0 ring-2 ${
               isActive
-                ? "bg-[#c9a227]/100 ring-amber-200 scale-125"
+                ? "bg-[#c9a227]/100 ring-amber-400/30 scale-125"
                 : isCompleted
-                  ? `${colors?.dot ?? "bg-[#c9a227]/100"} ring-white`
-                  : "bg-stone-200 ring-white"
+                  ? `${colors?.dot ?? "bg-[#c9a227]/100"} ring-white/[0.08]`
+                  : "bg-white/[0.08] ring-white/[0.04]"
             } transition-all`}
           />
         </div>
         <span
           className={`text-[7px] leading-tight mt-1 text-center truncate w-full px-0.5 ${
             isActive
-              ? "font-semibold text-amber-700"
+              ? "font-semibold text-amber-300"
               : isCompleted
-                ? "text-stone-500"
-                : "text-stone-300"
+                ? "text-white/30"
+                : "text-white/15"
           }`}
         >
           {STAGE_LABELS[stage]?.split(" ")[0] ?? stage}
@@ -287,7 +287,7 @@ function StageProgressBar({ currentStage }: { currentStage: string }) {
 
       {/* Vertical connector between rows */}
       <div className="flex justify-center my-0.5">
-        <div className="w-px h-1.5 bg-stone-300" />
+        <div className="w-px h-1.5 bg-white/[0.06]" />
       </div>
 
       {/* Second row */}
@@ -304,26 +304,26 @@ function TimelineDot({ item }: { item: TimelineItem }) {
       const colors = STAGE_COLORS[item.to_stage];
       return (
         <div
-          className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ring-2 ring-white ${colors?.bg ?? "bg-stone-100"}`}
+          className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ring-2 ring-white/[0.06] ${colors?.bg ?? "bg-white/[0.06]"}`}
         >
           <ArrowRight
-            className={`h-3 w-3 ${colors?.text ?? "text-stone-600"}`}
+            className={`h-3 w-3 ${colors?.text ?? "text-white/40"}`}
           />
         </div>
       );
     }
     case "submission":
       return (
-        <div className="h-6 w-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 ring-2 ring-white">
-          <FileText className="h-3 w-3 text-amber-600" />
+        <div className="h-6 w-6 rounded-lg bg-amber-500/[0.12] flex items-center justify-center shrink-0 ring-2 ring-white/[0.06]">
+          <FileText className="h-3 w-3 text-amber-300" />
         </div>
       );
     case "scan": {
       const colorClass =
-        SCAN_ACTION_COLORS[item.action] ?? "text-white/40 bg-[#1C1917]";
+        SCAN_ACTION_COLORS[item.action] ?? "text-white/30 bg-white/[0.04]";
       return (
         <div
-          className={`h-6 w-6 rounded-lg ${colorClass} flex items-center justify-center shrink-0 ring-2 ring-white`}
+          className={`h-6 w-6 rounded-lg ${colorClass} flex items-center justify-center shrink-0 ring-2 ring-white/[0.06]`}
         >
           <ScanLine className="h-3 w-3" />
         </div>
@@ -332,14 +332,14 @@ function TimelineDot({ item }: { item: TimelineItem }) {
     case "approval":
       return (
         <div
-          className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ring-2 ring-white ${
-            item.decision === "approved" ? "bg-emerald-100" : "bg-rose-100"
+          className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ring-2 ring-white/[0.06] ${
+            item.decision === "approved" ? "bg-emerald-500/[0.12]" : "bg-rose-500/[0.12]"
           }`}
         >
           {item.decision === "approved" ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
           ) : (
-            <XCircle className="h-3.5 w-3.5 text-rose-600" />
+            <XCircle className="h-3.5 w-3.5 text-rose-300" />
           )}
         </div>
       );
@@ -352,23 +352,23 @@ function TimelineContent({ item }: { item: TimelineItem }) {
       const label = STAGE_LABELS[item.to_stage] ?? item.to_stage;
       return (
         <>
-          <p className="text-xs font-medium text-stone-800">
+          <p className="text-xs font-medium text-[#e8e2d4]">
             {item.from_stage
               ? `${STAGE_LABELS[item.from_stage] ?? item.from_stage} → ${label}`
               : `Dimulai: ${label}`}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <User className="h-3 w-3" />
               {getUserName(item)}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <Clock className="h-3 w-3" />
               {formatDateTime(item.timestamp)}
             </span>
           </div>
           {item.reason && (
-            <p className="text-[11px] text-stone-500 mt-1 italic">
+            <p className="text-[11px] text-white/30 mt-1 italic">
               &ldquo;{item.reason}&rdquo;
             </p>
           )}
@@ -381,26 +381,26 @@ function TimelineContent({ item }: { item: TimelineItem }) {
       const konfirmasiInfo = getKonfirmasiInfo(item.stage, item.data);
       return (
         <>
-          <p className="text-xs font-medium text-stone-800">
+          <p className="text-xs font-medium text-[#e8e2d4]">
             Submit: {label}
             {item.attempt_number > 1 && (
-              <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-700 rounded px-1.5 py-0.5">
+              <span className="ml-1.5 text-[10px] bg-rose-500/[0.12] text-rose-300 rounded px-1.5 py-0.5">
                 Percobaan {item.attempt_number}
               </span>
             )}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <User className="h-3 w-3" />
               {getUserName(item)}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <Clock className="h-3 w-3" />
               {formatDateTime(item.timestamp)}
             </span>
           </div>
           {tukangInfo && (
-            <p className="text-[11px] text-amber-700 mt-1 font-medium">
+            <p className="text-[11px] text-amber-300 mt-1 font-medium">
               {tukangInfo}
             </p>
           )}
@@ -411,8 +411,8 @@ function TimelineContent({ item }: { item: TimelineItem }) {
           )}
           {getKonfirmasiPhotos(item.stage, item.data)}
           {item.notes && (
-            <p className="text-[11px] text-stone-600 mt-1">
-              <span className="font-semibold">Catatan:</span> {item.notes}
+            <p className="text-[11px] text-white/40 mt-1">
+              <span className="font-semibold text-white/50">Catatan:</span> {item.notes}
             </p>
           )}
         </>
@@ -423,18 +423,18 @@ function TimelineContent({ item }: { item: TimelineItem }) {
       const actionLabel = ACTION_LABELS[item.action] ?? item.action;
       return (
         <>
-          <p className="text-xs font-medium text-stone-800">
-            <span className="text-stone-400">Scan:</span> {label}
-            <span className="ml-1.5 text-[10px] text-stone-400">
+          <p className="text-xs font-medium text-[#e8e2d4]">
+            <span className="text-white/40">Scan:</span> {label}
+            <span className="ml-1.5 text-[10px] text-white/30">
               ({actionLabel})
             </span>
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <User className="h-3 w-3" />
               {getUserName(item)}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <Clock className="h-3 w-3" />
               {formatDateTime(item.timestamp)}
             </span>
@@ -446,22 +446,22 @@ function TimelineContent({ item }: { item: TimelineItem }) {
       const label = STAGE_LABELS[item.stage] ?? item.stage;
       return (
         <>
-          <p className="text-xs font-medium text-stone-800">
-            {item.decision === "approved" ? "✅ Disetujui" : "❌ Ditolak"}:{" "}
+          <p className="text-xs font-medium text-[#e8e2d4]">
+            {item.decision === "approved" ? "Disetujui" : "Ditolak"}:{" "}
             {label}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <User className="h-3 w-3" />
               {getUserName(item)}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-stone-400">
+            <span className="flex items-center gap-1 text-[11px] text-white/40">
               <Clock className="h-3 w-3" />
               {formatDateTime(item.timestamp)}
             </span>
           </div>
           {item.remarks && (
-            <p className="text-[11px] text-stone-500 mt-1 italic">
+            <p className="text-[11px] text-white/30 mt-1 italic">
               &ldquo;{item.remarks}&rdquo;
             </p>
           )}
@@ -554,7 +554,7 @@ export default function StageTimeline({
 
       {/* Timeline */}
       <div className="relative overflow-hidden">
-        <div className="absolute left-3 top-0 bottom-0 w-px bg-stone-200" />
+        <div className="absolute left-3 top-0 bottom-0 w-px bg-white/[0.06]" />
         <div className="space-y-3">
           {items.map((item, i) => (
             <div key={i} className="flex gap-3 relative">
@@ -562,7 +562,7 @@ export default function StageTimeline({
                 <TimelineDot item={item} />
               </div>
               <div className="flex-1 min-w-0 pb-1">
-                <div className="rounded-lg border border-stone-100 bg-[#2a2522] p-2.5 shadow-sm">
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5">
                   <TimelineContent item={item} />
                 </div>
               </div>

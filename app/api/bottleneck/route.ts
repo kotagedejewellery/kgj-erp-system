@@ -18,12 +18,16 @@ interface StageBottleneck {
   in_progress_orders: number;
   avg_hours: number | null;
   longest_hours: number | null;
-  bottlenecks: {
+  orders: {
     order_number: string;
     customer_name: string;
     hours_waiting: number | null;
     status: string;
   }[];
+}
+
+function toStageSummary({ orders: _orders, ...stage }: StageBottleneck) {
+  return stage;
 }
 
 export async function GET(request?: NextRequest) {
@@ -64,7 +68,7 @@ export async function GET(request?: NextRequest) {
 
     const query = admin
       .from("tracking_stages")
-      .select("order_id, current_stage, stage_status, updated_at, legacy_orders!tracking_stages_order_id_fkey(kode_order, nama, tgl_selesai, created_at)")
+      .select("order_id, current_stage, stage_status, updated_at, legacy_orders!tracking_stages_order_id_fkey(kode_order, nama, tgl_selesai, created_at, proses_produksi, proses_produksi_label)")
       .neq("current_stage", "selesai")
       .in("current_stage", ACTIVE_STAGES as unknown as string[]);
 
@@ -73,7 +77,7 @@ export async function GET(request?: NextRequest) {
     if (ordersError)
       return NextResponse.json({ error: "Gagal mengambil data" }, { status: 500 });
 
-    type LegacyEmbed = { kode_order: string; nama: string | null; tgl_selesai: string | null; created_at: string | null };
+    type LegacyEmbed = { kode_order: string; nama: string | null; tgl_selesai: string | null; created_at: string | null; proses_produksi: string | null; proses_produksi_label: string | null };
     type TrackRow = {
       order_id: string;
       current_stage: string;
@@ -98,6 +102,8 @@ export async function GET(request?: NextRequest) {
           updated_at: t.updated_at ?? "",
           deadline: lo?.tgl_selesai ?? null,
           created_at: lo?.created_at ?? null,
+          proses_produksi: lo?.proses_produksi ?? null,
+          proses_produksi_label: lo?.proses_produksi_label ?? null,
         };
       })
       .filter((o) => {
@@ -145,7 +151,7 @@ export async function GET(request?: NextRequest) {
     }
 
     // Group by stage
-    type OrderRec = { id: string; current_stage: string; status: string; order_number: string; customer_name: string | null; updated_at: string; deadline: string | null };
+    type OrderRec = { id: string; current_stage: string; status: string; order_number: string; customer_name: string | null; updated_at: string; deadline: string | null; proses_produksi: string | null; proses_produksi_label: string | null };
     const stageMap = new Map<string, OrderRec[]>();
     for (const order of orders || []) {
       const stage = order.current_stage;
@@ -162,8 +168,11 @@ export async function GET(request?: NextRequest) {
         (o) => o.status !== "waiting_approval",
       );
 
-      const ordersWithHours = inProgressOrders.map((o) => {
-        const latest = latestByOrder.get(o.id);
+      const ordersWithHours = stageOrders.map((o) => {
+        // Approval/waiting orders: arrival = when tracking pointer was set (updated_at)
+        // In-progress orders: arrival = when last worker submitted (stage_history)
+        const useTrackingArrival = o.status === "waiting_approval";
+        const latest = useTrackingArrival ? null : latestByOrder.get(o.id);
         const arrivedAt = latest?.finished_at || o.updated_at;
         const hours = (now.getTime() - new Date(arrivedAt).getTime()) / 3_600_000;
         const approval = approvalByOrder.get(o.id);
@@ -175,6 +184,8 @@ export async function GET(request?: NextRequest) {
           status: o.status,
           current_stage: o.current_stage,
           deadline: o.deadline ?? null,
+          proses_produksi: o.proses_produksi ?? null,
+          proses_produksi_label: o.proses_produksi_label ?? null,
           last_worker: latest?.users?.full_name ?? null,
           last_submission: latest?.finished_at ?? null,
           approval_decision: approval?.decision ?? null,
@@ -202,7 +213,6 @@ export async function GET(request?: NextRequest) {
         in_progress_orders: inProgressOrders.length,
         avg_hours: avgHours ? Math.round(avgHours * 10) / 10 : null,
         longest_hours: longestHours ? Math.round(longestHours * 10) / 10 : null,
-        bottlenecks: sortedOrders,
         orders: sortedOrders,
       };
     }).filter((b) => b.order_count > 0);
@@ -216,13 +226,13 @@ export async function GET(request?: NextRequest) {
           total_orders: (orders || []).length,
           busiest_stage:
             bottlenecks.length > 0
-              ? bottlenecks.reduce((a, b) => (a.order_count > b.order_count ? a : b))
+              ? toStageSummary(bottlenecks.reduce((a, b) => (a.order_count > b.order_count ? a : b)))
               : null,
           slowest_stage:
             bottlenecks.filter((b) => b.avg_hours).length > 0
-              ? bottlenecks
+              ? toStageSummary(bottlenecks
                   .filter((b) => b.avg_hours)
-                  .reduce((a, b) => ((a.avg_hours || 0) > (b.avg_hours || 0) ? a : b))
+                  .reduce((a, b) => ((a.avg_hours || 0) > (b.avg_hours || 0) ? a : b)))
               : null,
         },
       },

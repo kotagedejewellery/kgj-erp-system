@@ -60,20 +60,20 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
       {/* Expert Cards */}
       <CollapsibleSection
         header={
-          <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+          <header className="flex items-center justify-between border-b border-gold/10 px-5 py-3.5">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-900">
+              <h2 className="text-sm font-semibold text-ivory">
                 Jewelry Expert & Tukang
               </h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 Live
               </span>
             </div>
-            <span className="text-xs text-slate-500">
-              <span className="font-medium text-slate-700">{activeExperts}</span>{" "}
+            <span className="text-xs text-white/50">
+              <span className="font-medium text-cream">{activeExperts}</span>{" "}
               dari{" "}
-              <span className="font-medium text-slate-700">
+              <span className="font-medium text-cream">
                 {data.experts.length}
               </span>{" "}
               aktif
@@ -82,7 +82,7 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
         }
       >
         {filteredExperts.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">
+          <div className="p-10 text-center text-sm text-white/40">
             {q ? "Tidak ditemukan" : "Belum ada data tukang aktif"}
           </div>
         ) : (
@@ -99,10 +99,10 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
         {/* Micro Setting */}
         <CollapsibleSection
           header={
-            <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+            <header className="flex items-center justify-between border-b border-gold/10 px-5 py-3.5">
               <div className="flex items-center gap-2">
                 <Microscope className="h-4 w-4 text-violet-500" />
-                <h2 className="text-sm font-semibold text-slate-900">
+                <h2 className="text-sm font-semibold text-ivory">
                   Micro Setting
                 </h2>
               </div>
@@ -115,20 +115,20 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-xs">
-                  <th className="px-5 py-2.5 text-left font-medium text-slate-500">
+                <tr className="border-b border-gold/10 text-xs">
+                  <th className="px-5 py-2.5 text-left font-medium text-white/50">
                     Order
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-slate-500">
+                  <th className="px-3 py-2.5 text-left font-medium text-white/50">
                     Permata
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-slate-500">
+                  <th className="px-3 py-2.5 text-left font-medium text-white/50">
                     Tukang
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-slate-500">
+                  <th className="px-3 py-2.5 text-left font-medium text-white/50">
                     Berat
                   </th>
-                  <th className="px-5 py-2.5 text-left font-medium text-slate-500">
+                  <th className="px-5 py-2.5 text-left font-medium text-white/50">
                     Status
                   </th>
                 </tr>
@@ -138,7 +138,7 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
                   <tr>
                     <td
                       colSpan={5}
-                      className="py-10 text-center text-sm text-slate-400"
+                      className="py-10 text-center text-sm text-white/40"
                     >
                       {q ? "Tidak ditemukan" : "Tidak ada order micro setting"}
                     </td>
@@ -147,36 +147,36 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
                   filteredMicro.slice(0, 10).map((order) => (
                     <tr
                       key={order.order_id}
-                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors"
+                      className="border-b border-white/5 last:border-0 hover:bg-carbon transition-colors"
                     >
-                      <td className="px-5 py-2.5 font-mono text-xs text-slate-700">
+                      <td className="px-5 py-2.5 font-mono text-xs text-cream">
                         {order.order_number}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <Gem className="h-3 w-3 shrink-0 text-violet-400" />
-                          <span className="text-xs text-slate-600">
+                          <span className="text-xs text-white/70">
                             {fmtGemstone(order.gemstone_info)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">
+                      <td className="px-3 py-2.5 text-xs text-white/70">
                         {order.staff_name ?? (
-                          <span className="text-slate-400">Menunggu</span>
+                          <span className="text-white/40">Menunggu</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">
+                      <td className="px-3 py-2.5 text-xs text-white/70">
                         {order.weight_before != null &&
                         order.weight_after != null ? (
                           <span>
                             {order.weight_before.toFixed(2)} →{" "}
-                            <span className="font-medium text-slate-900">
+                            <span className="font-medium text-ivory">
                               {order.weight_after.toFixed(2)}
                             </span>
                             g
                           </span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-white/40">—</span>
                         )}
                       </td>
                       <td className="px-5 py-2.5">
@@ -189,8 +189,8 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
             </table>
           </div>
           {data.microSetting.length > 10 && (
-            <div className="border-t border-slate-100 px-5 py-2.5 text-center">
-              <p className="text-xs text-slate-400">
+            <div className="border-t border-gold/10 px-5 py-2.5 text-center">
+              <p className="text-xs text-white/40">
                 +{data.microSetting.length - 10} order lainnya
               </p>
             </div>
@@ -200,21 +200,21 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
         {/* Yield Material */}
         <CollapsibleSection
           header={
-            <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+            <header className="flex items-center justify-between border-b border-gold/10 px-5 py-3.5">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-slate-400" />
-                <h2 className="text-sm font-semibold text-slate-900">
+                <BarChart3 className="h-4 w-4 text-white/40" />
+                <h2 className="text-sm font-semibold text-ivory">
                   Yield Material
                 </h2>
               </div>
-              <span className="text-xs text-slate-500">7 hari terakhir</span>
+              <span className="text-xs text-white/50">7 hari terakhir</span>
             </header>
           }
         >
           {filteredYield.length === 0 ? (
             <div className="p-10 text-center">
-              <BarChart3 className="mx-auto mb-3 h-10 w-10 text-slate-200" />
-              <p className="text-sm text-slate-400">{q ? "Tidak ditemukan" : "Belum ada data yield"}</p>
+              <BarChart3 className="mx-auto mb-3 h-10 w-10 text-white/20" />
+              <p className="text-sm text-white/40">{q ? "Tidak ditemukan" : "Belum ada data yield"}</p>
             </div>
           ) : (
             <div className="p-5">
@@ -243,20 +243,20 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
                 ].map(({ label, value, accent }) => (
                   <div
                     key={label}
-                    className="rounded-md border border-slate-200 bg-slate-50/60 p-2.5"
+                    className="rounded-md border border-gold/15 bg-carbon/60 p-2.5"
                   >
-                    <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                    <p className="text-[10px] uppercase tracking-wide text-white/50">
                       {label}
                     </p>
                     <p
                       className={`mt-0.5 text-base font-semibold ${
                         accent === "emerald"
-                          ? "text-emerald-600"
+                          ? "text-emerald-300"
                           : accent === "amber"
-                            ? "text-amber-600"
+                            ? "text-amber-300"
                             : accent === "rose"
-                              ? "text-rose-600"
-                              : "text-slate-900"
+                              ? "text-rose-300"
+                              : "text-ivory"
                       }`}
                     >
                       {value}
@@ -278,20 +278,20 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
                         : "bg-rose-500";
                   const textColor =
                     pct >= 95
-                      ? "text-emerald-600"
+                      ? "text-emerald-300"
                       : pct >= 90
-                        ? "text-amber-600"
-                        : "text-rose-600";
+                        ? "text-amber-300"
+                        : "text-rose-300";
                   return (
                     <div key={idx} className="flex items-center gap-3">
-                      <span className="w-20 shrink-0 truncate font-mono text-xs text-slate-500">
+                      <span className="w-20 shrink-0 truncate font-mono text-xs text-white/50">
                         {item.order_number}
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="mb-1 flex items-center justify-between text-xs">
-                          <span className="text-slate-600">
+                          <span className="text-white/70">
                             {item.target?.toFixed(2) ?? "—"}g →{" "}
-                            <span className="font-medium text-slate-900">
+                            <span className="font-medium text-ivory">
                               {item.actual?.toFixed(2) ?? "—"}g
                             </span>
                           </span>
@@ -299,7 +299,7 @@ export function ProduksiTab({ data, searchQuery }: { data: ProduksiData | null; 
                             {pct.toFixed(1)}%
                           </span>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                           <div
                             className={`h-full rounded-full transition-all ${color}`}
                             style={{ width: `${Math.min(pct, 100)}%` }}

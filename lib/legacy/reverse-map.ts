@@ -25,18 +25,13 @@ export const STAGE_TO_YII2_STATUS: Record<string, number> = {
   packing:                   46,
   pengiriman:                14,
   selesai:                   15,
+  dibatalkan:                20,
 };
 
-// Set of stages that the ERP pushes back to Yii2. By default only the 6
-// customer-visible milestones fire; add/remove entries to control which
-// stages sync. All 20 are available in STAGE_TO_YII2_STATUS above.
-export const STAGES_THAT_PUSH_TO_YII2 = new Set<string>([
-  "racik_bahan",
-  "pembentukan_cincin",
-  "finishing",
-  "pengiriman",
-  "selesai",
-]);
+// Set of stages that the ERP pushes back to Yii2 — FULL 20-stage sync since
+// 2026-07-16 (Yii2 has all 20 statuses 1:1, see lib/legacy/status.ts).
+// lib/legacy/push-status.ts pushes the stage the order ENTERS on every
+// transition: worker submit, supervisor approve/reject, and rework.
 
 // Reverse lookup helper for any stage (returns null if not in the map).
 export function stageToYii2Status(stage: string): number | null {

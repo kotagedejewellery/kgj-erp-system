@@ -111,14 +111,16 @@ export default function ManagementHistoryPage() {
   const uniqueManagers = new Set(history.map((e) => e.managerId)).size;
   const bgStyle = {
     background:
-      "#f8f9fb url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(139,92,246,0.06)'/%3E%3C/svg%3E\") repeat",
+      "#26211C url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(201,162,39,0.06)'/%3E%3C/svg%3E\") repeat",
   };
 
-  const P = {
-    purple: "#7c3aed", purpleLight: "#f5f3ff", purpleMuted: "#c4b5fd",
-    green: "#059669", greenLight: "#ecfdf5", greenMuted: "#a7f3d0",
-    gray: "#6b7280", grayLight: "#f9fafb", grayBorder: "#e5e7eb",
-    orange: "#ea580c", orangeLight: "#fff7ed", ink: "#111827",
+    const P = {
+    purple: "#7c3aed", purpleLight: "#7c3aed22", purpleMuted: "#a78bfa",
+    green: "#34d399", greenLight: "#05966922", greenMuted: "#6ee7b7",
+    gray: "#a8a29e", grayLight: "#1C1917", grayBorder: "#c9a22733",
+    orange: "#f97316", orangeLight: "#f9731622",
+    red: "#f87171", redLight: "#f8717122",
+    ink: "#F5EFE3", card: "#2A2522",
   };
 
   return (
@@ -128,7 +130,7 @@ export default function ManagementHistoryPage() {
         <Header userEmail={clientUser?.email ?? ""} role="superadmin" />
         <main className="flex-1 overflow-y-auto p-6">
           {/* Title Banner */}
-          <div className="mb-6 p-5 rounded-2xl relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${P.purpleLight} 0%, #fff 60%)`, border: `1px solid ${P.grayBorder}` }}>
+          <div className="mb-6 p-5 rounded-2xl relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${P.purple}18 0%, transparent 60%)`, border: `1px solid ${P.grayBorder}` }}>
             <div className="absolute top-0 right-0 w-48 h-full pointer-events-none opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${P.purpleMuted} 0%, transparent 70%)` }} />
             <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
@@ -151,24 +153,24 @@ export default function ManagementHistoryPage() {
           <div className="flex items-center gap-2 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: P.gray }} />
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama / role / task..." className="w-full rounded-xl border py-2 pl-9 pr-3 text-sm outline-none transition-colors" style={{ borderColor: P.grayBorder, color: P.ink, background: "#fff" }} onFocus={(e) => { e.currentTarget.style.borderColor = P.purple; }} onBlur={(e) => { e.currentTarget.style.borderColor = P.grayBorder; }} />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama / role / task..." className="w-full rounded-xl border py-2 pl-9 pr-3 text-sm outline-none transition-colors" style={{ borderColor: P.grayBorder, color: P.ink, background: P.card }} onFocus={(e) => { e.currentTarget.style.borderColor = P.purple; }} onBlur={(e) => { e.currentTarget.style.borderColor = P.grayBorder; }} />
               {searchQuery && <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: P.gray }}><X className="h-3 w-3" /></button>}
             </div>
-            <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5 shrink-0">
+            <div className="flex gap-0.5 bg-white/10 rounded-lg p-0.5 shrink-0">
               {(["today", "week", "all"] as const).map((f) => (
                 <button key={f} onClick={() => setDateFilter(f)}
-                  className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${dateFilter === f ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${dateFilter === f ? "bg-cocoa text-purple-300 shadow-sm" : "text-white/50 hover:text-cream"}`}>
                   {f === "today" ? "Hari Ini" : f === "week" ? "Minggu Ini" : "Semua"}
                 </button>
               ))}
             </div>
             <div className="relative" ref={datePickerRef}>
-              <button type="button" onClick={() => setShowDatePicker(!showDatePicker)} className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors" style={{ borderColor: dateFrom || dateTo ? P.purple : P.grayBorder, color: dateFrom || dateTo ? P.purple : P.gray, background: "#fff" }}>
+              <button type="button" onClick={() => setShowDatePicker(!showDatePicker)} className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors" style={{ borderColor: dateFrom || dateTo ? P.purple : P.grayBorder, color: dateFrom || dateTo ? P.purple : P.gray, background: P.card }}>
                 <Calendar className="h-3.5 w-3.5" />{dateFrom || dateTo ? <span>{dateFrom ? new Date(dateFrom).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "…"}{" — "}{dateTo ? new Date(dateTo).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "…"}</span> : "Filter"}
               </button>
-              {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="absolute -top-1 -right-1 rounded-full p-0.5" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}><X className="h-2.5 w-2.5" style={{ color: P.gray }} /></button>}
+              {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="absolute -top-1 -right-1 rounded-full p-0.5" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}><X className="h-2.5 w-2.5" style={{ color: P.gray }} /></button>}
               {showDatePicker && (
-                <div className="absolute right-0 top-full mt-1 z-30 rounded-xl border p-3 shadow-lg w-52" style={{ background: "#fff", borderColor: P.grayBorder }}>
+                <div className="absolute right-0 top-full mt-1 z-30 rounded-xl border p-3 shadow-lg w-52" style={{ background: P.card, borderColor: P.grayBorder }}>
                   <div className="space-y-2">
                     <div><label className="text-[10px] font-semibold mb-1 block" style={{ color: P.gray }}>Dari</label><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full rounded-lg border px-2 py-1.5 text-xs outline-none" style={{ borderColor: P.grayBorder, color: P.ink, background: P.grayLight }} onFocus={(e) => { e.currentTarget.style.borderColor = P.purple; }} /></div>
                     <div><label className="text-[10px] font-semibold mb-1 block" style={{ color: P.gray }}>Sampai</label><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full rounded-lg border px-2 py-1.5 text-xs outline-none" style={{ borderColor: P.grayBorder, color: P.ink, background: P.grayLight }} onFocus={(e) => { e.currentTarget.style.borderColor = P.purple; }} /></div>
@@ -180,7 +182,7 @@ export default function ManagementHistoryPage() {
           </div>
 
           {filteredHistory.length > 0 && (
-            <div className="flex items-center gap-4 rounded-2xl px-4 py-2 mb-6" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+            <div className="flex items-center gap-4 rounded-2xl px-4 py-2 mb-6" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
               <div className="flex items-center gap-1.5 text-xs" style={{ color: P.gray }}><CheckCircle2 className="h-3.5 w-3.5" style={{ color: P.green }} />{filteredHistory.length} entri log</div>
               <div className="w-px h-4" style={{ background: P.grayBorder }} />
               <div className="flex items-center gap-1.5 text-xs" style={{ color: P.gray }}><User className="h-3.5 w-3.5" style={{ color: P.purple }} />{uniqueManagers} managers</div>
@@ -188,7 +190,7 @@ export default function ManagementHistoryPage() {
           )}
 
           {isLoading ? <div className="p-12"><Loading variant="skeleton" text="Memuat data..." /></div> : filteredHistory.length === 0 ? (
-            <div className="text-center py-16 rounded-2xl" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}><CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Belum ada riwayat.</p></div>
+            <div className="text-center py-16 rounded-2xl" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}><CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Belum ada riwayat.</p></div>
           ) : (
             <div className="space-y-10">
               {monthlyGroups.map((month) => (
@@ -207,7 +209,7 @@ export default function ManagementHistoryPage() {
                       return (
                         <div key={globalIdx} className="relative pb-3 last:pb-0">
                           <div className="absolute left-[-28px] top-1.5 rounded-full border-2" style={{ width: 10, height: 10, borderColor: statusColor, background: "#F9FAFB" }} />
-                          <div className="rounded-2xl border p-4 cursor-pointer transition-colors" style={{ background: "#fff", borderColor: P.grayBorder }} onClick={() => toggleExpand(globalIdx, entry.itemId)}>
+                          <div className="rounded-2xl border p-4 cursor-pointer transition-colors" style={{ background: P.card, borderColor: P.grayBorder }} onClick={() => toggleExpand(globalIdx, entry.itemId)}>
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0"><span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: barColor }} /><span className="text-sm font-semibold truncate" style={{ color: P.ink }}>{entry.manager}</span><span className="text-[10px]" style={{ color: P.gray }}>{entry.role}</span></div>
                               <span className="text-[10px] shrink-0" style={{ color: P.gray }}>{new Date(entry.completed_at).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
@@ -215,7 +217,7 @@ export default function ManagementHistoryPage() {
                             <div className="flex items-center gap-2 mt-2">
                               <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: P.grayBorder }}><div className="h-full rounded-full" style={{ width: `${entry.managerRate}%`, background: barColor }} /></div>
                               <span className="text-[10px] shrink-0" style={{ color: P.gray }}>{entry.managerDone}/{entry.managerTotal}</span>
-                              <span className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium shrink-0" style={{ background: statusColor === P.green ? P.greenLight : statusColor === P.orange ? P.orangeLight : "#fef2f2", color: statusColor }}>
+                              <span className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-medium shrink-0" style={{ background: statusColor === P.green ? P.greenLight : statusColor === P.orange ? P.orangeLight : P.redLight, color: statusColor }}>
                                 {entry.status === "selesai" ? "Selesai" : entry.status === "proses" ? "Proses" : "Belum"}
                               </span>
                               {isExpanded ? <ChevronDown className="h-3 w-3 shrink-0" style={{ color: P.purple }} /> : <ChevronDown className="h-3 w-3 shrink-0 rotate-[-90deg]" style={{ color: P.gray }} />}

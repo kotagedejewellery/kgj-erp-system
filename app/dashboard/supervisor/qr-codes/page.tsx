@@ -25,21 +25,24 @@ import QRCodeLib from "qrcode";
 
 // ─── Constants ──────────────────────────────────────────────────────
 
+const formatRoleName = (name: string) =>
+  name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 const ROLE_GROUP_STYLES: Record<
   string,
   { label: string; bg: string; border: string; text: string }
 > = {
   operational: {
     label: "Operasional",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-700",
+    bg: "bg-sky-500/20",
+    border: "border-sky-400/20",
+    text: "text-sky-300",
   },
   production: {
     label: "Produksi",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    text: "text-amber-700",
+    bg: "bg-amber-500/20",
+    border: "border-amber-400/20",
+    text: "text-amber-300",
   },
 };
 
@@ -75,7 +78,7 @@ function QRCodeImage({ data, size = 160 }: { data: string; size?: number }) {
       QRCodeLib.toCanvas(canvasRef.current, data, {
         width: size,
         margin: 2,
-        color: { dark: "#1c1917", light: "#ffffff" },
+        color: { dark: "#111111", light: "#ffffff" },
       });
     }
   }, [data, size]);
@@ -285,7 +288,7 @@ export default function SupervisorQRCodesPage() {
       h2{margin-bottom:4px}h3{color:#666;font-weight:normal;margin-top:0}</style></head>
       <body>
         <h2>${qr.workstation_name}</h2>
-        <h3>${qr.role_name ?? ""}</h3>
+        <h3>${formatRoleName(qr.role_name ?? "")}</h3>
         <img src="${dataUrl}" />
         <p style="color:#999;font-size:12px">Scan QR untuk login ke workstation</p>
         <script>window.print()</script>
@@ -302,7 +305,7 @@ export default function SupervisorQRCodesPage() {
   // ── Render ──────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen bg-stone-50">
+    <div className="flex h-screen bg-carbon">
       <Sidebar
         role="supervisor"
         isOpen={sidebarOpen}
@@ -321,8 +324,8 @@ export default function SupervisorQRCodesPage() {
             <div
               className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2 ${
                 alert.type === "success"
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : "bg-red-50 text-red-700 border border-red-200"
+                  ? "bg-emerald-500/10 text-emerald-300 border border-emerald-200"
+                  : "bg-rose-500/10 text-rose-300 border border-red-200"
               }`}
             >
               {alert.type === "success" ? (
@@ -337,16 +340,16 @@ export default function SupervisorQRCodesPage() {
           {/* Header */}
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-lg font-bold text-stone-800">
+              <h1 className="text-lg font-bold text-cream">
                 Kelola QR Code
               </h1>
-              <p className="text-sm text-stone-500">
+              <p className="text-sm text-white/50">
                 {qrCodes.length} QR Code tersedia
               </p>
             </div>
             <button
               onClick={() => setShowGenerate(true)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 active:scale-[0.98] transition-all"
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/100 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 active:scale-[0.98] transition-all"
             >
               <Plus className="h-4 w-4" />
               Buat QR Baru
@@ -359,27 +362,27 @@ export default function SupervisorQRCodesPage() {
               {
                 label: "Total",
                 value: qrCodes.length,
-                color: "text-stone-700",
-                bg: "bg-stone-100",
+                color: "text-cream",
+                bg: "bg-white/10",
               },
               {
                 label: "Aktif",
                 value: totalActive,
-                color: "text-emerald-600",
-                bg: "bg-emerald-100",
+                color: "text-emerald-300",
+                bg: "bg-emerald-500/10",
               },
               {
                 label: "Nonaktif",
                 value: totalInactive,
-                color: "text-stone-500",
-                bg: "bg-stone-100",
+                color: "text-white/50",
+                bg: "bg-white/10",
               },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`rounded-xl ${bg} px-3 py-3 sm:px-4`}>
                 <p className={`text-lg sm:text-xl font-bold ${color}`}>
                   {value}
                 </p>
-                <p className="text-[11px] text-stone-500 mt-0.5">{label}</p>
+                <p className="text-[11px] text-white/50 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
@@ -387,24 +390,24 @@ export default function SupervisorQRCodesPage() {
           {/* Filters */}
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
               <input
                 type="text"
                 placeholder="Cari workstation, role, atau token..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-800 placeholder-stone-400 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100 transition"
+                className="w-full rounded-xl border border-gold/15 bg-cocoa py-2.5 pl-10 pr-4 text-sm text-cream placeholder:text-white/30 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100 transition"
               />
             </div>
-            <div className="flex gap-1 rounded-xl border border-stone-200 bg-white p-1">
+            <div className="flex gap-1 rounded-xl border border-gold/15 bg-cocoa p-1">
               {(["all", "production", "operational"] as const).map((g) => (
                 <button
                   key={g}
                   onClick={() => setFilterGroup(g)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                     filterGroup === g
-                      ? "bg-amber-500 text-white shadow-sm"
-                      : "text-stone-500 hover:text-stone-700"
+                      ? "bg-amber-500/100 text-white shadow-sm"
+                      : "text-white/50 hover:text-cream"
                   }`}
                 >
                   {g === "all"
@@ -420,25 +423,25 @@ export default function SupervisorQRCodesPage() {
           {/* Content */}
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-stone-300" />
+              <Loader2 className="h-8 w-8 animate-spin text-white/30" />
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-4">
               <AlertTriangle className="mb-3 h-8 w-8 text-rose-400" />
-              <p className="text-sm font-medium text-stone-700">
+              <p className="text-sm font-medium text-cream">
                 {error instanceof Error ? error.message : "Gagal memuat data"}
               </p>
               <button
                 onClick={() => refetchQr()}
-                className="mt-4 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 min-h-[44px]"
+                className="mt-4 rounded-md border border-gold/15 bg-cocoa px-4 py-2.5 text-sm text-cream hover:bg-carbon min-h-[44px]"
               >
                 Coba lagi
               </button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-xl border border-stone-100 bg-white py-16 text-center shadow-sm">
-              <QrCode className="mx-auto mb-4 h-10 w-10 text-stone-200" />
-              <p className="text-sm font-medium text-stone-500">
+            <div className="rounded-xl border border-gold/10 bg-cocoa py-16 text-center shadow-sm">
+              <QrCode className="mx-auto mb-4 h-10 w-10 text-white/20" />
+              <p className="text-sm font-medium text-white/50">
                 {search || filterGroup !== "all"
                   ? "Tidak ada QR Code yang sesuai filter"
                   : "Belum ada QR Code"}
@@ -446,7 +449,7 @@ export default function SupervisorQRCodesPage() {
               {!search && filterGroup === "all" && (
                 <button
                   onClick={() => setShowGenerate(true)}
-                  className="mt-3 text-sm font-semibold text-amber-600 hover:text-amber-700"
+                  className="mt-3 text-sm font-semibold text-amber-300 hover:text-amber-300"
                 >
                   + Buat QR Code pertama
                 </button>
@@ -461,19 +464,19 @@ export default function SupervisorQRCodesPage() {
                 return (
                   <div
                     key={qr.id}
-                    className={`rounded-xl border bg-white shadow-sm overflow-hidden transition-all hover:shadow-md ${
+                    className={`rounded-xl border bg-cocoa shadow-sm overflow-hidden transition-all hover:shadow-md ${
                       qr.is_active
-                        ? "border-stone-200"
-                        : "border-stone-100 opacity-70"
+                        ? "border-gold/15"
+                        : "border-gold/10 opacity-70"
                     }`}
                   >
                     {/* Card header */}
-                    <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-100">
+                    <div className="flex items-center justify-between px-3 py-2.5 border-b border-gold/10">
                       <div className="flex items-center gap-2 min-w-0">
                         <QrCode
-                          className={`h-4 w-4 shrink-0 ${qr.is_active ? "text-stone-600" : "text-stone-300"}`}
+                          className={`h-4 w-4 shrink-0 ${qr.is_active ? "text-white/70" : "text-white/30"}`}
                         />
-                        <span className="text-sm font-semibold text-stone-700 truncate">
+                        <span className="text-sm font-semibold text-cream truncate">
                           {qr.workstation_name}
                         </span>
                       </div>
@@ -485,41 +488,41 @@ export default function SupervisorQRCodesPage() {
                     </div>
 
                     {/* QR image */}
-                    <div className="flex justify-center py-4 bg-stone-50/50">
+                    <div className="flex justify-center py-4 bg-carbon/60">
                       <QRCodeImage data={qr.qr_payload} size={140} />
                     </div>
 
                     {/* Info */}
-                    <div className="px-3 py-2 space-y-1 text-[11px] text-stone-500">
+                    <div className="px-3 py-2 space-y-1 text-[11px] text-white/50">
                       <p>
                         Role:{" "}
-                        <span className="font-medium text-stone-700">
-                          {qr.role_name ?? "-"}
+                        <span className="font-medium text-cream">
+                          {formatRoleName(qr.role_name ?? "-")}
                         </span>
                       </p>
                       {qr.location && (
                         <p>
                           Lokasi:{" "}
-                          <span className="font-medium text-stone-700">
+                          <span className="font-medium text-cream">
                             {qr.location}
                           </span>
                         </p>
                       )}
                       <p>
                         Token:{" "}
-                        <code className="text-[10px] bg-stone-100 px-1 rounded">
+                        <code className="text-[10px] bg-white/10 px-1 rounded">
                           {qr.qr_token.slice(0, 20)}...
                         </code>
                       </p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${qr.is_active ? "bg-emerald-500" : "bg-stone-300"}`}
+                          className={`h-1.5 w-1.5 rounded-full ${qr.is_active ? "bg-emerald-500/100" : "bg-stone-300"}`}
                         />
                         <span
                           className={
                             qr.is_active
-                              ? "text-emerald-600 font-medium"
-                              : "text-stone-400"
+                              ? "text-emerald-300 font-medium"
+                              : "text-white/40"
                           }
                         >
                           {qr.is_active ? "Aktif" : "Nonaktif"}
@@ -528,10 +531,10 @@ export default function SupervisorQRCodesPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1 px-3 py-2 border-t border-stone-100 bg-stone-50/50">
+                    <div className="flex items-center gap-1 px-3 py-2 border-t border-gold/10 bg-carbon/60">
                       <button
                         onClick={() => setSelectedQR(qr)}
-                        className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                        className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white/70 transition-colors"
                         title="Detail"
                       >
                         <QrCode className="h-4 w-4" />
@@ -540,8 +543,8 @@ export default function SupervisorQRCodesPage() {
                         onClick={() => handleDownload(qr)}
                         className={`rounded-lg p-1.5 transition-colors ${
                           actionFeedback?.type === "download" && actionFeedback?.qrId === qr.id
-                            ? "text-emerald-500 bg-emerald-50"
-                            : "text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                            ? "text-emerald-500 bg-emerald-500/10"
+                            : "text-white/40 hover:bg-white/10 hover:text-white/70"
                         }`}
                         title={actionFeedback?.type === "download" && actionFeedback?.qrId === qr.id ? "Tersimpan" : "Download PNG"}
                       >
@@ -555,8 +558,8 @@ export default function SupervisorQRCodesPage() {
                         onClick={() => handlePrint(qr)}
                         className={`rounded-lg p-1.5 transition-colors ${
                           actionFeedback?.type === "print" && actionFeedback?.qrId === qr.id
-                            ? "text-emerald-500 bg-emerald-50"
-                            : "text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                            ? "text-emerald-500 bg-emerald-500/10"
+                            : "text-white/40 hover:bg-white/10 hover:text-white/70"
                         }`}
                         title={actionFeedback?.type === "print" && actionFeedback?.qrId === qr.id ? "Tercetak" : "Print"}
                       >
@@ -570,8 +573,8 @@ export default function SupervisorQRCodesPage() {
                         onClick={() => handleCopyLink(qr.qr_payload, qr.id)}
                         className={`rounded-lg p-1.5 transition-colors ${
                           actionFeedback?.type === "copy" && actionFeedback?.qrId === qr.id
-                            ? "text-emerald-500 bg-emerald-50"
-                            : "text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                            ? "text-emerald-500 bg-emerald-500/10"
+                            : "text-white/40 hover:bg-white/10 hover:text-white/70"
                         }`}
                         title={actionFeedback?.type === "copy" && actionFeedback?.qrId === qr.id ? "Tersalin" : "Salin Link"}
                       >
@@ -586,8 +589,8 @@ export default function SupervisorQRCodesPage() {
                         onClick={() => setToggleQR(qr)}
                         className={`rounded-lg p-1.5 transition-colors ${
                           qr.is_active
-                            ? "text-amber-500 hover:bg-amber-50 hover:text-amber-600"
-                            : "text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600"
+                            ? "text-amber-500 hover:bg-amber-500/100/10 hover:text-amber-300"
+                            : "text-emerald-500 hover:bg-emerald-500/100/10 hover:text-emerald-300"
                         }`}
                         title={qr.is_active ? "Nonaktifkan" : "Aktifkan"}
                       >
@@ -599,7 +602,7 @@ export default function SupervisorQRCodesPage() {
                       </button>
                       <button
                         onClick={() => setDeleteQR(qr)}
-                        className="rounded-lg p-1.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                        className="rounded-lg p-1.5 text-rose-400 hover:bg-rose-500/100/10 hover:text-rose-300 transition-colors"
                         title="Hapus"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -620,16 +623,16 @@ export default function SupervisorQRCodesPage() {
           onClick={() => setShowGenerate(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            className="w-full max-w-md rounded-2xl bg-cocoa p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-stone-800">
+              <h2 className="text-base font-bold text-cream">
                 Buat QR Code Baru
               </h2>
               <button
                 onClick={() => setShowGenerate(false)}
-                className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                className="rounded-lg p-1 text-white/40 hover:bg-white/10 hover:text-white/70"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -637,7 +640,7 @@ export default function SupervisorQRCodesPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
                   Role Workstation
                 </label>
                 <select
@@ -645,7 +648,7 @@ export default function SupervisorQRCodesPage() {
                   onChange={(e) =>
                     setGenerateForm((f) => ({ ...f, role_id: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-700 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
+                  className="w-full rounded-xl border border-gold/15 bg-cocoa px-3.5 py-2.5 text-sm text-cream focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
                 >
                   <option value="">Pilih role...</option>
                   {roles
@@ -661,7 +664,7 @@ export default function SupervisorQRCodesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
                   Nama Workstation
                 </label>
                 <input
@@ -674,12 +677,12 @@ export default function SupervisorQRCodesPage() {
                     }))
                   }
                   placeholder="Contoh: Meja Kerja 1, Stasiun QC A"
-                  className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-700 placeholder-stone-400 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
+                  className="w-full rounded-xl border border-gold/15 bg-cocoa px-3.5 py-2.5 text-sm text-cream placeholder:text-white/30 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">
+                <label className="block text-xs font-medium text-white/50 mb-1.5">
                   Lokasi (opsional)
                 </label>
                 <input
@@ -689,7 +692,7 @@ export default function SupervisorQRCodesPage() {
                     setGenerateForm((f) => ({ ...f, location: e.target.value }))
                   }
                   placeholder="Contoh: Lantai 1, Ruang Produksi"
-                  className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-stone-700 placeholder-stone-400 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
+                  className="w-full rounded-xl border border-gold/15 bg-cocoa px-3.5 py-2.5 text-sm text-cream placeholder:text-white/30 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
                 />
               </div>
             </div>
@@ -697,7 +700,7 @@ export default function SupervisorQRCodesPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowGenerate(false)}
-                className="flex-1 rounded-xl border border-stone-200 bg-white py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+                className="flex-1 rounded-xl border border-gold/15 bg-cocoa py-2.5 text-sm font-medium text-white/70 hover:bg-carbon transition-colors"
               >
                 Batal
               </button>
@@ -708,7 +711,7 @@ export default function SupervisorQRCodesPage() {
                   !generateForm.workstation_name ||
                   generating
                 }
-                className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                className="flex-1 rounded-xl bg-amber-500/100 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {generating && <Loader2 className="h-4 w-4 animate-spin" />}
                 {generating ? "Membuat..." : "Buat QR Code"}
@@ -725,16 +728,18 @@ export default function SupervisorQRCodesPage() {
           onClick={() => setSelectedQR(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl text-center"
+            className="w-full max-w-lg rounded-2xl bg-cocoa p-6 shadow-xl text-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <QRCodeImage data={selectedQR.qr_payload} size={200} />
-            <h3 className="mt-4 text-base font-bold text-stone-800">
+            <div className="inline-block rounded-xl bg-white p-4 mx-auto mb-2">
+              <QRCodeImage data={selectedQR.qr_payload} size={200} />
+            </div>
+            <h3 className="mt-4 text-base font-bold text-cream">
               {selectedQR.workstation_name}
             </h3>
-            <p className="text-sm text-stone-500">{selectedQR.role_name}</p>
+            <p className="text-sm text-white/50">{formatRoleName(selectedQR.role_name ?? "-")}</p>
             {selectedQR.location && (
-              <p className="text-xs text-stone-400 mt-1">
+              <p className="text-xs text-white/40 mt-1">
                 {selectedQR.location}
               </p>
             )}
@@ -743,8 +748,8 @@ export default function SupervisorQRCodesPage() {
                 onClick={() => handleDownload(selectedQR)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-medium flex items-center gap-1 transition-colors ${
                   actionFeedback?.type === "download" && actionFeedback?.qrId === selectedQR.id
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-stone-200 text-stone-600 hover:bg-stone-50"
+                    ? "border-emerald-200 bg-emerald-500/10 text-emerald-300"
+                    : "border-gold/15 text-white/70 hover:bg-carbon"
                 }`}
               >
                 {actionFeedback?.type === "download" && actionFeedback?.qrId === selectedQR.id ? (
@@ -757,8 +762,8 @@ export default function SupervisorQRCodesPage() {
                 onClick={() => handlePrint(selectedQR)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-medium flex items-center gap-1 transition-colors ${
                   actionFeedback?.type === "print" && actionFeedback?.qrId === selectedQR.id
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-stone-200 text-stone-600 hover:bg-stone-50"
+                    ? "border-emerald-200 bg-emerald-500/10 text-emerald-300"
+                    : "border-gold/15 text-white/70 hover:bg-carbon"
                 }`}
               >
                 {actionFeedback?.type === "print" && actionFeedback?.qrId === selectedQR.id ? (
@@ -771,8 +776,8 @@ export default function SupervisorQRCodesPage() {
                 onClick={() => handleCopyLink(selectedQR.qr_payload, selectedQR.id)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-medium flex items-center gap-1 transition-colors ${
                   actionFeedback?.type === "copy" && actionFeedback?.qrId === selectedQR.id
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-stone-200 text-stone-600 hover:bg-stone-50"
+                    ? "border-emerald-200 bg-emerald-500/10 text-emerald-300"
+                    : "border-gold/15 text-white/70 hover:bg-carbon"
                 }`}
               >
                 {actionFeedback?.type === "copy" && actionFeedback?.qrId === selectedQR.id ? (
@@ -782,7 +787,7 @@ export default function SupervisorQRCodesPage() {
                 )}
               </button>
             </div>
-            <div className="mt-4 text-left space-y-1 text-xs text-stone-500 bg-stone-50 rounded-xl px-3 py-2.5">
+            <div className="mt-4 text-left space-y-1 text-xs text-white/50 bg-carbon rounded-xl px-3 py-2.5">
               <p>
                 Token:{" "}
                 <code className="text-[10px]">{selectedQR.qr_token}</code>
@@ -819,20 +824,20 @@ export default function SupervisorQRCodesPage() {
           onClick={() => setToggleQR(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-cocoa p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-stone-800">
+                <h3 className="text-sm font-bold text-cream">
                   {toggleQR.is_active
                     ? "Nonaktifkan QR Code?"
                     : "Aktifkan QR Code?"}
                 </h3>
-                <p className="text-xs text-stone-500 mt-0.5">
+                <p className="text-xs text-white/50 mt-0.5">
                   {toggleQR.is_active
                     ? `QR Code "${toggleQR.workstation_name}" tidak bisa digunakan saat nonaktif`
                     : `QR Code "${toggleQR.workstation_name}" akan bisa digunakan kembali`}
@@ -842,14 +847,14 @@ export default function SupervisorQRCodesPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setToggleQR(null)}
-                className="flex-1 rounded-xl border border-stone-200 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+                className="flex-1 rounded-xl border border-gold/15 py-2.5 text-sm font-medium text-white/70 hover:bg-carbon transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleToggle}
                 disabled={toggling}
-                className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                className="flex-1 rounded-xl bg-amber-500/100 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
                 {toggling && <Loader2 className="h-4 w-4 animate-spin" />}
                 {toggling
@@ -870,18 +875,18 @@ export default function SupervisorQRCodesPage() {
           onClick={() => setDeleteQR(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-cocoa p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500/10">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-stone-800">
+                <h3 className="text-sm font-bold text-cream">
                   Hapus QR Code?
                 </h3>
-                <p className="text-xs text-stone-500 mt-0.5">
+                <p className="text-xs text-white/50 mt-0.5">
                   QR Code untuk <strong>{deleteQR.workstation_name}</strong>{" "}
                   akan dihapus permanen
                 </p>
@@ -890,14 +895,14 @@ export default function SupervisorQRCodesPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteQR(null)}
-                className="flex-1 rounded-xl border border-stone-200 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+                className="flex-1 rounded-xl border border-gold/15 py-2.5 text-sm font-medium text-white/70 hover:bg-carbon transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                className="flex-1 rounded-xl bg-rose-500/100 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
                 {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {deleting ? "Menghapus..." : "Hapus"}

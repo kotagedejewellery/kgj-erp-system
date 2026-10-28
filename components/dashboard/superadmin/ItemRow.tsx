@@ -49,7 +49,7 @@ interface Segment {
 const SEGMENTS: Segment[] = [
   { key: "belum", label: "Belum", activeBg: "#fef2f2", activeColor: "#dc2626", border: "#dc2626", textColor: "#dc2626" },
   { key: "proses", label: "Proses", activeBg: "#fff7ed", activeColor: "#ea580c", border: "#ea580c", textColor: "#ea580c" },
-  { key: "waiting_review", label: "Review", activeBg: "#f5f3ff", activeColor: "#7c3aed", border: "#7c3aed", textColor: "#7c3aed" },
+  { key: "waiting_review", label: "Review", activeBg: "#a78bfa22", activeColor: "#a78bfa", border: "#a78bfa", textColor: "#a78bfa" },
   { key: "done", label: "Done", activeBg: "#ecfdf5", activeColor: "#059669", border: "#059669", textColor: "#059669" },
 ];
 
@@ -154,7 +154,7 @@ export function ItemRow({
         onBlur={() => onSaveNote(item.id, "notes", notesValue)}
         placeholder="Catatan..."
         disabled={isSaving}
-        className="w-full rounded-md border px-2 py-1.5 text-xs bg-white focus:outline-none"
+        className="w-full rounded-md border px-2 py-1.5 text-xs P.card focus:outline-none"
         style={{ borderColor: C.border, color: C.sepia }}
       />
       <input
@@ -164,7 +164,7 @@ export function ItemRow({
         onBlur={() => onSaveNote(item.id, "kendala", kendalaValue)}
         placeholder="Kendala..."
         disabled={isSaving}
-        className="w-full rounded-md border px-2 py-1.5 text-xs bg-white focus:outline-none"
+        className="w-full rounded-md border px-2 py-1.5 text-xs P.card focus:outline-none"
         style={{ borderColor: C.border, color: C.terra }}
       />
     </div>
@@ -196,7 +196,7 @@ export function ItemRow({
         <div className="px-2 pt-2.5 pb-2">
           <div
             className="flex items-stretch rounded-lg overflow-hidden relative p-0.5"
-            style={{ gap: "2px", background: "#fff" }}
+            style={{ gap: "2px", background: "#2A2522" }}
           >
             {/* Sliding active pill */}
             <div
@@ -271,8 +271,8 @@ export function ItemRow({
                 const isImage = f.mime_type?.startsWith("image/");
                 return (
                   <a key={f.id} href={f.public_url} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium hover:bg-gray-50 transition-colors shrink-0 group"
-                    style={{ borderColor: "#e5e7eb", color: "#7c3aed" }}>
+                    className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium hover:bg-white/5 transition-colors shrink-0 group"
+                    style={{ borderColor: "#c9a22733", color: "#a78bfa" }}>
                     {isImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={f.public_url} alt={f.file_name} className="w-4 h-4 rounded object-cover" />
@@ -288,8 +288,8 @@ export function ItemRow({
                 );
               })}
               {attachments.length < 3 && attachmentOnUpload && (
-                <label className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium cursor-pointer hover:bg-gray-50 transition-colors shrink-0"
-                  style={{ borderColor: "#e5e7eb", color: "#6b7280", borderStyle: "dashed" }}>
+                <label className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium cursor-pointer hover:bg-white/5 transition-colors shrink-0"
+                  style={{ borderColor: "#c9a22733", color: "#6b7280", borderStyle: "dashed" }}>
                   {attachUploading ? "Mengunggah..." : <><Plus className="w-3 h-3" /> Lampiran</>}
                   <input type="file" className="hidden" accept="image/*,.pdf" onChange={async (e) => {
                     const file = e.target.files?.[0];

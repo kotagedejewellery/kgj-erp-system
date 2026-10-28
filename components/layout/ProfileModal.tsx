@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback } from "react";
-import { X, User, Mail, Shield, Building, Hash, Circle } from "lucide-react";
+import { X, User, Mail, Shield, Hash, Circle } from "lucide-react";
 
 interface ProfileData {
   id: string;
@@ -15,7 +15,6 @@ interface ProfileData {
     role_group: string;
     description: string | null;
   };
-  branch: { id: string; name: string; code: string } | null;
 }
 
 export default function ProfileModal({
@@ -40,7 +39,7 @@ export default function ProfileModal({
   const formatRole = (name: string) =>
     name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const P = { purple: "#7c3aed", green: "#059669", gray: "#6b7280", grayBorder: "#e5e7eb", ink: "#111827" };
+  const P = { purple: "#a78bfa", green: "#34d399", gray: "#a8a29e", grayBorder: "#c9a22733", ink: "#F5EFE3" };
 
   const rows: { icon: React.ReactNode; label: string; value: string; color?: string }[] = [
     { icon: <User className="h-4 w-4" />, label: "Full Name", value: profile.full_name || "—" },
@@ -48,7 +47,6 @@ export default function ProfileModal({
     { icon: <Mail className="h-4 w-4" />, label: "Email", value: profile.email || "—" },
     { icon: <Shield className="h-4 w-4" />, label: "Role", value: formatRole(profile.role.name), color: P.purple },
     { icon: <Shield className="h-4 w-4" />, label: "Role Group", value: formatRole(profile.role.role_group) },
-    { icon: <Building className="h-4 w-4" />, label: "Branch", value: profile.branch ? `${profile.branch.name} (${profile.branch.code})` : "—" },
     {
       icon: <Circle className="h-4 w-4" />,
       label: "Status",
@@ -63,8 +61,8 @@ export default function ProfileModal({
       style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ background: "#f5f3ff", borderBottom: `1px solid ${P.grayBorder}` }}>
+      <div className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ background: "#2A2522", border: `1px solid ${P.grayBorder}` }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ background: "#7c3aed22", borderBottom: `1px solid ${P.grayBorder}` }}>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: P.purple }}>Profil Saya</p>
             <p className="text-lg font-bold" style={{ color: P.ink }}>{profile.full_name}</p>
@@ -84,8 +82,8 @@ export default function ProfileModal({
             </div>
           ))}
         </div>
-        <div className="flex justify-end px-6 py-3 shrink-0" style={{ borderTop: `1px solid ${P.grayBorder}`, background: "#f9fafb" }}>
-          <button onClick={onClose} className="rounded-xl px-4 py-2 text-xs font-medium transition-all active:scale-[0.96]" style={{ border: `1px solid ${P.grayBorder}`, color: "#374151", background: "#fff" }}>
+        <div className="flex justify-end px-6 py-3 shrink-0" style={{ borderTop: `1px solid ${P.grayBorder}`, background: "#1C1917" }}>
+          <button onClick={onClose} className="rounded-xl px-4 py-2 text-xs font-medium transition-all active:scale-[0.96]" style={{ border: `1px solid ${P.grayBorder}`, color: "#E8E2D4", background: "#2A2522" }}>
             Tutup
           </button>
         </div>

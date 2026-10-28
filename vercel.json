@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/legacy/cron", "schedule": "0 1 * * *" },
+    { "path": "/api/legacy/reconcile", "schedule": "0 20 * * *" }
+  ]
+}

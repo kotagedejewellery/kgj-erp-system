@@ -5,8 +5,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import Loading from "@/components/ui/Loading";
@@ -14,17 +13,11 @@ import { getClientUser, type ClientUser } from "@/lib/auth/session";
 import {
   AlertTriangle,
   ArrowDown,
-  ArrowRight,
   ArrowUp,
   BarChart3,
-  Briefcase,
-  Camera,
   CheckCircle2,
   ClipboardList,
   Clock,
-  DollarSign,
-  Gem,
-  Hammer,
   LineChart,
   MapPin,
   RefreshCw,
@@ -32,8 +25,6 @@ import {
   ShieldCheck,
   ThumbsUp,
   Trophy,
-  Truck,
-  Users,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -51,10 +42,6 @@ import {
 // ============================================================
 
 const API_ENDPOINT = "/api/daily-stats-2";
-
-// Link paths
-const LINK_OPERASIONAL = "/dashboard/superadmin/oprprd/operasional";
-const LINK_PRODUKSI = "/dashboard/superadmin/oprprd/produksi";
 
 // ============================================================
 // Types
@@ -125,6 +112,23 @@ interface DashboardData {
     };
 
   };
+  workshopPulse: {
+    today: {
+      ordersReceived: number;
+      ordersCompleted: number;
+      reworksLogged: number;
+      activeUsers: number;
+    };
+    workInProgress: {
+      activeOrders: number;
+      overdueOrders: number;
+    };
+    afterProduction: {
+      customerCare: number;
+      packing: number;
+      shipping: number;
+    };
+  };
   recentActivities: Array<{
     id: string;
     type: "scan" | "qc" | "approval" | "rework";
@@ -190,7 +194,7 @@ const STAGE_BAR_CLASS: Record<string, string> = {
   pelunasan: "bg-amber-600",
   kelengkapan: "bg-blue-500",
   qc_3: "bg-emerald-600",
-  packing: "bg-[#26211c]0",
+  packing: "bg-stone-400",
   pengiriman: "bg-slate-600",
 };
 
@@ -235,15 +239,24 @@ function formatRelativeTime(timestamp: string): string {
 // Page
 // ============================================================
 
-export default function OwnerDashboardPage() {
+export function OwnerDashboardContent() {
   const router = useRouter();
-  const [clientUser] = useState<ClientUser | null>(() => getClientUser() ?? null);
+  // Dibaca di useEffect (bukan initializer useState) agar render pertama di
+  // client identik dengan SSR — menghindari hydration mismatch di Header.
+  const [clientUser, setClientUser] = useState<ClientUser | null>(null);
+  const [chartReady, setChartReady] = useState(false);
 
   useEffect(() => {
-    if (!clientUser) {
+    const user = getClientUser();
+    setClientUser(user);
+    if (!user) {
       router.push("/login");
     }
-  }, [clientUser, router]);
+  }, [router]);
+
+  useEffect(() => {
+    setChartReady(true);
+  }, []);
 
   const {
     data: rawData,
@@ -270,29 +283,36 @@ export default function OwnerDashboardPage() {
   const trendIsPositive = data?.kpi.trend.trendPercent
     ? data.kpi.trend.trendPercent > 0
     : false;
-  const totalOrders = data?.kpi.totalOrdersAktif || 1;
 
   return (
-    <div className="flex h-screen bg-[#26211c]">
+    <div className="flex h-screen bg-night">
       <Sidebar role="superadmin" />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header userEmail={clientUser?.email ?? ""} role="superadmin" />
         <main className="flex-1 overflow-y-auto p-6">
           {/* ========== Page Header ========== */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3 ml-auto">
+            <div>
+              <h1 className="font-playfair text-2xl font-semibold tracking-wide text-ivory">
+                Operasional & Produksi
+              </h1>
+              <p className="mt-0.5 text-xs text-white/40">
+                Ringkasan harian workshop — order, kualitas, dan performa tukang
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
               {lastUpdated && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-white/40">
                   Diperbarui {lastUpdated.toLocaleTimeString("id-ID")}
                 </span>
               )}
               <button
                 onClick={() => refetch()}
                 disabled={isRefetching}
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-[#26211c] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-md border border-gold/15 bg-cocoa px-3 py-1.5 text-xs font-medium text-cream transition hover:border-gold/40 hover:bg-white/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw
-                  className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`}
+                  className={`h-3.5 w-3.5 text-gold/70 ${isRefetching ? "animate-spin" : ""}`}
                 />
                 Refresh
               </button>
@@ -306,413 +326,219 @@ export default function OwnerDashboardPage() {
             <DashboardError error={error instanceof Error ? error.message : "Terjadi kesalahan"} onRetry={() => refetch()} />
           ) : !data ? null : (
             <div className="space-y-6">
-              {/* ========== ROW 1: MAIN KPI CARDS ========== */}
+              {/* ========== ROW 1: HERO KPI CARDS ========== */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
-                  label="Total Order Aktif"
+                  label="Order Aktif"
                   value={data.kpi.totalOrdersAktif.toString()}
                   icon={ClipboardList}
                   accent="sky"
-                  subtitle="Order dalam proses"
-                  badge={
-                    <TrendBadge
-                      percent={data.kpi.trend.trendPercent}
-                      isPositive={trendIsPositive}
-                    />
+                  subtitle={
+                    trendIsPositive
+                      ? `+${data.kpi.trend.trendPercent.toFixed(0)}% dari minggu lalu`
+                      : `${data.kpi.trend.trendPercent.toFixed(0)}% dari minggu lalu`
                   }
+                  trend={trendIsPositive ? "up" : "down"}
                 />
-
                 <KpiCard
-                  label="Potensi Keterlambatan"
+                  label="Risiko Terlambat"
                   value={data.kpi.potensiKeterlambatan.toString()}
                   icon={AlertTriangle}
                   accent={data.kpi.potensiKeterlambatan > 0 ? "amber" : "slate"}
                   subtitle={
                     data.kpi.potensiKeterlambatan > 0
-                      ? "Butuh perhatian segera"
+                      ? `${((data.kpi.potensiKeterlambatan / data.kpi.totalOrdersAktif) * 100).toFixed(0)}% dari total aktif`
                       : "Semua order on track"
                   }
                 />
-
-                {/* Chart Card — Stage Distribution (replaces Nilai Barang WIP) */}
-                <div className="rounded-lg border border-slate-200 bg-white p-4 col-span-1">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Distribusi per Stage
-                    </p>
-                    {data.stageDistribution.length > 0 && (
-                      <span className="text-xs text-slate-400">
-                        {data.stageDistribution.reduce((a, b) => a + b.count, 0)} order
-                      </span>
-                    )}
-                  </div>
-                  <div className="h-[120px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={data.stageDistribution
-                          .sort((a, b) => b.count - a.count)
-                          .slice(0, 8)}
-                        margin={{ top: 0, right: 0, bottom: 0, left: -12 }}
-                      >
-                        <XAxis
-                          dataKey="stage"
-                          tickFormatter={(s) => STAGE_LABELS[s] ?? s}
-                          tick={{ fontSize: 9, fill: "#94a3b8" }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          allowDecimals={false}
-                          tick={{ fontSize: 9, fill: "#94a3b8" }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Tooltip
-                          formatter={(value) => [value, "Order"]}
-                          labelFormatter={(s) => STAGE_LABELS[s as string] ?? s}
-                          contentStyle={{
-                            fontSize: 11,
-                            borderRadius: 6,
-                            border: "1px solid #e2e8f0",
-                          }}
-                        />
-                        <Bar
-                          dataKey="count"
-                          fill="#6366f1"
-                          radius={[3, 3, 0, 0]}
-                          maxBarSize={32}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  {data.stageDistribution.length > 8 && (
-                    <p className="mt-2 text-center text-[10px] text-slate-400">
-                      +{data.stageDistribution.length - 8} stage lainnya
-                    </p>
-                  )}
-                </div>
-
                 <KpiCard
-                  label="Rata-rata Cycle Time"
+                  label="Cycle Time"
                   value={`${data.kpi.rataCycleTime.toFixed(1)}`}
                   unit="hari"
                   icon={Clock}
                   accent={isOverCycle ? "rose" : "emerald"}
-                  subtitle={
-                    <div className="mt-2 space-y-1">
-                      <div className="flex justify-between text-[11px] text-slate-500">
-                        <span>Target {data.kpi.targetCycleTime} hari</span>
-                        <span
-                          className={`inline-flex items-center gap-0.5 font-medium ${
-                            isOverCycle ? "text-rose-600" : "text-emerald-600"
-                          }`}
-                        >
-                          {isOverCycle ? (
-                            <ArrowUp className="h-3 w-3" />
-                          ) : (
-                            <ArrowDown className="h-3 w-3" />
-                          )}
-                          {Math.abs(
-                            data.kpi.rataCycleTime - data.kpi.targetCycleTime,
-                          ).toFixed(1)}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            isOverCycle ? "bg-rose-500" : "bg-emerald-500"
-                          }`}
-                          style={{
-                            width: `${Math.min(
-                              (data.kpi.rataCycleTime /
-                                data.kpi.targetCycleTime) *
-                                100,
-                              100,
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  }
+                  subtitle={`Target ${data.kpi.targetCycleTime} hari`}
+                />
+                <KpiCard
+                  label="QC Pass Rate"
+                  value={`${data.operasional.qc.passRateAvg.toFixed(1)}`}
+                  unit="%"
+                  icon={ShieldCheck}
+                  accent={data.operasional.qc.passRateAvg >= 80 ? "emerald" : "amber"}
+                  subtitle={`${data.operasional.qc.failedToday} gagal hari ini`}
                 />
               </div>
 
-              {/* ========== ROW 2: QUICK STATS & TODAY ========== */}
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <SectionCard icon={BarChart3} title="Hari Ini">
-                  <dl className="space-y-2.5 text-sm">
-                    <StatRow
-                      label="Order masuk"
-                      value={data.kpi.additional.ordersHariIni}
-                      tone="sky"
-                    />
-                    <StatRow
-                      label="Order selesai"
-                      value={data.kpi.additional.selesaiHariIni}
-                      tone="emerald"
-                    />
-                    <StatRow
-                      label="Rework"
-                      value={data.kpi.additional.totalRework}
-                      tone={
-                        data.kpi.additional.criticalRework > 0
-                          ? "rose"
-                          : "slate"
-                      }
-                      warn={data.kpi.additional.criticalRework > 0}
-                    />
-                    <StatRow
-                      label="Completed (30 hari)"
-                      value={data.kpi.additional.completedCount}
-                      tone="slate"
-                      smaller
-                    />
-                  </dl>
-                </SectionCard>
-
-                <SectionCard icon={Briefcase} title="Operasional">
-                  <div className="space-y-1.5">
-                    <LinkRow
-                      href={LINK_OPERASIONAL}
-                      icon={Camera}
-                      label="Konfirmasi"
-                      value={data.operasional.afterSales.totalKonfirmasi}
-                      iconTone="sky"
-                    />
-                    <LinkRow
-                      href={LINK_OPERASIONAL}
-                      icon={DollarSign}
-                      label="Pelunasan"
-                      value={data.operasional.afterSales.totalPelunasan}
-                      iconTone="amber"
-                    />
-                    <LinkRow
-                      href={LINK_OPERASIONAL}
-                      icon={Truck}
-                      label="Delivery"
-                      value={data.operasional.afterSales.totalDelivery}
-                      iconTone="emerald"
-                    />
-                    {data.operasional.afterSales.urgentCount > 0 && (
-                      <div className="mt-3 flex items-start gap-1.5 rounded-md border border-rose-200 bg-rose-50/50 p-2">
-                        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-rose-600" />
-                        <p className="text-xs text-rose-700">
-                          {data.operasional.afterSales.urgentCount} order butuh
-                          follow up segera
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="mt-3 border-t border-slate-100 pt-3">
-                      <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                        Admin & QC
-                      </p>
-                      <div className="mb-2 flex items-center justify-between rounded-md px-2 py-1.5">
-                        <span className="flex items-center gap-2 text-sm text-slate-600">
-                          <ClipboardList className="h-3.5 w-3.5 text-slate-400" />
-                          Tugas admin
-                        </span>
-                        <span className="text-sm font-semibold tabular-nums text-slate-900">
-                          {data.operasional.adminTasks.total}
-                        </span>
-                      </div>
-                      <div className="mb-2 flex items-center gap-3 px-2">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                          {data.operasional.adminTasks.active} aktif
-                        </span>
-                        {data.operasional.adminTasks.delayed > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
-                            {data.operasional.adminTasks.delayed} terlambat
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between rounded-md px-2 py-1.5">
-                        <span className="flex items-center gap-2 text-sm text-slate-600">
-                          <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
-                          QC pass rate
-                        </span>
-                        <span
-                          className={`text-sm font-semibold ${
-                            data.operasional.qc.passRateAvg >= 80
-                              ? "text-emerald-600"
-                              : data.operasional.qc.passRateAvg >= 60
-                                ? "text-amber-600"
-                                : "text-rose-600"
-                          }`}
-                        >
-                          {data.operasional.qc.passRateAvg.toFixed(1)}%
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 border-t border-slate-100 pt-3">
-                      <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                        Racik & Laser
-                      </p>
-                      <div className="flex items-center justify-between rounded-md px-2 py-1.5">
-                        <span className="flex items-center gap-2 text-sm text-slate-600">
-                          <BarChart3 className="h-3.5 w-3.5 text-slate-400" />
-                          Shrinkage
-                        </span>
-                        <span
-                          className={`text-sm font-semibold ${
-                            data.operasional.racik.rataShrinkage <=
-                            data.operasional.racik.targetShrinkage
-                              ? "text-emerald-600"
-                              : "text-rose-600"
-                          }`}
-                        >
-                          {data.operasional.racik.rataShrinkage.toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-md px-2 py-1.5">
-                        <span className="flex items-center gap-2 text-sm text-slate-600">
-                          <ScanLine className="h-3.5 w-3.5 text-slate-400" />
-                          Laser antrian
-                        </span>
-                        <span className="text-sm font-semibold tabular-nums text-slate-900">
-                          {data.operasional.laser.antrian}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-md px-2 py-1.5">
-                        <span className="flex items-center gap-2 text-sm text-slate-600">
-                          <ScanLine className="h-3.5 w-3.5 text-slate-400" />
-                          Mesin aktif
-                        </span>
-                        <span className="text-sm font-semibold tabular-nums text-slate-900">
-                          {data.operasional.laser.mesinAktif}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </SectionCard>
-
-                <SectionCard icon={Hammer} title="Produksi">
-                  <div className="space-y-1.5">
-                    <LinkRow
-                      href={LINK_PRODUKSI}
-                      icon={Users}
-                      label="Tukang aktif"
-                      value={`${data.produksi.experts.aktif}/${data.produksi.experts.total}`}
-                      iconTone="slate"
-                    />
-                    <LinkRow
-                      href={LINK_PRODUKSI}
-                      icon={Gem}
-                      label="Micro setting"
-                      value={data.produksi.microSetting.total}
-                      iconTone="violet"
-                    />
-                    <div className="mt-2 border-t border-slate-100 pt-2">
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span>Order dikerjakan hari ini</span>
-                        <span className="font-medium text-slate-700">
-                          {data.produksi.experts.totalOrders}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </SectionCard>
-              </div>
-
-              {/* ========== ROW 3: STAGE DISTRIBUTION & QC SUMMARY ========== */}
+              {/* ========== ROW 2: WORKSHOP PULSE + STAGE DIST ========== */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <SectionCard icon={MapPin} title="Distribusi Order per Stage">
-                  {data.stageDistribution.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-slate-400">
-                      Belum ada data distribusi
-                    </p>
-                  ) : (
-                    <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
-                      {data.stageDistribution.map((stage) => {
-                        const percent = (stage.count / totalOrders) * 100;
-                        const barClass =
-                          STAGE_BAR_CLASS[stage.stage] ?? "bg-slate-400";
-
-                        return (
-                          <div
-                            key={stage.stage}
-                            className="flex items-center gap-3"
-                          >
-                            <span className="w-28 shrink-0 truncate text-xs text-slate-600">
-                              {STAGE_LABELS[stage.stage] ?? stage.stage}
-                            </span>
-                            <div className="flex min-w-0 flex-1 items-center gap-2">
-                              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                  className={`h-full rounded-full transition-all ${barClass}`}
-                                  style={{ width: `${percent}%` }}
-                                />
-                              </div>
-                              <span className="w-8 shrink-0 text-right text-xs font-medium tabular-nums text-slate-700">
-                                {stage.count}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </SectionCard>
-
-                <SectionCard icon={ShieldCheck} title="Quality Control">
-                  <div className="mb-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-md border border-slate-200 bg-[#26211c]/60 p-3">
-                      <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                        Pass Rate Rata-rata
+                {/* Left — Workshop Pulse */}
+                <section className="rounded-lg border border-gold/15 bg-cocoa transition-colors hover:border-gold/25">
+                  <header className="flex items-center gap-2 border-b border-gold/10 px-5 py-3.5">
+                    <BarChart3 className="h-3.5 w-3.5 text-gold/70" />
+                    <h3 className="font-playfair text-[15px] font-semibold tracking-wide text-ivory">
+                      Workshop Pulse
+                    </h3>
+                    <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-white/35">
+                      Data live · WIB
+                    </span>
+                  </header>
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                        Aktivitas Hari Ini
                       </p>
-                      <p
-                        className={`mt-1 text-2xl font-semibold ${
-                          data.operasional.qc.passRateAvg >= 80
-                            ? "text-emerald-600"
-                            : data.operasional.qc.passRateAvg >= 60
-                              ? "text-amber-600"
-                              : "text-rose-600"
-                        }`}
-                      >
-                        {data.operasional.qc.passRateAvg.toFixed(1)}%
-                      </p>
-                    </div>
-                    <div className="rounded-md border border-slate-200 bg-[#26211c]/60 p-3">
-                      <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                        Total QC Hari Ini
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-900">
-                        {data.operasional.qc.totalChecks}
-                      </p>
-                    </div>
-                  </div>
-
-                  {data.operasional.qc.failedToday > 0 && (
-                    <div className="mb-4 flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50/50 p-3">
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-                      <div>
-                        <p className="text-sm font-medium text-rose-900">
-                          {data.operasional.qc.failedToday} order gagal QC hari
-                          ini
-                        </p>
-                        <p className="mt-0.5 text-xs text-rose-700">
-                          Segera lakukan review untuk mencegah rework berulang
-                        </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <MiniStat label="Order Dibuat" value={data.workshopPulse.today.ordersReceived} accent="sky" />
+                        <MiniStat label="Order Selesai" value={data.workshopPulse.today.ordersCompleted} accent="emerald" />
+                        <MiniStat label="Rework Dicatat" value={data.workshopPulse.today.reworksLogged} accent="rose" />
+                        <MiniStat label="Pengguna Aktif" value={data.workshopPulse.today.activeUsers} accent="slate" />
                       </div>
                     </div>
-                  )}
 
-                  <Link
-                    href={LINK_OPERASIONAL}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:text-sky-900"
-                  >
-                    Lihat detail QC
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </SectionCard>
+                    <hr className="border-gold/10" />
+
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                        Pekerjaan Berjalan
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <MiniStat label="Order Aktif" value={data.workshopPulse.workInProgress.activeOrders} accent="violet" />
+                        <MiniStat label="Lewat Estimasi" value={data.workshopPulse.workInProgress.overdueOrders} accent={data.workshopPulse.workInProgress.overdueOrders > 0 ? "rose" : "emerald"} />
+                      </div>
+                      {data.workshopPulse.workInProgress.overdueOrders > 0 && (
+                        <div className="mt-2 flex items-start gap-1.5 rounded-md border border-rose-400/20 bg-rose-500/10 px-2.5 py-1.5">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-rose-300" />
+                          <p className="text-[11px] text-rose-200">
+                            {data.workshopPulse.workInProgress.overdueOrders} order melewati tanggal estimasi selesai
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <hr className="border-gold/10" />
+
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                        Setelah Produksi
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <MiniStat label="Customer Care" value={data.workshopPulse.afterProduction.customerCare} accent="sky" />
+                        <MiniStat label="Packing" value={data.workshopPulse.afterProduction.packing} accent="amber" />
+                        <MiniStat label="Pengiriman" value={data.workshopPulse.afterProduction.shipping} accent="emerald" />
+                      </div>
+                    </div>
+
+                    <p className="border-t border-gold/10 pt-3 text-[10px] leading-relaxed text-white/35">
+                      Berdasarkan order Yii2, tracking stage, riwayat aktivitas, dan log rework.
+                    </p>
+                  </div>
+                </section>
+
+                {/* Right — Stage Distribution (horizontal bar chart) */}
+                <section className="rounded-lg border border-gold/15 bg-cocoa transition-colors hover:border-gold/25">
+                  <header className="flex items-center justify-between border-b border-gold/10 px-5 py-3.5">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-gold/70" />
+                      <h3 className="font-playfair text-[15px] font-semibold tracking-wide text-ivory">
+                        Distribusi per Stage
+                      </h3>
+                    </div>
+                    {data.stageDistribution.length > 0 && (
+                      <span className="text-[10px] tabular-nums text-white/40">
+                        {data.stageDistribution.reduce((a, b) => a + b.count, 0)} order
+                      </span>
+                    )}
+                  </header>
+                  <div className="p-5">
+                    {data.stageDistribution.length === 0 ? (
+                      <p className="py-12 text-center text-xs text-white/40">
+                        Belum ada data distribusi
+                      </p>
+                    ) : chartReady ? (
+                      <>
+                        <div className="h-[220px] w-full min-w-0">
+                          <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+                            <BarChart
+                              data={data.stageDistribution
+                                .sort((a, b) => b.count - a.count)
+                                .slice(0, 12)}
+                              margin={{ top: 0, right: 4, bottom: 0, left: -8 }}
+                              layout="vertical"
+                            >
+                              <XAxis
+                                type="number"
+                                allowDecimals={false}
+                                tick={{ fontSize: 10, fill: "#A69A82" }}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <YAxis
+                                type="category"
+                                dataKey="stage"
+                                tickFormatter={(s) => STAGE_LABELS[s] ?? s}
+                                tick={{ fontSize: 11, fill: "#A69A82" }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={78}
+                              />
+                              <Tooltip
+                                formatter={(value) => [value, "Order"]}
+                                labelFormatter={(s) => STAGE_LABELS[s as string] ?? s}
+                                cursor={{ fill: "rgba(201, 162, 39, 0.08)" }}
+                                contentStyle={{
+                                  fontSize: 11,
+                                  borderRadius: 6,
+                                  backgroundColor: "#1C1917",
+                                  border: "1px solid rgba(201, 162, 39, 0.25)",
+                                  color: "#E8E2D4",
+                                }}
+                                labelStyle={{ color: "#F5EFE3" }}
+                                itemStyle={{ color: "#E8E2D4" }}
+                              />
+                              <Bar
+                                dataKey="count"
+                                fill="#C9A227"
+                                radius={[0, 3, 3, 0]}
+                                maxBarSize={24}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        {data.stageDistribution.length > 12 && (
+                          <p className="mt-2 text-center text-[10px] text-white/40">
+                            +{data.stageDistribution.length - 12} stage lainnya
+                          </p>
+                        )}
+                        {/* Stage color chips */}
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {data.stageDistribution
+                            .sort((a, b) => b.count - a.count)
+                            .slice(0, 6)
+                            .map((s) => (
+                              <span
+                                key={s.stage}
+                                className="inline-flex items-center gap-1 rounded-full border border-gold/10 bg-carbon px-2 py-0.5 text-[10px] text-white/50"
+                              >
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${STAGE_BAR_CLASS[s.stage] ?? "bg-white/40"}`}
+                                />
+                                {STAGE_LABELS[s.stage] ?? s.stage}: {s.count}
+                              </span>
+                            ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-[220px]" />
+                    )}
+                  </div>
+                </section>
               </div>
 
-              {/* ========== ROW 4: RECENT ACTIVITIES & TOP PERFORMERS ========== */}
+              {/* ========== ROW 3: ACTIVITIES & TOP PERFORMERS ========== */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <SectionCard icon={LineChart} title="Aktivitas Terbaru">
                   {data.recentActivities.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-slate-400">
+                    <p className="py-6 text-center text-sm text-white/40">
                       Belum ada aktivitas
                     </p>
                   ) : (
@@ -724,9 +550,9 @@ export default function OwnerDashboardPage() {
                   )}
                 </SectionCard>
 
-                <SectionCard icon={Trophy} title="Top Performers">
+                  <SectionCard icon={Trophy} title="Top Performers">
                   {data.topPerformers.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-slate-400">
+                    <p className="py-6 text-center text-sm text-white/40">
                       Belum ada data performer
                     </p>
                   ) : (
@@ -740,24 +566,6 @@ export default function OwnerDashboardPage() {
                       ))}
                     </div>
                   )}
-
-                  <div className="mt-5 border-t border-slate-100 pt-4">
-                    <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                      Akses Cepat
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <QuickLink
-                        href={LINK_OPERASIONAL}
-                        icon={ClipboardList}
-                        label="Operasional"
-                      />
-                      <QuickLink
-                        href={LINK_PRODUKSI}
-                        icon={Hammer}
-                        label="Produksi"
-                      />
-                    </div>
-                  </div>
                 </SectionCard>
               </div>
             </div>
@@ -779,7 +587,7 @@ function KpiCard({
   icon: Icon,
   accent,
   subtitle,
-  badge,
+  trend,
 }: {
   label: string;
   value: string;
@@ -787,55 +595,55 @@ function KpiCard({
   icon: LucideIcon;
   accent: "sky" | "amber" | "violet" | "rose" | "emerald" | "slate";
   subtitle?: React.ReactNode;
-  badge?: React.ReactNode;
+  trend?: "up" | "down";
 }) {
   const accentMap = {
     sky: {
-      iconBg: "bg-sky-50",
-      iconText: "text-sky-600",
-      ring: "ring-sky-100",
+      iconBg: "bg-sky-500/10",
+      iconText: "text-sky-300",
+      ring: "ring-sky-400/20",
     },
     amber: {
-      iconBg: "bg-amber-50",
-      iconText: "text-amber-600",
-      ring: "ring-amber-100",
+      iconBg: "bg-amber-500/10",
+      iconText: "text-amber-300",
+      ring: "ring-amber-400/20",
     },
     violet: {
-      iconBg: "bg-violet-50",
-      iconText: "text-violet-600",
-      ring: "ring-violet-100",
+      iconBg: "bg-violet-500/10",
+      iconText: "text-violet-300",
+      ring: "ring-violet-400/20",
     },
     rose: {
-      iconBg: "bg-rose-50",
-      iconText: "text-rose-600",
-      ring: "ring-rose-100",
+      iconBg: "bg-rose-500/10",
+      iconText: "text-rose-300",
+      ring: "ring-rose-400/20",
     },
     emerald: {
-      iconBg: "bg-emerald-50",
-      iconText: "text-emerald-600",
-      ring: "ring-emerald-100",
+      iconBg: "bg-emerald-500/10",
+      iconText: "text-emerald-300",
+      ring: "ring-emerald-400/20",
     },
     slate: {
-      iconBg: "bg-[#26211c]",
-      iconText: "text-slate-500",
-      ring: "ring-slate-100",
+      iconBg: "bg-white/5",
+      iconText: "text-white/50",
+      ring: "ring-white/10",
     },
   };
 
   const a = accentMap[accent];
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5">
+    <div className="rounded-lg border border-gold/15 bg-cocoa p-5 transition-colors hover:border-gold/25">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-medium uppercase tracking-wide text-white/50">
             {label}
           </p>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <p className="text-3xl font-semibold tabular-nums text-slate-900">
+            <p className="text-3xl font-semibold tabular-nums text-ivory">
               {value}
             </p>
-            {unit && <p className="text-sm text-slate-500">{unit}</p>}
+            {unit && <p className="text-sm text-white/50">{unit}</p>}
           </div>
         </div>
         <div
@@ -845,32 +653,19 @@ function KpiCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <div className="min-w-0 flex-1 text-slate-500">{subtitle}</div>
-        {badge && <div className="shrink-0">{badge}</div>}
-      </div>
+      {subtitle && (
+        <p className="mt-2 text-[11px] text-white/40">
+          {trend && (
+            <span
+              className={`mr-1 inline-flex items-center gap-0.5 ${trend === "up" ? "text-emerald-300" : "text-rose-300"}`}
+            >
+              {trend === "up" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+            </span>
+          )}
+          {subtitle}
+        </p>
+      )}
     </div>
-  );
-}
-
-function TrendBadge({
-  percent,
-  isPositive,
-}: {
-  percent: number;
-  isPositive: boolean;
-}) {
-  const Icon = isPositive ? ArrowUp : ArrowDown;
-  const classes = isPositive
-    ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-    : "bg-rose-50 text-rose-700 ring-rose-200";
-  return (
-    <span
-      className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${classes}`}
-    >
-      <Icon className="h-3 w-3" />
-      {Math.abs(percent).toFixed(0)}%
-    </span>
   );
 }
 
@@ -888,93 +683,13 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white">
-      <header className="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
-        <Icon className="h-3.5 w-3.5 text-slate-400" />
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+    <section className="rounded-lg border border-gold/15 bg-cocoa transition-colors hover:border-gold/25">
+      <header className="flex items-center gap-2 border-b border-gold/10 px-5 py-3.5">
+        <Icon className="h-3.5 w-3.5 text-gold/70" />
+        <h3 className="font-playfair text-[15px] font-semibold tracking-wide text-ivory">{title}</h3>
       </header>
       <div className="p-5">{children}</div>
     </section>
-  );
-}
-
-// ============================================================
-// Sub: StatRow — label di kiri, angka di kanan
-// ============================================================
-
-function StatRow({
-  label,
-  value,
-  tone,
-  warn,
-  smaller,
-}: {
-  label: string;
-  value: number | string;
-  tone: "sky" | "emerald" | "rose" | "slate";
-  warn?: boolean;
-  smaller?: boolean;
-}) {
-  const toneMap = {
-    sky: "text-sky-600",
-    emerald: "text-emerald-600",
-    rose: "text-rose-600",
-    slate: "text-slate-700",
-  };
-
-  return (
-    <div className="flex items-center justify-between">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd
-        className={`${smaller ? "text-base" : "text-xl"} font-semibold tabular-nums ${
-          warn ? "text-rose-600" : toneMap[tone]
-        }`}
-      >
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-// ============================================================
-// Sub: LinkRow — row yang clickable
-// ============================================================
-
-function LinkRow({
-  href,
-  icon: Icon,
-  label,
-  value,
-  iconTone,
-}: {
-  href: string;
-  icon: LucideIcon;
-  label: string;
-  value: number | string;
-  iconTone: "sky" | "amber" | "emerald" | "violet" | "slate";
-}) {
-  const iconToneMap = {
-    sky: "text-sky-500",
-    amber: "text-amber-500",
-    emerald: "text-emerald-500",
-    violet: "text-violet-500",
-    slate: "text-slate-400",
-  };
-
-  return (
-    <Link
-      href={href}
-      className="group flex items-center justify-between rounded-md px-2 py-1.5 transition hover:bg-[#26211c]"
-    >
-      <span className="flex items-center gap-2 text-sm text-slate-600">
-        <Icon className={`h-3.5 w-3.5 ${iconToneMap[iconTone]}`} />
-        {label}
-      </span>
-      <span className="flex items-center gap-1 text-sm font-semibold tabular-nums text-slate-900">
-        {value}
-        <ArrowRight className="h-3 w-3 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500" />
-      </span>
-    </Link>
   );
 }
 
@@ -989,10 +704,10 @@ function ActivityRow({
 }) {
   const Icon = ACTIVITY_ICON[activity.type] ?? ClipboardList;
   const iconToneMap = {
-    scan: "text-sky-500",
-    qc: "text-emerald-500",
-    approval: "text-violet-500",
-    rework: "text-amber-500",
+    scan: "text-sky-400",
+    qc: "text-emerald-400",
+    approval: "text-violet-400",
+    rework: "text-amber-400",
   };
 
   const StatusIcon =
@@ -1014,20 +729,20 @@ function ActivityRow({
           : "";
 
   return (
-    <div className="flex items-center gap-3 border-b border-slate-50 py-2 text-sm last:border-0">
+    <div className="flex items-center gap-3 border-b border-white/5 py-2 text-sm last:border-0">
       <Icon
-        className={`h-3.5 w-3.5 shrink-0 ${iconToneMap[activity.type] ?? "text-slate-400"}`}
+        className={`h-3.5 w-3.5 shrink-0 ${iconToneMap[activity.type] ?? "text-white/40"}`}
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs font-medium text-slate-800">
+          <span className="font-mono text-xs font-medium text-cream">
             {activity.orderNumber}
           </span>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-white/40">
             {STAGE_LABELS[activity.stage] ?? activity.stage}
           </span>
         </div>
-        <p className="truncate text-[11px] text-slate-500">
+        <p className="truncate text-[11px] text-white/50">
           {activity.user} · {formatRelativeTime(activity.timestamp)}
         </p>
       </div>
@@ -1058,27 +773,27 @@ function PerformerRow({
   const isTopThree = rank <= 3;
 
   return (
-    <div className="flex items-center justify-between border-b border-slate-50 py-2.5 last:border-0">
+    <div className="flex items-center justify-between border-b border-white/5 py-2.5 last:border-0">
       <div className="flex items-center gap-3">
         <span
           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
             isTopThree
-              ? "bg-amber-100 text-amber-700"
-              : "bg-slate-100 text-slate-500"
+              ? "bg-gold/15 text-gold"
+              : "bg-white/10 text-white/50"
           }`}
         >
           {rank}
         </span>
         <div>
-          <p className="text-sm font-medium text-slate-800">{name}</p>
-          <p className="text-[11px] text-slate-500">{role}</p>
+          <p className="text-sm font-medium text-cream">{name}</p>
+          <p className="text-[11px] text-white/50">{role}</p>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-sm font-semibold tabular-nums text-slate-900">
+        <p className="text-sm font-semibold tabular-nums text-ivory">
           {ordersCompleted}
         </p>
-        <p className="text-[11px] text-slate-500">
+        <p className="text-[11px] text-white/50">
           {avgTime.toFixed(1)} hari/order
         </p>
       </div>
@@ -1087,26 +802,33 @@ function PerformerRow({
 }
 
 // ============================================================
-// Sub: QuickLink
+// Sub: MiniStat — compact stat pill for the Workshop Pulse card
 // ============================================================
 
-function QuickLink({
-  href,
-  icon: Icon,
+function MiniStat({
   label,
+  value,
+  accent,
 }: {
-  href: string;
-  icon: LucideIcon;
   label: string;
+  value: number | string;
+  accent: "sky" | "amber" | "violet" | "rose" | "emerald" | "slate";
 }) {
+  const toneMap: Record<string, string> = {
+    sky: "text-sky-300",
+    amber: "text-amber-300",
+    violet: "text-violet-300",
+    rose: "text-rose-300",
+    emerald: "text-emerald-300",
+    slate: "text-cream",
+  };
   return (
-    <Link
-      href={href}
-      className="group inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-[#26211c]"
-    >
-      <Icon className="h-3.5 w-3.5 text-slate-400 transition group-hover:text-slate-600" />
-      {label}
-    </Link>
+    <div className="rounded-md border border-gold/10 bg-carbon/60 px-3 py-2">
+      <p className="text-[10px] text-white/40">{label}</p>
+      <p className={`mt-0.5 text-lg font-semibold tabular-nums ${toneMap[accent]}`}>
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -1116,11 +838,11 @@ function QuickLink({
 
 function _DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-[#26211c]">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-night">
+      <header className="border-b border-gold/15 bg-cocoa">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="h-5 w-40 animate-pulse rounded bg-slate-200" />
-          <div className="h-7 w-24 animate-pulse rounded bg-slate-200" />
+          <div className="h-5 w-40 animate-pulse rounded bg-mocha" />
+          <div className="h-7 w-24 animate-pulse rounded bg-mocha" />
         </div>
       </header>
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-6">
@@ -1128,7 +850,7 @@ function _DashboardSkeleton() {
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="h-32 animate-pulse rounded-lg border border-slate-200 bg-white"
+              className="h-32 animate-pulse rounded-lg border border-gold/15 bg-cocoa"
             />
           ))}
         </div>
@@ -1136,7 +858,7 @@ function _DashboardSkeleton() {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-48 animate-pulse rounded-lg border border-slate-200 bg-white"
+              className="h-48 animate-pulse rounded-lg border border-gold/15 bg-cocoa"
             />
           ))}
         </div>
@@ -1144,7 +866,7 @@ function _DashboardSkeleton() {
           {[...Array(2)].map((_, i) => (
             <div
               key={i}
-              className="h-80 animate-pulse rounded-lg border border-slate-200 bg-white"
+              className="h-80 animate-pulse rounded-lg border border-gold/15 bg-cocoa"
             />
           ))}
         </div>
@@ -1165,18 +887,18 @@ function DashboardError({
   onRetry: () => void;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#26211c] p-6">
-      <div className="max-w-md rounded-lg border border-rose-200 bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50">
-          <AlertTriangle className="h-6 w-6 text-rose-600" />
+    <div className="flex min-h-screen items-center justify-center bg-night p-6">
+      <div className="max-w-md rounded-lg border border-rose-400/20 bg-cocoa p-8 text-center shadow-lg shadow-black/20">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10">
+          <AlertTriangle className="h-6 w-6 text-rose-300" />
         </div>
-        <h2 className="mb-1 text-base font-semibold text-slate-900">
+        <h2 className="mb-1 text-base font-semibold text-ivory">
           Gagal memuat dashboard
         </h2>
-        <p className="mb-5 text-sm text-slate-600">{error}</p>
+        <p className="mb-5 text-sm text-white/70">{error}</p>
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-[#26211c]"
+          className="inline-flex items-center gap-1.5 rounded-md border border-gold/15 bg-cocoa px-4 py-2 text-sm font-medium text-cream shadow-sm transition hover:bg-white/5"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Coba Lagi
@@ -1184,4 +906,8 @@ function DashboardError({
       </div>
     </div>
   );
+}
+
+export default function OprprdDashboardRedirect() {
+  redirect("/dashboard/superadmin");
 }

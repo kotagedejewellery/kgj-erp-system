@@ -101,8 +101,8 @@ export default function ManagementHistoryPage() {
   const statusColor = (status: string) => status === "selesai" ? "#059669" : status === "proses" ? "#ea580c" : "#dc2626";
   const statusLabel = (status: string) => status === "selesai" ? "Selesai" : status === "proses" ? "Proses" : "Belum";
 
-  const P = { purple: "#7c3aed", purpleLight: "#f5f3ff", purpleMuted: "#c4b5fd", green: "#059669", greenLight: "#ecfdf5", gray: "#6b7280", grayLight: "#f9fafb", grayBorder: "#e5e7eb", orange: "#ea580c", orangeLight: "#fff7ed", red: "#dc2626", redLight: "#fef2f2", ink: "#111827" };
-  const bgStyle = { background: "#f8f9fb url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(139,92,246,0.06)'/%3E%3C/svg%3E\") repeat" };
+  const P = { purple: "#7c3aed", purpleLight: "#7c3aed22", purpleMuted: "#a78bfa", green: "#34d399", greenLight: "#05966922", greenMuted: "#6ee7b7", gray: "#a8a29e", grayLight: "#1C1917", grayBorder: "#c9a22733", orange: "#f97316", orangeLight: "#f9731622", blue: "#60a5fa", blueLight: "#60a5fa22", red: "#f87171", redLight: "#f8717122", ink: "#F5EFE3", card: "#2A2522" };
+  const bgStyle = { background: "#26211C url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(201,162,39,0.06)'/%3E%3C/svg%3E\") repeat" };
 
   return (
     <div className="flex h-screen" style={bgStyle}>
@@ -112,17 +112,17 @@ export default function ManagementHistoryPage() {
         <main className="flex-1 overflow-y-auto p-6">
 
             {/* Gradient Banner */}
-            <div className="mb-6 p-5 rounded-2xl relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${P.purpleLight} 0%, #fff 60%)`, border: `1px solid ${P.grayBorder}` }}>
+            <div className="mb-6 p-5 rounded-2xl relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${P.purple}18 0%, transparent 60%)`, border: `1px solid ${P.grayBorder}` }}>
               <div className="absolute top-0 right-0 w-48 h-full pointer-events-none opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${P.purpleMuted} 0%, transparent 70%)` }} />
               <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.15em] mb-1" style={{ color: P.purple }}>Management History</p>
                 <div className="flex items-center gap-2">
                   <h2 className="text-[28px] font-bold leading-tight" style={{ color: P.ink }}>Riwayat <span style={{ color: P.purple }}>Tugas</span></h2>
-                  <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+                  <div className="flex gap-0.5 bg-white/10 rounded-lg p-0.5">
                     {(["today", "week", "all"] as const).map((f) => (
                       <button key={f} onClick={() => setDateFilter(f)}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${dateFilter === f ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${dateFilter === f ? "bg-cocoa text-purple-300 shadow-sm" : "text-white/50 hover:text-cream"}`}>
                         {f === "today" ? "Hari Ini" : f === "week" ? "Minggu Ini" : "Semua"}
                       </button>
                     ))}
@@ -138,9 +138,9 @@ export default function ManagementHistoryPage() {
             </div>
 
           {isLoading ? <Loading variant="skeleton" text="Memuat data..." /> : history.length === 0 ? (
-            <div className="text-center py-16 rounded-2xl" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}><CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Belum ada riwayat penyelesaian tugas.</p></div>
+            <div className="text-center py-16 rounded-2xl" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}><CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Belum ada riwayat penyelesaian tugas.</p></div>
           ) : filteredHistory.length === 0 ? (
-            <div className="text-center py-16 rounded-2xl" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}><CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Tidak ada riwayat untuk filter ini.</p></div>
+            <div className="text-center py-16 rounded-2xl" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}><CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Tidak ada riwayat untuk filter ini.</p></div>
           ) : (
               <div className="space-y-10">
                 {monthGroups.map((month) => (
@@ -155,8 +155,8 @@ export default function ManagementHistoryPage() {
                         const globalIdx = history.indexOf(entry); const isExpanded = expandedIdxs.has(globalIdx); const clr = statusColor(entry.status);
                         return (
                           <div key={globalIdx} className="relative pb-3 last:pb-0">
-                            <div className="absolute left-[-28px] top-1.5 rounded-full border-2" style={{ width: 10, height: 10, borderColor: clr, background: "#F9FAFB" }} />
-                            <div className="rounded-2xl border p-3 cursor-pointer transition-colors" style={{ background: "#fff", borderColor: P.grayBorder }} onClick={() => toggleExpand(globalIdx)}>
+                            <div className="absolute left-[-28px] top-1.5 rounded-full border-2" style={{ width: 10, height: 10, borderColor: clr, background: P.card }} />
+                            <div className="rounded-2xl border p-3 cursor-pointer transition-colors" style={{ background: P.card, borderColor: P.grayBorder }} onClick={() => toggleExpand(globalIdx)}>
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0"><span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: clr }} /><span className="text-sm font-semibold truncate" style={{ color: P.ink }}>{entry.item}</span></div>
                                 <span className="text-[10px] shrink-0" style={{ color: P.gray }}>{new Date(entry.completed_at).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>

@@ -1,4 +1,28 @@
-*.md
+# Secrets and local environment
+.env*
+*.pem
+
+# Dependencies and generated output
+node_modules/
+.next/
+out/
+build/
+coverage/
+test-results/
+playwright-report/
+graphify-out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Agent/tooling internals
+.git/
+.opencode/
+.agents/
+.claude/
+opencode.json
+skills-lock.json
+
+# Binary visual assets are not architectural source material
 *.png
 *.jpg
 *.webp
@@ -8,7 +32,3 @@
 *.xlsx
 public/
 assets/
-memory-bank/
-README.md
-.opencode/
-.agents/

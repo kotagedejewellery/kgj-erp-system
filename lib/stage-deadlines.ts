@@ -1,22 +1,22 @@
 import { countWorkingDays, getIndonesianHolidays } from "@/lib/working-days";
 
 export const STAGE_H_DAYS: Record<string, { label: string; hDays: number }> = {
-  racik_bahan: { label: "Racik & Lebur", hDays: 15 },
-  lebur_bahan: { label: "Racik & Lebur", hDays: 15 },
-  pembentukan_cincin: { label: "Pembentukan Cincin", hDays: 14 },
-  pemasangan_permata: { label: "Microsetting", hDays: 10 },
-  cek_kadar: { label: "Cek Kadar", hDays: 8 },
-  pemolesan: { label: "Poles", hDays: 8 },
-  qc_1: { label: "QC Awal", hDays: 7 },
-  laser: { label: "Laser", hDays: 6 },
-  finishing: { label: "Finishing", hDays: 3 },
-  qc_2: { label: "QC Akhir", hDays: 2 },
-  konfirmasi: { label: "Konfirmasi", hDays: 1 },
-  packing: { label: "Packing & Pengiriman", hDays: 1 },
-  pengiriman: { label: "Packing & Pengiriman", hDays: 1 },
+  racik_bahan: { label: "Racik & Lebur", hDays: 20 },
+  lebur_bahan: { label: "Racik & Lebur", hDays: 20 },
+  pembentukan_cincin: { label: "Pembentukan Cincin", hDays: 19 },
+  pemasangan_permata: { label: "Microsetting", hDays: 13 },
+  cek_kadar: { label: "Cek Kadar", hDays: 11 },
+  pemolesan: { label: "Poles", hDays: 11 },
+  qc_1: { label: "QC Awal", hDays: 9 },
+  laser: { label: "Laser", hDays: 7 },
+  finishing: { label: "Finishing", hDays: 5 },
+  qc_2: { label: "QC Akhir", hDays: 4 },
+  konfirmasi: { label: "Konfirmasi", hDays: 3 },
+  packing: { label: "Packing & Pengiriman", hDays: 3 },
+  pengiriman: { label: "Packing & Pengiriman", hDays: 3 },
 };
 
-const MAX_BASELINE_H_DAYS = 15;
+const MAX_BASELINE_H_DAYS = 20;
 
 function subtractWorkingDays(endDate: string, workingDays: number): string {
   const date = new Date(endDate);
@@ -26,7 +26,7 @@ function subtractWorkingDays(endDate: string, workingDays: number): string {
     const day = date.getDay();
     const holidays = getIndonesianHolidays(date.getFullYear());
     const dateStr = date.toISOString().split("T")[0];
-    if (day !== 0 && day !== 6 && !holidays.includes(dateStr)) {
+    if (day !== 0 && !holidays.includes(dateStr)) {
       count++;
     }
   }
@@ -70,17 +70,21 @@ export function getStageDeadlineStatus(
   const scale = getScaleFactor(tglOrder, deadline);
   const scaledHDays = Math.round(rule.hDays * scale);
   const targetDate = subtractWorkingDays(deadline, scaledHDays);
-  const target = new Date(targetDate);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split("T")[0];
+  const targetStr = targetDate;
 
-  const diffTime = target.getTime() - today.getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const daysRemaining =
+    targetStr >= todayStr
+      ? countWorkingDays(todayStr, targetStr)
+      : -countWorkingDays(targetStr, todayStr);
 
   return {
     targetDate,
-    isOverdue: diffDays < 0,
-    daysRemaining: diffDays,
+    isOverdue: daysRemaining < 0,
+    daysRemaining,
     label: rule.label,
   };
 }

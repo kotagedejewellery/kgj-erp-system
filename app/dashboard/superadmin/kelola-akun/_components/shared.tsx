@@ -2,21 +2,13 @@
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface BranchRef {
-  id: string;
-  name: string;
-  code: string;
-}
-
 export interface RoleOPRPRD {
   id: string;
   name: string;
   role_group:
     | "management"
     | "operational"
-    | "production"
-    | "marketing"
-    | "customer_service";
+    | "production";
   description: string | null;
   permissions: {
     can_read: boolean;
@@ -33,31 +25,15 @@ export interface UnifiedUser {
   email: string | null;
   username: string | null;
   phone: string | null;
-  role: "superadmin" | "customer_service" | "marketing" | null;
+  role: "superadmin" | "after_sales" | null;
   roles: RoleOPRPRD | null;
   role_id: string | null;
-  branch_id: string | null;
-  branches: BranchRef | null;
   status: "active" | "inactive" | null;
   is_active: boolean;
   last_login: string | null;
   last_login_at: string | null;
   created_at: string;
   userType: "bms" | "supervisor" | "oprprd" | "management";
-}
-
-export interface Branch {
-  id: string;
-  code: string;
-  name: string;
-  address: string;
-  phone: string | null;
-  email: string | null;
-  pic: string | null;
-  status: "active" | "inactive";
-  total_leads: number;
-  total_closing: number;
-  created_at: string;
 }
 
 export type AlertState = {
@@ -71,17 +47,17 @@ export type NewUserType = "bms" | "supervisor" | "oprprd" | "management" | null;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const BMS_ROLES = ["superadmin", "customer_service", "marketing"] as const;
+export const BMS_ROLES = ["superadmin", "after_sales"] as const;
 
 export const ROLE_GROUP_LABELS: Record<string, { label: string; bg: string }> = {
   management: { label: "Manajemen", bg: "bg-purple-100 text-purple-800" },
   operational: { label: "Operasional", bg: "bg-blue-100 text-blue-800" },
-  production: { label: "Produksi", bg: "bg-amber-100 text-amber-800" },
+  production: { label: "Produksi", bg: "bg-amber-500/10 text-amber-800" },
 };
 
 export const SEGMENT_OPTIONS: { value: UserSegment; label: string }[] = [
   { value: "all", label: "Semua" },
-  { value: "bms", label: "BMS (Admin, CS, Marketing)" },
+  { value: "bms", label: "Dashboard" },
   { value: "management", label: "Manajemen" },
   { value: "operational", label: "Operasional" },
   { value: "production", label: "Produksi" },
@@ -94,8 +70,7 @@ export const EMPTY_BMS_FORM = {
   full_name: "",
   email: "",
   password: "",
-  role: "customer_service" as "superadmin" | "customer_service" | "marketing",
-  branch_id: "",
+  role: "superadmin" as "superadmin" | "after_sales",
 };
 
 export const EMPTY_OPRPRD_FORM = {
@@ -112,17 +87,7 @@ export const EMPTY_SUPERVISOR_FORM = {
   full_name: "",
   email: "",
   password: "",
-  role: "operational_supervisor" as "operational_supervisor" | "production_supervisor",
-};
-
-export const EMPTY_BRANCH_FORM = {
-  name: "",
-  code: "",
-  address: "",
-  phone: "",
-  email: "",
-  pic: "",
-  status: "active" as Branch["status"],
+  role: "operational_supervisor" as "operational_supervisor" | "production_supervisor" | "customer_service_supervisor",
 };
 
 export const EMPTY_MANAGEMENT_FORM = {
@@ -159,17 +124,15 @@ export const parseApiError = (raw: string, httpStatus?: number): string => {
     return "Nama lengkap dan password wajib diisi.";
   if (raw.includes("Password minimal"))
     return "Password terlalu pendek, minimal 6 karakter.";
-  if (raw.includes("Email wajib")) return "Email wajib diisi untuk akun BMS.";
-  if (raw.includes("Cabang wajib"))
-    return "Pilih cabang terlebih dahulu untuk role Customer Service.";
+  if (raw.includes("Email wajib")) return "Email wajib diisi untuk akun Superadmin.";
   if (raw.includes("Username minimal"))
     return "Username terlalu pendek, minimal 3 karakter.";
   if (raw.includes("Role harus dipilih") || raw.includes("Role tidak valid"))
     return "Role belum dipilih atau tidak valid.";
   if (raw.includes("Role harus salah satu"))
-    return "Role tidak dikenali. Pilih: Super Admin, Customer Service, atau Marketing.";
+    return "Role tidak dikenali. Pilih Super Admin atau role operasional yang tersedia.";
   if (raw.includes("role BMS, gunakan field"))
-    return "Untuk role BMS gunakan mode BMS, bukan mode Operasional.";
+    return "Untuk role Superadmin gunakan mode Superadmin, bukan mode Operasional.";
 
   if (raw.startsWith("Gagal membuat akun auth:")) return raw;
   if (raw.includes("Gagal menyimpan profil"))
@@ -190,7 +153,7 @@ export const resolveUserType = (u: { role?: string; roles?: { name?: string; rol
   if (u.role && (BMS_ROLES as readonly string[]).includes(u.role))
     return "bms";
   const roleName = u.roles?.name;
-  if (roleName === "operational_supervisor" || roleName === "production_supervisor")
+  if (roleName === "operational_supervisor" || roleName === "production_supervisor" || roleName === "customer_service_supervisor")
     return "supervisor";
   if (u.roles?.role_group === "management") return "management";
   if (u.roles?.role_group) return "oprprd";
@@ -217,11 +180,10 @@ export const getRoleBadge = (user: UnifiedUser) => {
   if (user.userType === "bms") {
     const map: Record<string, { bg: string; label: string }> = {
       superadmin: { bg: "bg-purple-100 text-purple-800", label: "Super Admin" },
-      customer_service: { bg: "bg-blue-100 text-blue-800", label: "Customer Service" },
-      marketing: { bg: "bg-green-100 text-green-800", label: "Marketing" },
+      after_sales: { bg: "bg-teal-500/10 text-teal-700", label: "After Sales" },
     };
     const cfg = map[user.role ?? ""] ?? {
-      bg: "bg-gray-100 text-gray-800",
+      bg: "bg-white/10 text-cream",
       label: user.role ?? "-",
     };
     return (
@@ -229,34 +191,44 @@ export const getRoleBadge = (user: UnifiedUser) => {
         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${cfg.bg}`}>
           {cfg.label}
         </span>
-        <span className="text-[10px] text-gray-400">BMS</span>
+        <span className="text-[10px] text-white/40">Dashboard</span>
       </div>
     );
   }
   const role = user.roles;
   if (!role)
     return (
-      <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500">
+      <span className="px-2 py-1 text-xs rounded-full bg-white/10 text-white/50">
         -
       </span>
     );
   if (role.name === "operational_supervisor") {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-500/10 text-orange-800">
           Spv. Operasional
         </span>
-        <span className="text-[10px] text-gray-400">Manajemen</span>
+        <span className="text-[10px] text-white/40">Manajemen</span>
       </div>
     );
   }
   if (role.name === "production_supervisor") {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-800">
+        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-800">
           Spv. Produksi
         </span>
-        <span className="text-[10px] text-gray-400">Manajemen</span>
+        <span className="text-[10px] text-white/40">Manajemen</span>
+      </div>
+    );
+  }
+  if (role.name === "customer_service_supervisor") {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-500/10 text-sky-800">
+          Spv. Customer Service
+        </span>
+        <span className="text-[10px] text-white/40">Manajemen</span>
       </div>
     );
   }
@@ -277,23 +249,23 @@ export const getRoleBadge = (user: UnifiedUser) => {
   if (role.role_group === "management" && MGMT_LABELS[role.name]) {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-violet-100 text-violet-800">
+        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-violet-500/10 text-violet-800">
           {MGMT_LABELS[role.name]}
         </span>
-        <span className="text-[10px] text-gray-400">Management</span>
+        <span className="text-[10px] text-white/40">Management</span>
       </div>
     );
   }
   const cfg = ROLE_GROUP_LABELS[role.role_group] ?? {
     label: role.name,
-    bg: "bg-gray-100 text-gray-800",
+    bg: "bg-white/10 text-cream",
   };
   return (
     <div className="flex flex-col gap-0.5">
       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${cfg.bg}`}>
         {role.name}
       </span>
-      <span className="text-[10px] text-gray-400">{cfg.label}</span>
+      <span className="text-[10px] text-white/40">{cfg.label}</span>
     </div>
   );
 };
@@ -302,23 +274,13 @@ export const getStatusBadge = (user: UnifiedUser) => {
   const isActive =
     user.userType === "bms" ? user.status === "active" : user.is_active;
   return isActive ? (
-    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-green-800">
       Aktif
     </span>
   ) : (
-    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-red-800">
       Nonaktif
     </span>
   );
 };
 
-export const getBranchStatusBadge = (status: "active" | "inactive") =>
-  status === "active" ? (
-    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-      Aktif
-    </span>
-  ) : (
-    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-      Nonaktif
-    </span>
-  );

@@ -94,13 +94,13 @@ export function OprprdUserForm({
         disabled={isSaving}
       />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-cream mb-1">
           Role
         </label>
         <select
           value={form.role_id}
           onChange={(e) => setForm({ ...form, role_id: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="w-full px-3 py-2 border border-gold/25 rounded-lg focus:ring-2 focus:ring-gold/30 bg-carbon text-cream"
           disabled={isSaving}
         >
           <option value="">Pilih Role</option>
@@ -122,7 +122,7 @@ export function OprprdUserForm({
           })}
         </select>
         {form.role_id && (
-          <p className="mt-1.5 text-xs text-gray-500 italic">
+          <p className="mt-1.5 text-xs text-white/50 italic">
             {roles.find((r) => r.id === form.role_id)?.description ?? "Tidak ada deskripsi."}
           </p>
         )}

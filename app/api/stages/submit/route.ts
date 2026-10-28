@@ -4,12 +4,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
-import { notifySupervisors, getSupervisorRoleForApproval, notifyCsForOrder } from "@/lib/notifications";
-import { STAGE_SEQUENCE, STAGE_GROUP, getStageIndex } from "@/lib/stages";
-import {
-  stageToYii2Status,
-  STAGES_THAT_PUSH_TO_YII2,
-} from "@/lib/legacy/reverse-map";
+import { notifySupervisors, getSupervisorRoleForApproval } from "@/lib/notifications";
+import { STAGE_SEQUENCE, STAGE_GROUP, effectiveNext } from "@/lib/stages";
+import { pushStageToYii2 } from "@/lib/legacy/push-status";
 
 // ── Role access ────────────────────────────────────────────────────────────────
 
@@ -49,23 +46,15 @@ async function getAttemptNumber(
 ): Promise<number> {
   const { data } = await admin
     .from("stage_history")
-    .select("attempt_number")
+    .select("attempt_number, data")
     .eq("order_id", orderId)
     .eq("stage", stage)
     .order("attempt_number", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return ((data as { attempt_number?: number } | null)?.attempt_number ?? 0) + 1;
-}
-
-function nextInSequence(stage: string): string | null {
-  const idx = getStageIndex(stage);
-  return idx >= 0 && idx < STAGE_SEQUENCE.length - 1 ? STAGE_SEQUENCE[idx + 1] : null;
-}
-
-function _prevInSequence(stage: string): string | null {
-  const idx = getStageIndex(stage);
-  return idx > 0 ? STAGE_SEQUENCE[idx - 1] : null;
+  const row = data as { attempt_number?: number; data?: Record<string, unknown> } | null;
+  const hasData = row?.data && typeof row.data === "object" && Object.keys(row.data).length > 0;
+  return (hasData ? (row?.attempt_number ?? 1) : 0) + 1;
 }
 
 // Advance the legacy tracking pointer. The completion of `fromStage` is logged
@@ -120,40 +109,8 @@ async function recordSubmission(
   return (row as { id?: string } | null)?.id ?? null;
 }
 
-// Fire-and-forget push to Yii2 LIVE_SYSTEM when a milestone stage is completed.
-// Does not block the HTTP response; failure is logged, never propagated.
-async function pushStageToYii2(
-  legacyId: number | null,
-  stage: string,
-) {
-  if (legacyId == null) return;
-
-  if (!STAGES_THAT_PUSH_TO_YII2.has(stage)) return;
-
-  const idStatus = stageToYii2Status(stage);
-  if (idStatus == null) return;
-
-  const baseUrl = process.env.LIVE_SYSTEM_BASE_URL;
-  const apiKey = process.env.INTEGRATED_SYSTEM_WEBHOOK_SECRET;
-  if (!baseUrl || !apiKey) return;
-
-  try {
-    await fetch(`${baseUrl}/api/order-sync/webhook`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": apiKey,
-      },
-      body: JSON.stringify({
-        event: "status_update",
-        order_id: legacyId,
-        id_status: idStatus,
-      }),
-    });
-  } catch {
-    console.warn(`[pushStageToYii2] Push gagal untuk order #${legacyId} stage ${stage}`);
-  }
-}
+// Fire-and-forget push to Yii2 LIVE_SYSTEM — see lib/legacy/push-status.ts.
+// Full 20-stage sync: every transition pushes the stage the order ENTERS.
 
 // ── POST ───────────────────────────────────────────────────────────────────────
 
@@ -242,6 +199,8 @@ export async function POST(request: Request) {
       status: tracking?.stage_status ?? "in_progress",
     };
 
+    const legacyId = (legacyOrder as { legacy_id?: number }).legacy_id ?? null;
+
     if (order.current_stage !== stage)
       return NextResponse.json(
         {
@@ -308,6 +267,8 @@ export async function POST(request: Request) {
           `/workshop/input?order_id=${orderId}`,
         );
 
+        await pushStageToYii2(orderId, legacyId, "lebur_bahan");
+
         return NextResponse.json({
           success: true,
           rework: true,
@@ -321,8 +282,8 @@ export async function POST(request: Request) {
         });
       }
 
-      const next = nextInSequence("cek_kadar");
-      if (next)
+      const next = effectiveNext("cek_kadar");
+      if (next) {
         await advanceOrder(
           admin,
           orderId,
@@ -332,6 +293,8 @@ export async function POST(request: Request) {
           false,
           "Cek kadar lolos",
         );
+        await pushStageToYii2(orderId, legacyId, next);
+      }
 
       return NextResponse.json({
         success: true,
@@ -400,6 +363,8 @@ export async function POST(request: Request) {
           `/workshop/input?order_id=${orderId}`,
         );
 
+        await pushStageToYii2(orderId, legacyId, prevStage);
+
         return NextResponse.json({
           success: true,
           rework: true,
@@ -413,8 +378,8 @@ export async function POST(request: Request) {
       }
 
       // Approved → packing
-      const next = nextInSequence("konfirmasi");
-      if (next)
+      const next = effectiveNext("konfirmasi");
+      if (next) {
         await advanceOrder(
           admin,
           orderId,
@@ -424,6 +389,8 @@ export async function POST(request: Request) {
           false,
           "Konfirmasi customer care disetujui",
         );
+        await pushStageToYii2(orderId, legacyId, next);
+      }
 
       return NextResponse.json({
         success: true,
@@ -462,6 +429,7 @@ export async function POST(request: Request) {
       const approvalStage = APPROVAL_GATE_MAP[stage];
       if (approvalStage) {
         await advanceOrder(admin, orderId, stage, approvalStage, userId, true);
+        await pushStageToYii2(orderId, legacyId, approvalStage);
         // Notify the right supervisor
         const supRole = getSupervisorRoleForApproval(approvalStage);
         if (supRole) {
@@ -483,7 +451,7 @@ export async function POST(request: Request) {
         data: {
           order_id: orderId,
           order_number: order.order_number,
-          next_stage: approvalStage ?? nextInSequence(stage),
+          next_stage: approvalStage ?? effectiveNext(stage),
           waiting_approval: !!approvalStage,
         },
       });
@@ -510,8 +478,8 @@ export async function POST(request: Request) {
         });
       }
 
-      const next = nextInSequence("packing");
-      if (next)
+      const next = effectiveNext("packing");
+      if (next) {
         await advanceOrder(
           admin,
           orderId,
@@ -521,6 +489,25 @@ export async function POST(request: Request) {
           false,
           "Packing selesai — siap kirim",
         );
+        await pushStageToYii2(orderId, legacyId, next);
+
+        // Order memasuki pengiriman → siapkan baris delivery pending (di-update
+        // saat stage pengiriman selesai). Idempoten: jangan buat duplikat.
+        if (next === "pengiriman") {
+          const { data: existingDelivery } = await admin
+            .from("legacy_deliveries")
+            .select("id")
+            .eq("order_id", orderId)
+            .maybeSingle();
+          if (!existingDelivery) {
+            await admin.from("legacy_deliveries").insert({
+              order_id: orderId,
+              status: "pending",
+              created_at: now,
+            });
+          }
+        }
+      }
 
       notifySupervisors(
         "operational_supervisor",
@@ -595,12 +582,8 @@ export async function POST(request: Request) {
           created_at: now,
         });
 
-        notifyCsForOrder(orderId);
-
-        // Pengiriman berhasil → push selesai to Yii2.
-        const legacyId = (legacyOrder as { legacy_id?: number }).legacy_id ?? null;
-        pushStageToYii2(legacyId, "pengiriman");
-        pushStageToYii2(legacyId, "selesai");
+        // Pengiriman berhasil → order masuk tahap selesai.
+        await pushStageToYii2(orderId, legacyId, "selesai");
 
         return NextResponse.json({
           success: true,
@@ -626,12 +609,52 @@ export async function POST(request: Request) {
       });
     }
 
+    // ── pembentukan_cincin: optional microsetting skip ───────────────────────
+    // Tidak semua order perlu micro setting (id_microsetting 8 = "Sesuai Model").
+    // Tukang memilih lanjut ke pemasangan_permata atau langsung ke pemolesan.
+    if (stage === "pembentukan_cincin") {
+      const perlu = data.perlu_microsetting as string | undefined;
+      if (!perlu)
+        return NextResponse.json(
+          { error: "perlu_microsetting wajib diisi untuk pembentukan_cincin" },
+          { status: 400 },
+        );
+
+      await recordSubmission(admin, orderId, userId, "pembentukan_cincin", attemptNumber,
+        { ...data }, (data.notes as string) ?? null);
+
+      const nextStage = perlu === "skip" ? "pemolesan" : "pemasangan_permata";
+
+      await advanceOrder(
+        admin,
+        orderId,
+        "pembentukan_cincin",
+        nextStage,
+        userId,
+        false,
+      );
+      await pushStageToYii2(orderId, legacyId, nextStage);
+
+      return NextResponse.json({
+        success: true,
+        message:
+          perlu === "skip"
+            ? "Pembentukan selesai. Tanpa micro setting — lanjut ke pemolesan."
+            : "Pembentukan selesai. Lanjut ke micro setting.",
+        data: {
+          order_id: orderId,
+          order_number: order.order_number,
+          next_stage: nextStage,
+        },
+      });
+    }
+
     // ── Standard "Done" stages ─────────────────────────────────────────────────
     await recordSubmission(admin, orderId, userId, stage, attemptNumber,
       { ...data }, (data as Record<string, unknown>).notes as string | null ?? null);
 
     const approvalStage = APPROVAL_GATE_MAP[stage];
-    const resolvedNext = approvalStage ?? nextInSequence(stage);
+    const resolvedNext = approvalStage ?? effectiveNext(stage);
     const isWaiting = !!approvalStage;
 
     if (resolvedNext && resolvedNext !== "selesai") {
@@ -643,6 +666,8 @@ export async function POST(request: Request) {
         userId,
         isWaiting,
       );
+      // Push the stage the order has ENTERED so Yii2 mirrors the ERP.
+      await pushStageToYii2(orderId, legacyId, resolvedNext);
     }
 
     if (isWaiting && approvalStage) {
@@ -658,10 +683,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Push the completed stage back to Yii2 (fire-and-forget; only fires on
-    // milestone stages defined in STAGES_THAT_PUSH_TO_YII2).
-    const legacyId = (legacyOrder as { legacy_id?: number }).legacy_id ?? null;
-    pushStageToYii2(legacyId, stage);
+    // (Push ke Yii2 sudah dilakukan di atas dengan stage terkini.)
 
     return NextResponse.json({
       success: true,

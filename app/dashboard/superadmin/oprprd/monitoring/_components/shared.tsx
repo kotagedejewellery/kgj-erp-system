@@ -236,16 +236,16 @@ export function getSLA(hours: number) {
   if (hours > 48)
     return {
       label: "Terlambat",
-      cls: "bg-rose-50 text-rose-700 ring-rose-200",
+      cls: "bg-rose-500/10 text-rose-300 ring-rose-400/20",
     };
   if (hours > 24)
     return {
       label: "Perhatian",
-      cls: "bg-amber-50 text-amber-700 ring-amber-200",
+      cls: "bg-amber-500/10 text-amber-300 ring-amber-400/20",
     };
   return {
     label: "On Track",
-    cls: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    cls: "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20",
   };
 }
 
@@ -274,22 +274,22 @@ export function KpiChip({
 }) {
   const aMap = {
     emerald: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-600",
-      ring: "ring-emerald-100",
-      val: "text-emerald-700",
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-300",
+      ring: "ring-emerald-400/20",
+      val: "text-emerald-300",
     },
     amber: {
-      bg: "bg-amber-50",
-      text: "text-amber-600",
-      ring: "ring-amber-100",
-      val: "text-amber-700",
+      bg: "bg-amber-500/10",
+      text: "text-amber-300",
+      ring: "ring-amber-400/20",
+      val: "text-amber-300",
     },
     rose: {
-      bg: "bg-rose-50",
-      text: "text-rose-600",
-      ring: "ring-rose-100",
-      val: "text-rose-700",
+      bg: "bg-rose-500/10",
+      text: "text-rose-300",
+      ring: "ring-rose-400/20",
+      val: "text-rose-200",
     },
     violet: {
       bg: "bg-violet-50",
@@ -298,33 +298,33 @@ export function KpiChip({
       val: "text-violet-700",
     },
     sky: {
-      bg: "bg-sky-50",
+      bg: "bg-sky-500/10",
       text: "text-sky-600",
       ring: "ring-sky-100",
       val: "text-sky-700",
     },
     slate: {
-      bg: "bg-slate-50",
-      text: "text-slate-500",
-      ring: "ring-slate-100",
-      val: "text-slate-800",
+      bg: "bg-carbon",
+      text: "text-white/50",
+      ring: "ring-white/10",
+      val: "text-cream",
     },
   };
   const a = aMap[accent];
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-gold/15 bg-cocoa p-4">
       <div className="flex items-center gap-2 mb-2">
         <div
           className={`flex h-7 w-7 items-center justify-center rounded-md ring-1 ring-inset ${a.bg} ${a.ring}`}
         >
           <Icon className={`h-3.5 w-3.5 ${a.text}`} />
         </div>
-        <span className="text-[10px] uppercase tracking-wide text-slate-400">
+        <span className="text-[10px] uppercase tracking-wide text-white/40">
           {sub}
         </span>
       </div>
       <p className={`text-base font-bold tabular-nums ${a.val}`}>{value}</p>
-      <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{label}</p>
+      <p className="text-[10px] text-white/50 mt-0.5 leading-tight">{label}</p>
     </div>
   );
 }
@@ -347,40 +347,40 @@ export function ExpertCard({ expert }: { expert: Expert }) {
     : null;
 
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-300">
+    <article className="rounded-lg border border-gold/15 bg-cocoa p-4 transition hover:border-gold/40">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-1.5">
-            <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">
+            <Icon className="h-3.5 w-3.5 shrink-0 text-white/40" />
+            <span className="text-[10px] uppercase tracking-wide text-white/50">
               {cfg.name}
             </span>
           </div>
-          <p className="truncate text-sm font-semibold text-slate-900">
+          <p className="truncate text-sm font-semibold text-ivory">
             {expert.fullName}
           </p>
         </div>
         {isActive ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
             Bekerja
           </span>
         ) : (
-          <span className="inline-flex shrink-0 items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
+          <span className="inline-flex shrink-0 items-center rounded-full bg-carbon px-2 py-0.5 text-[10px] font-medium text-white/50 ring-1 ring-inset ring-white/10">
             Idle
           </span>
         )}
       </div>
       {expert.activeOrder && (
-        <div className="mb-3 rounded-md bg-emerald-50/50 p-2 ring-1 ring-inset ring-emerald-100">
-          <p className="mb-0.5 text-[10px] uppercase tracking-wide text-emerald-600">
+        <div className="mb-3 rounded-md bg-emerald-500/10 p-2 ring-1 ring-inset ring-emerald-400/20">
+          <p className="mb-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
             Sedang dikerjakan
           </p>
           <div className="flex items-center justify-between">
             <span className="font-mono text-xs font-semibold text-emerald-900">
               {expert.activeOrder.orderNumber}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-emerald-700">
+            <span className="flex items-center gap-1 text-[11px] text-emerald-300">
               <Clock className="h-3 w-3" />
               {mins}m
             </span>
@@ -389,28 +389,28 @@ export function ExpertCard({ expert }: { expert: Expert }) {
       )}
       <dl className="space-y-1.5 text-xs">
         <div className="flex items-center justify-between">
-          <dt className="text-slate-500">Order hari ini</dt>
-          <dd className="font-semibold text-slate-900">
+          <dt className="text-white/50">Order hari ini</dt>
+          <dd className="font-semibold text-ivory">
             {expert.ordersHandled}
           </dd>
         </div>
         <div className="flex items-center justify-between">
-          <dt className="text-slate-500">Total scan</dt>
-          <dd className="text-slate-700">{expert.totalScans}</dd>
+          <dt className="text-white/50">Total scan</dt>
+          <dd className="text-cream">{expert.totalScans}</dd>
         </div>
         {hasSusut && (
-          <div className="flex items-center justify-between border-t border-slate-100 pt-1.5">
-            <dt className="flex items-center gap-1 text-slate-500">
+          <div className="flex items-center justify-between border-t border-gold/10 pt-1.5">
+            <dt className="flex items-center gap-1 text-white/50">
               <Target className="h-3 w-3" />
               Susut
             </dt>
             <dd className="flex items-center gap-1">
               <span
-                className={`text-xs font-semibold ${isOverSusut ? "text-rose-600" : "text-emerald-600"}`}
+                className={`text-xs font-semibold ${isOverSusut ? "text-rose-300" : "text-emerald-300"}`}
               >
                 {expert.rataSusut!.toFixed(2)}%
               </span>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-white/40">
                 / {expert.targetSusut!.toFixed(1)}%
               </span>
             </dd>
@@ -436,23 +436,23 @@ export function BnRow({
     <>
       <tr
         onClick={() => setExpanded((v) => !v)}
-        className={`cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors ${isCritical ? "bg-rose-50/40" : isSlow ? "bg-amber-50/30" : ""}`}
+        className={`cursor-pointer border-b border-white/5 last:border-0 hover:bg-carbon transition-colors ${isCritical ? "bg-rose-500/10" : isSlow ? "bg-amber-500/10" : ""}`}
       >
         <td className="px-5 py-3">
           <div className="flex items-center gap-2">
             <ChevronRight
-              className={`h-3.5 w-3.5 text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`}
+              className={`h-3.5 w-3.5 text-white/40 transition-transform ${expanded ? "rotate-90" : ""}`}
             />
             <span
               className={`h-2 w-2 rounded-full ${isProd ? "bg-amber-400" : "bg-blue-400"}`}
             />
-            <span className="text-sm font-medium text-slate-800">
+            <span className="text-sm font-medium text-cream">
               {stage.stage_label}
             </span>
           </div>
         </td>
         <td className="px-3 py-3 text-center">
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-cream">
             {stage.order_count}
             {stage.waiting_orders > 0 && (
               <span className="text-rose-500">
@@ -464,44 +464,44 @@ export function BnRow({
         <td className="px-3 py-3 text-center">
           {stage.avg_hours ? (
             <span
-              className={`text-xs font-semibold ${isCritical ? "text-rose-600" : isSlow ? "text-amber-600" : "text-slate-600"}`}
+              className={`text-xs font-semibold ${isCritical ? "text-rose-300" : isSlow ? "text-amber-300" : "text-white/70"}`}
             >
               {fmtHours(stage.avg_hours)}
             </span>
           ) : (
-            <span className="text-xs text-slate-400">—</span>
+            <span className="text-xs text-white/40">—</span>
           )}
         </td>
         <td className="px-3 py-3 text-center">
           {stage.longest_hours ? (
             <span
-              className={`text-xs font-semibold ${stage.longest_hours > 48 ? "text-rose-600" : stage.longest_hours > 24 ? "text-amber-600" : "text-slate-600"}`}
+              className={`text-xs font-semibold ${stage.longest_hours > 48 ? "text-rose-300" : stage.longest_hours > 24 ? "text-amber-300" : "text-white/70"}`}
             >
               {fmtHours(stage.longest_hours)}
             </span>
           ) : (
-            <span className="text-xs text-slate-400">—</span>
+            <span className="text-xs text-white/40">—</span>
           )}
         </td>
         <td className="px-3 py-3">
           <div className="space-y-0.5">
-            {stage.bottlenecks.length === 0 ? (
-              <span className="text-xs text-slate-400">—</span>
+            {stage.orders.length === 0 ? (
+              <span className="text-xs text-white/40">—</span>
             ) : (
-              stage.bottlenecks.slice(0, 2).map((item, idx) => (
+              stage.orders.slice(0, 2).map((item, idx) => (
                 <button
                   key={idx}
                   onClick={(e) => {
                     e.stopPropagation();
                     onOrderClick(item.order_id, item.order_number);
                   }}
-                  className="flex items-center gap-1.5 text-xs hover:text-amber-600 transition-colors w-full text-left"
+                  className="flex items-center gap-1.5 text-xs hover:text-amber-300 transition-colors w-full text-left"
                 >
-                  <span className="font-mono text-slate-500 truncate">
+                  <span className="font-mono text-white/50 truncate">
                     {item.order_number}
                   </span>
                   <span
-                    className={`ml-auto shrink-0 font-medium ${(item.hours_waiting || 0) > 48 ? "text-rose-600" : (item.hours_waiting || 0) > 24 ? "text-amber-600" : "text-slate-400"}`}
+                    className={`ml-auto shrink-0 font-medium ${(item.hours_waiting || 0) > 48 ? "text-rose-300" : (item.hours_waiting || 0) > 24 ? "text-amber-300" : "text-white/40"}`}
                   >
                     {item.hours_waiting ? `${item.hours_waiting}j` : "—"}
                   </span>
@@ -512,17 +512,17 @@ export function BnRow({
         </td>
         <td className="px-5 py-3 text-center">
           {isCritical ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-300 ring-1 ring-inset ring-rose-400/20">
               <AlertTriangle className="h-3 w-3" />
               Kritis
             </span>
           ) : isSlow ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 ring-1 ring-inset ring-amber-400/20">
               <Clock className="h-3 w-3" />
               Lambat
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
               <CheckCircle2 className="h-3 w-3" />
               Normal
             </span>
@@ -530,12 +530,12 @@ export function BnRow({
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-slate-50/50">
+        <tr className="bg-carbon/50">
           <td colSpan={6} className="px-5 py-3">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-[10px] uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-gold/15 text-[10px] uppercase tracking-wide text-white/50">
                     <th className="px-3 py-2 text-left font-medium">Order</th>
                     <th className="px-3 py-2 text-left font-medium">Customer</th>
                     <th className="px-3 py-2 text-center font-medium">Waktu</th>
@@ -550,26 +550,26 @@ export function BnRow({
                     <tr
                       key={item.order_id}
                       onClick={() => onOrderClick(item.order_id, item.order_number)}
-                      className="border-b border-slate-100 hover:bg-white cursor-pointer transition-colors"
+                      className="border-b border-gold/10 hover:bg-cocoa cursor-pointer transition-colors"
                     >
-                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                      <td className="px-3 py-2.5 font-mono text-white/70">
                         {item.order_number}
                       </td>
-                      <td className="px-3 py-2.5 text-slate-800 font-medium">
+                      <td className="px-3 py-2.5 text-cream font-medium">
                         {item.customer_name || "—"}
                       </td>
-                      <td className={`px-3 py-2.5 text-center font-medium ${(item.hours_waiting || 0) > 48 ? "text-rose-600" : (item.hours_waiting || 0) > 24 ? "text-amber-600" : "text-slate-500"}`}>
+                      <td className={`px-3 py-2.5 text-center font-medium ${(item.hours_waiting || 0) > 48 ? "text-rose-300" : (item.hours_waiting || 0) > 24 ? "text-amber-300" : "text-white/50"}`}>
                         {item.hours_waiting ? `${item.hours_waiting}j` : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-slate-600">
+                      <td className="px-3 py-2.5 text-white/70">
                         {item.last_worker || "—"}
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         {item.deadline ? (() => {
                           const dl = getStageDeadlineStatus(item.tgl_order, item.deadline, item.current_stage);
-                          if (!dl) return <span className="text-slate-400">—</span>;
+                          if (!dl) return <span className="text-white/40">—</span>;
                           return (
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${dl.isOverdue ? "bg-rose-50 text-rose-700 ring-rose-200" : "bg-emerald-50 text-emerald-700 ring-emerald-200"}`}>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${dl.isOverdue ? "bg-rose-500/10 text-rose-300 ring-rose-400/20" : "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20"}`}>
                               {dl.isOverdue ? `⚠ ${Math.abs(dl.daysRemaining)}h` : `✔ H-${Math.max(dl.daysRemaining, 1)}`}
                             </span>
                           );
@@ -577,26 +577,26 @@ export function BnRow({
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         {item.approval_decision === "approved" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
                             <CheckCircle2 className="h-2.5 w-2.5" />
                             {item.approved_by || "Disetujui"}
                           </span>
                         ) : item.approval_decision === "rejected" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-300 ring-1 ring-inset ring-rose-400/20">
                             <AlertTriangle className="h-2.5 w-2.5" />
                             Ditolak
                           </span>
                         ) : item.status === "waiting_approval" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 ring-1 ring-inset ring-amber-400/20">
                             <Clock className="h-2.5 w-2.5" />
                             Menunggu
                           </span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-white/40">—</span>
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${item.status === "rework" ? "bg-orange-100 text-orange-700" : item.status === "waiting_approval" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${item.status === "rework" ? "bg-orange-500/10 text-orange-300" : item.status === "waiting_approval" ? "bg-amber-500/10 text-amber-300" : "bg-white/10 text-white/70"}`}>
                           {item.status === "rework" ? "Rework" : item.status === "waiting_approval" ? "Approval" : "Proses"}
                         </span>
                       </td>
@@ -618,20 +618,20 @@ export function MicroStatusBadge({
 }) {
   if (status === "completed")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
         <CheckCircle2 className="h-3 w-3" />
         Selesai
       </span>
     );
   if (status === "in_progress")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
+      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-300 ring-1 ring-inset ring-sky-400/20">
         <Loader2 className="h-3 w-3 animate-spin" />
         Proses
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+    <span className="inline-flex items-center gap-1 rounded-full bg-carbon px-2 py-0.5 text-[10px] font-medium text-white/70 ring-1 ring-inset ring-white/10">
       <Clock className="h-3 w-3" />
       Antri
     </span>
@@ -652,9 +652,9 @@ export function KanbanCol({
   children: React.ReactNode;
 }) {
   const accentMap = {
-    sky: "bg-sky-50 text-sky-700 ring-sky-200",
-    amber: "bg-amber-50 text-amber-700 ring-amber-200",
-    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    sky: "bg-sky-500/10 text-sky-300 ring-sky-400/20",
+    amber: "bg-amber-500/10 text-amber-300 ring-amber-400/20",
+    emerald: "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20",
   };
   const items = Array.isArray(children)
     ? children.filter(Boolean)
@@ -662,10 +662,10 @@ export function KanbanCol({
       ? [children]
       : [];
   return (
-    <div className="rounded-lg bg-slate-50/60 p-3.5">
+    <div className="rounded-lg bg-carbon/60 p-3.5">
       <header className="mb-3 flex items-center gap-2">
         {icon}
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-cream">
           {title}
         </h3>
         <span
@@ -676,8 +676,8 @@ export function KanbanCol({
       </header>
       <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
         {count === 0 ? (
-          <div className="rounded-md border border-dashed border-slate-200 bg-white py-6 text-center">
-            <p className="text-xs text-slate-400">Tidak ada order menunggu</p>
+          <div className="rounded-md border border-dashed border-gold/15 bg-cocoa py-6 text-center">
+            <p className="text-xs text-white/40">Tidak ada order menunggu</p>
           </div>
         ) : (
           items
@@ -697,9 +697,9 @@ export function Badge({
   children: React.ReactNode;
 }) {
   const map = {
-    rose: "bg-rose-50 text-rose-700 ring-rose-200",
-    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    slate: "bg-slate-50 text-slate-600 ring-slate-200",
+    rose: "bg-rose-500/10 text-rose-300 ring-rose-400/20",
+    emerald: "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20",
+    slate: "bg-carbon text-white/70 ring-white/10",
   };
   return (
     <span
@@ -713,19 +713,19 @@ export function Badge({
 
 export function MetricPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5">
-      <p className="text-[10px] uppercase tracking-wide text-slate-500">
+    <div className="rounded-md border border-gold/15 bg-cocoa px-2.5 py-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-white/50">
         {label}
       </p>
-      <p className="text-xs font-semibold text-slate-900">{value}</p>
+      <p className="text-xs font-semibold text-ivory">{value}</p>
     </div>
   );
 }
 
 export function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
-      <p className="text-sm text-slate-400">{text}</p>
+    <div className="rounded-lg border border-gold/15 bg-cocoa p-12 text-center">
+      <p className="text-sm text-white/40">{text}</p>
     </div>
   );
 }
@@ -738,18 +738,18 @@ export function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-8">
+    <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-8">
       <div className="flex flex-col items-center text-center">
-        <div className="mb-4 rounded-full bg-rose-100 p-3">
-          <AlertTriangle className="h-6 w-6 text-rose-600" />
+        <div className="mb-4 rounded-full bg-rose-500/10 p-3">
+          <AlertTriangle className="h-6 w-6 text-rose-300" />
         </div>
-        <h3 className="mb-1 text-base font-semibold text-rose-900">
+        <h3 className="mb-1 text-base font-semibold text-rose-200">
           Gagal memuat data
         </h3>
-        <p className="mb-5 text-sm text-rose-700">{error}</p>
+        <p className="mb-5 text-sm text-rose-200">{error}</p>
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-rose-400/20 bg-cocoa px-4 py-2 text-sm font-medium text-rose-200 shadow-sm transition hover:bg-rose-500/10"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Coba Lagi

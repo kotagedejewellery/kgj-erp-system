@@ -104,7 +104,7 @@ export async function GET(request?: NextRequest) {
     const expertUserIds = expertUserList.map((u) => u.id);
 
     // ========== 2. SCAN EVENTS HARI INI ==========
-    // Legacy orders have no scan_events; scan-based metrics are unavailable.
+    // Scan-based metrics are unavailable for legacy orders.
     const todayScans: Array<{ user_id: string; order_id: string | null }> = [];
 
     const scanStats = new Map<
@@ -182,25 +182,7 @@ export async function GET(request?: NextRequest) {
       }
     });
 
-    // ========== 5. TARGET SUSUT DARI WORK_INSTRUCTIONS ==========
-    const { data: targetRows } = await admin
-      .from("work_instructions")
-      .select("stage, parameters")
-      .in("stage", ["lebur_bahan", "pembentukan_cincin", "pemolesan"])
-      .eq("is_active", true);
-
-    const targetMap: Record<string, number> = {};
-    (targetRows || []).forEach((row) => {
-      const params = row.parameters || {};
-      const target =
-        parseFloat(params.shrinkage_buffer_percent) ||
-        parseFloat(params.max_shrinkage_percent);
-      if (!isNaN(target)) {
-        targetMap[row.stage] = target;
-      }
-    });
-
-    // ========== 6. SUSUN FINAL EXPERTS ARRAY ==========
+    // ========== 5. SUSUN FINAL EXPERTS ARRAY ==========
     const experts = expertUserList
       .map((expert) => {
         const stats = scanStats.get(expert.id) ?? {
@@ -214,9 +196,7 @@ export async function GET(request?: NextRequest) {
           active?.stage ?? ROLE_DEFAULT_STAGE[expert.roleName];
         const rataSusut =
           susut && susut.count > 0 ? susut.sum / susut.count : null;
-        const targetSusut = activeStage
-          ? (targetMap[activeStage] ?? null)
-          : null;
+        const targetSusut = null;
 
         return {
           userId: expert.id,

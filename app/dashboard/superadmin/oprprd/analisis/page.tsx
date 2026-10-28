@@ -11,8 +11,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import Loading from "@/components/ui/Loading";
 import { getClientUser, type ClientUser } from "@/lib/auth/session";
-import CycleTimeTab from "@/components/analytics/CycleTimeTab";
-import WorkerProductivityTab from "@/components/analytics/WorkerProductivityTab";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -25,8 +23,6 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-
-type TabId = "overview" | "cycle-time" | "worker-productivity";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,17 +100,17 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
   },
   jewelry_expert_pembentukan_awal: {
     label: "Bentuk",
-    color: "bg-amber-100 text-amber-700",
+    color: "bg-amber-500/10 text-amber-300",
   },
   jewelry_expert_finishing: {
     label: "Finishing",
-    color: "bg-emerald-100 text-emerald-700",
+    color: "bg-emerald-500/10 text-emerald-300",
   },
   micro_setting: {
     label: "Micro Setting",
     color: "bg-violet-100 text-violet-700",
   },
-  laser: { label: "Laser", color: "bg-sky-100 text-sky-700" },
+  laser: { label: "Laser", color: "bg-sky-500/10 text-sky-300" },
 };
 
 const QC_LABELS: Record<string, string> = {
@@ -140,7 +136,7 @@ function fmtDuration(mins: number | null): string {
 
 function getRoleConfig(name: string) {
   return (
-    ROLE_CONFIG[name] ?? { label: name, color: "bg-slate-100 text-slate-600" }
+    ROLE_CONFIG[name] ?? { label: name, color: "bg-cocoa/10 text-white/70" }
   );
 }
 
@@ -148,27 +144,18 @@ function getRoleConfig(name: string) {
 
 export default function AnalisisPage() {
   const router = useRouter();
-  const [clientUser] = useState<ClientUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getClientUser();
-  });
-  const [period, setPeriod] = useState<string>(currentPeriod());
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [clientUser, setClientUser] = useState<ClientUser | null>(null);
 
+  useEffect(() => {
+    const user = getClientUser();
+    setClientUser(user);
+    if (!user) router.push("/login");
+  }, [router]);
+  const [period, setPeriod] = useState<string>(currentPeriod());
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["analyst-oprprd", period],
     queryFn: () => fetcher<AnalystData>(`/api/analyst-oprprd?period=${period}`),
   });
-
-  const tabs: { id: TabId; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "cycle-time", label: "Cycle Time" },
-    { id: "worker-productivity", label: "Worker Productivity" },
-  ];
-
-  useEffect(() => {
-    if (!clientUser) router.push("/login");
-  }, [clientUser, router]);
 
   const handlePeriodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value; // YYYY-MM
@@ -191,16 +178,16 @@ export default function AnalisisPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Link
-                  href="/dashboard/superadmin/oprprd"
-                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  href="/dashboard/superadmin"
+                  className="inline-flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
                 >
                   <ArrowLeft className="h-3 w-3" /> OPR-PRD
                 </Link>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
+              <h2 className="text-2xl font-bold text-ivory tracking-tight leading-none">
                 Analisis Performa
               </h2>
-              <p className="text-sm text-slate-400 font-mono mt-1">
+              <p className="text-sm text-white/40 font-mono mt-1">
                 Efisiensi produksi, kualitas, dan performa tim
               </p>
             </div>
@@ -210,12 +197,12 @@ export default function AnalisisPage() {
                 type="month"
                 value={period}
                 onChange={handlePeriodChange}
-                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                className="rounded-md border border-gold/15 bg-cocoa px-3 py-1.5 text-xs font-medium text-cream shadow-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
               />
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-[#26211c] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-gold/15 bg-cocoa px-3 py-1.5 text-xs font-medium text-cream shadow-sm hover:bg-white/5 disabled:opacity-50"
               >
                 <RefreshCw
                   className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
@@ -225,31 +212,8 @@ export default function AnalisisPage() {
             </div>
           </div>
 
-          {/* ── Tab bar ── */}
-          <div className="mb-6 border-b border-slate-200">
-            <nav className="flex gap-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab.id
-                      ? "border-slate-900 text-slate-900"
-                      : "border-transparent text-slate-400 hover:text-slate-600"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
           {/* ── Content ── */}
-          {activeTab === "cycle-time" ? (
-            <CycleTimeTab />
-          ) : activeTab === "worker-productivity" ? (
-            <WorkerProductivityTab />
-          ) : isLoading ? (
+          {isLoading ? (
             <Loading variant="skeleton" text="Memuat data analisis..." />
           ) : error ? (
             <ErrorState error={error?.message ?? "Terjadi kesalahan"} onRetry={() => refetch()} />
@@ -291,15 +255,15 @@ export default function AnalisisPage() {
 
               {/* ── Order Flow bar chart ── */}
               {data.orderFlow.length > 0 && (
-                <section className="rounded-lg border border-slate-200 bg-white">
-                  <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-                    <h2 className="text-sm font-semibold text-slate-900">
+                <section className="rounded-lg border border-gold/15 bg-cocoa">
+                  <header className="flex items-center justify-between border-b border-gold/10 px-5 py-3.5">
+                    <h2 className="text-sm font-semibold text-ivory">
                       Tren Order Selesai
                     </h2>
                     {peakDay && peakDay.completed > 0 && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-white/50">
                         Puncak:{" "}
-                        <span className="font-medium text-slate-700">
+                        <span className="font-medium text-cream">
                           {new Date(peakDay.date).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",
@@ -316,15 +280,15 @@ export default function AnalisisPage() {
               )}
 
               {/* ── Expert Performance ── */}
-              <section className="rounded-lg border border-slate-200 bg-white">
-                <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+              <section className="rounded-lg border border-gold/15 bg-cocoa">
+                <header className="flex items-center justify-between border-b border-gold/10 px-5 py-3.5">
                   <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-slate-400" />
-                    <h2 className="text-sm font-semibold text-slate-900">
+                    <Users className="h-4 w-4 text-white/40" />
+                    <h2 className="text-sm font-semibold text-ivory">
                       Performa Jewelry Expert
                     </h2>
                   </div>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-white/50">
                     {data.expertPerformance.length} staff
                   </span>
                 </header>
@@ -335,23 +299,23 @@ export default function AnalisisPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-100 text-xs">
-                          <th className="px-5 py-2.5 text-left font-medium text-slate-500">
+                        <tr className="border-b border-gold/10 text-xs">
+                          <th className="px-5 py-2.5 text-left font-medium text-white/50">
                             Nama
                           </th>
-                          <th className="px-3 py-2.5 text-left font-medium text-slate-500">
+                          <th className="px-3 py-2.5 text-left font-medium text-white/50">
                             Role
                           </th>
-                          <th className="px-3 py-2.5 text-right font-medium text-slate-500">
+                          <th className="px-3 py-2.5 text-right font-medium text-white/50">
                             Scan
                           </th>
-                          <th className="px-3 py-2.5 text-right font-medium text-slate-500">
+                          <th className="px-3 py-2.5 text-right font-medium text-white/50">
                             Order
                           </th>
-                          <th className="px-3 py-2.5 text-right font-medium text-slate-500">
+                          <th className="px-3 py-2.5 text-right font-medium text-white/50">
                             Tahap Selesai
                           </th>
-                          <th className="px-5 py-2.5 text-right font-medium text-slate-500">
+                          <th className="px-5 py-2.5 text-right font-medium text-white/50">
                             Rata Susut
                           </th>
                         </tr>
@@ -364,9 +328,9 @@ export default function AnalisisPage() {
                           return (
                             <tr
                               key={expert.userId}
-                              className="border-b border-slate-50 last:border-0 hover:bg-[#26211c] transition-colors"
+                              className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"
                             >
-                              <td className="px-5 py-2.5 text-sm font-medium text-slate-900">
+                              <td className="px-5 py-2.5 text-sm font-medium text-ivory">
                                 {expert.fullName}
                               </td>
                               <td className="px-3 py-2.5">
@@ -376,13 +340,13 @@ export default function AnalisisPage() {
                                   {rc.label}
                                 </span>
                               </td>
-                              <td className="px-3 py-2.5 text-right text-xs text-slate-700">
+                              <td className="px-3 py-2.5 text-right text-xs text-cream">
                                 {expert.totalScans.toLocaleString("id-ID")}
                               </td>
-                              <td className="px-3 py-2.5 text-right text-xs font-medium text-slate-900">
+                              <td className="px-3 py-2.5 text-right text-xs font-medium text-ivory">
                                 {expert.totalOrders.toLocaleString("id-ID")}
                               </td>
-                              <td className="px-3 py-2.5 text-right text-xs text-slate-700">
+                              <td className="px-3 py-2.5 text-right text-xs text-cream">
                                 {expert.stagesCompleted.toLocaleString("id-ID")}
                               </td>
                               <td className="px-5 py-2.5 text-right">
@@ -390,8 +354,8 @@ export default function AnalisisPage() {
                                   <span
                                     className={`text-xs font-semibold ${
                                       susutOk
-                                        ? "text-emerald-600"
-                                        : "text-rose-600"
+                                        ? "text-emerald-300"
+                                        : "text-rose-300"
                                     }`}
                                   >
                                     {expert.avgSusut.toFixed(2)}%
@@ -402,7 +366,7 @@ export default function AnalisisPage() {
                                     )}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-slate-400">
+                                  <span className="text-xs text-white/40">
                                     —
                                   </span>
                                 )}
@@ -419,10 +383,10 @@ export default function AnalisisPage() {
               {/* ── Stage Efficiency + QC ── */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Stage Efficiency */}
-                <section className="rounded-lg border border-slate-200 bg-white">
-                  <header className="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
-                    <Clock className="h-4 w-4 text-slate-400" />
-                    <h2 className="text-sm font-semibold text-slate-900">
+                <section className="rounded-lg border border-gold/15 bg-cocoa">
+                  <header className="flex items-center gap-2 border-b border-gold/10 px-5 py-3.5">
+                    <Clock className="h-4 w-4 text-white/40" />
+                    <h2 className="text-sm font-semibold text-ivory">
                       Efisiensi Tahap Produksi
                     </h2>
                   </header>
@@ -433,17 +397,17 @@ export default function AnalisisPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-slate-100 text-xs">
-                            <th className="px-5 py-2.5 text-left font-medium text-slate-500">
+                          <tr className="border-b border-gold/10 text-xs">
+                            <th className="px-5 py-2.5 text-left font-medium text-white/50">
                               Tahap
                             </th>
-                            <th className="px-3 py-2.5 text-right font-medium text-slate-500">
+                            <th className="px-3 py-2.5 text-right font-medium text-white/50">
                               Selesai
                             </th>
-                            <th className="px-3 py-2.5 text-right font-medium text-slate-500">
+                            <th className="px-3 py-2.5 text-right font-medium text-white/50">
                               Rata-rata
                             </th>
-                            <th className="px-5 py-2.5 text-right font-medium text-slate-500">
+                            <th className="px-5 py-2.5 text-right font-medium text-white/50">
                               Min / Maks
                             </th>
                           </tr>
@@ -452,20 +416,20 @@ export default function AnalisisPage() {
                           {data.stageEfficiency.slice(0, 12).map((s) => (
                             <tr
                               key={s.stage}
-                              className="border-b border-slate-50 last:border-0 hover:bg-[#26211c] transition-colors"
+                              className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"
                             >
-                              <td className="px-5 py-2.5 text-xs font-medium text-slate-800">
+                              <td className="px-5 py-2.5 text-xs font-medium text-cream">
                                 {STAGE_LABELS[s.stage] ?? s.stage}
                               </td>
-                              <td className="px-3 py-2.5 text-right text-xs text-slate-600">
+                              <td className="px-3 py-2.5 text-right text-xs text-white/70">
                                 {s.totalCompleted.toLocaleString("id-ID")}
                               </td>
                               <td className="px-3 py-2.5 text-right">
-                                <span className="text-xs font-semibold text-slate-900">
+                                <span className="text-xs font-semibold text-ivory">
                                   {fmtDuration(s.avgDurationMinutes)}
                                 </span>
                               </td>
-                              <td className="px-5 py-2.5 text-right text-[11px] text-slate-400">
+                              <td className="px-5 py-2.5 text-right text-[11px] text-white/40">
                                 {fmtDuration(s.minDurationMinutes)} /{" "}
                                 {fmtDuration(s.maxDurationMinutes)}
                               </td>
@@ -478,10 +442,10 @@ export default function AnalisisPage() {
                 </section>
 
                 {/* QC Metrics */}
-                <section className="rounded-lg border border-slate-200 bg-white">
-                  <header className="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
-                    <Target className="h-4 w-4 text-slate-400" />
-                    <h2 className="text-sm font-semibold text-slate-900">
+                <section className="rounded-lg border border-gold/15 bg-cocoa">
+                  <header className="flex items-center gap-2 border-b border-gold/10 px-5 py-3.5">
+                    <Target className="h-4 w-4 text-white/40" />
+                    <h2 className="text-sm font-semibold text-ivory">
                       Quality Control
                     </h2>
                   </header>
@@ -501,35 +465,35 @@ export default function AnalisisPage() {
 
                       const toneMap = {
                         slate: {
-                          bar: "bg-slate-200",
-                          text: "text-slate-400",
-                          bg: "bg-[#26211c]",
+                          bar: "bg-white/10",
+                          text: "text-white/40",
+                          bg: "bg-carbon",
                         },
                         emerald: {
                           bar: "bg-emerald-500",
-                          text: "text-emerald-700",
-                          bg: "bg-emerald-50",
+                          text: "text-emerald-300",
+                          bg: "bg-emerald-500/10",
                         },
                         amber: {
                           bar: "bg-amber-500",
-                          text: "text-amber-700",
-                          bg: "bg-amber-50",
+                          text: "text-amber-300",
+                          bg: "bg-amber-500/10",
                         },
                         rose: {
                           bar: "bg-rose-500",
-                          text: "text-rose-700",
-                          bg: "bg-rose-50",
+                          text: "text-rose-300",
+                          bg: "bg-rose-500/10",
                         },
                       };
 
                       return (
                         <div key={qc.stage}>
                           <div className="mb-1.5 flex items-center justify-between">
-                            <span className="text-xs font-medium text-slate-700">
+                            <span className="text-xs font-medium text-cream">
                               {QC_LABELS[qc.stage] ?? qc.stage}
                             </span>
                             <div className="flex items-center gap-3 text-xs">
-                              <span className="text-slate-400">
+                              <span className="text-white/40">
                                 {qc.passed}/{qc.totalChecks} lulus
                               </span>
                               <span
@@ -539,7 +503,7 @@ export default function AnalisisPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-cocoa/10">
                             <div
                               className={`h-full rounded-full transition-all ${toneMap[tone].bar}`}
                               style={{
@@ -548,7 +512,7 @@ export default function AnalisisPage() {
                             />
                           </div>
                           {qc.failed > 0 && (
-                            <p className="mt-1 text-[11px] text-rose-600">
+                            <p className="mt-1 text-[11px] text-rose-300">
                               {qc.failed} gagal QC
                             </p>
                           )}
@@ -580,23 +544,23 @@ function KPICard({
   tone: "emerald" | "sky" | "amber" | "rose" | "slate";
 }) {
   const toneMap = {
-    emerald: "text-emerald-600 bg-emerald-50",
-    sky: "text-sky-600 bg-sky-50",
-    amber: "text-amber-600 bg-amber-50",
-    rose: "text-rose-600 bg-rose-50",
-    slate: "text-slate-600 bg-slate-100",
+    emerald: "text-emerald-300 bg-emerald-500/10",
+    sky: "text-sky-300 bg-sky-500/10",
+    amber: "text-amber-300 bg-amber-500/10",
+    rose: "text-rose-300 bg-rose-500/10",
+    slate: "text-white/50 bg-white/5",
   };
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-gold/15 bg-cocoa p-4">
       <div
         className={`mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg ${toneMap[tone]}`}
       >
         {icon}
       </div>
-      <p className="text-[10px] uppercase tracking-wide text-slate-500">
+      <p className="text-[10px] uppercase tracking-wide text-white/50">
         {label}
       </p>
-      <p className="mt-0.5 text-xl font-bold text-slate-900">{value}</p>
+      <p className="mt-0.5 text-xl font-bold text-ivory">{value}</p>
     </div>
   );
 }
@@ -622,10 +586,10 @@ function OrderFlowChart({ data }: { data: OrderFlowPoint[] }) {
             <div
               className={`rounded-sm transition-all ${
                 d.completed === max && max > 0
-                  ? "bg-emerald-500"
-                  : d.completed > 0
-                    ? "bg-slate-300 group-hover:bg-slate-400"
-                    : "bg-slate-100"
+                    ? "bg-gold"
+                    : d.completed > 0
+                      ? "bg-white/20 group-hover:bg-white/30"
+                    : "bg-cocoa/10"
               }`}
               style={{ height: `${Math.max(pct, d.completed > 0 ? 4 : 2)}%` }}
             />
@@ -639,7 +603,7 @@ function OrderFlowChart({ data }: { data: OrderFlowPoint[] }) {
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="py-10 text-center">
-      <p className="text-sm text-slate-400">{label}</p>
+      <p className="text-sm text-white/40">{label}</p>
     </div>
   );
 }
@@ -652,18 +616,18 @@ function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-8">
+    <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-8">
       <div className="flex flex-col items-center text-center">
-        <div className="mb-4 rounded-full bg-rose-100 p-3">
-          <AlertTriangle className="h-6 w-6 text-rose-600" />
+        <div className="mb-4 rounded-full bg-rose-500/10 p-3">
+          <AlertTriangle className="h-6 w-6 text-rose-300" />
         </div>
-        <h3 className="mb-1 text-base font-semibold text-rose-900">
+        <h3 className="mb-1 text-base font-semibold text-ivory">
           Gagal memuat analisis
         </h3>
-        <p className="mb-5 text-sm text-rose-700">{error}</p>
+        <p className="mb-5 text-sm text-rose-200">{error}</p>
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-700 shadow-sm hover:bg-rose-50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-rose-400/20 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-200 shadow-sm hover:bg-rose-500/20"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Coba Lagi

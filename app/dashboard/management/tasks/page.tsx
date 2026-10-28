@@ -152,8 +152,8 @@ export default function ManagementTasksPage() {
 
   const animOverdue = useAnimatedValue(taskStats.overdue, 600);
 
-  const P = { purple: "#7c3aed", purpleLight: "#f5f3ff", purpleMuted: "#c4b5fd", green: "#059669", greenLight: "#ecfdf5", gray: "#6b7280", grayLight: "#f9fafb", grayBorder: "#e5e7eb", orange: "#ea580c", orangeLight: "#fff7ed", red: "#dc2626", redLight: "#fef2f2", ink: "#111827" };
-  const bgStyle = { background: "#f8f9fb url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(139,92,246,0.06)'/%3E%3C/svg%3E\") repeat" };
+  const P = { purple: "#7c3aed", purpleLight: "#7c3aed22", purpleMuted: "#a78bfa", green: "#34d399", greenLight: "#05966922", greenMuted: "#6ee7b7", gray: "#a8a29e", grayLight: "#1C1917", grayBorder: "#c9a22733", orange: "#f97316", orangeLight: "#f9731622", blue: "#60a5fa", blueLight: "#60a5fa22", red: "#f87171", redLight: "#f8717122", ink: "#F5EFE3", card: "#2A2522" };
+  const bgStyle = { background: "#26211C url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(201,162,39,0.06)'/%3E%3C/svg%3E\") repeat" };
   const animDueToday = useAnimatedValue(taskStats.dueToday, 600);
   const animTotal = useAnimatedValue(taskStats.total, 600);
 
@@ -307,7 +307,7 @@ export default function ManagementTasksPage() {
     const progressBg = allDone ? P.green : someProgress ? P.purple : P.grayBorder;
     const staggerDelay = index !== undefined ? `${index * 50}ms` : "0ms";
     return (
-      <div key={task.id} className={`group rounded-xl overflow-hidden cursor-pointer transition-shadow animate-card-enter ${isDragging ? "shadow-lg scale-[1.02]" : "hover:shadow-sm"} ${isSelected ? "ring-2" : ""}`} style={{ background: "#fff", borderTop: `1px solid ${P.grayBorder}`, borderRight: `1px solid ${P.grayBorder}`, borderBottom: `1px solid ${P.grayBorder}`, borderLeft: leftBorder, opacity: untouched ? 0.75 : 1, animationDelay: staggerDelay, boxShadow: isDragging ? "0 8px 24px rgba(124,58,237,0.1)" : isSelected ? "0 0 0 2px rgba(124,58,237,0.2)" : undefined }}
+      <div key={task.id} className={`group rounded-xl overflow-hidden cursor-pointer transition-shadow animate-card-enter ${isDragging ? "shadow-lg scale-[1.02]" : "hover:shadow-sm"} ${isSelected ? "ring-2" : ""}`} style={{ background: P.card, borderTop: `1px solid ${P.grayBorder}`, borderRight: `1px solid ${P.grayBorder}`, borderBottom: `1px solid ${P.grayBorder}`, borderLeft: leftBorder, opacity: untouched ? 0.75 : 1, animationDelay: staggerDelay, boxShadow: isDragging ? "0 8px 24px rgba(124,58,237,0.1)" : isSelected ? "0 0 0 2px rgba(124,58,237,0.2)" : undefined }}
         tabIndex={0} role="button" onClick={() => openPanel(task.id)} title="Open details — edit status, notes, kendala"
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openPanel(task.id); } }}>
         <div className="flex items-center gap-3 px-5 py-4">
@@ -369,7 +369,7 @@ export default function ManagementTasksPage() {
       <Sidebar role="management" />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header userEmail={clientUser?.email ?? ""} role="management" />
-        <div className="flex items-center gap-4 px-6 py-2" style={{ background: "#fff", borderBottom: `1px solid ${P.grayBorder}` }}>
+        <div className="flex items-center gap-4 px-6 py-2" style={{ background: P.card, borderBottom: `1px solid ${P.grayBorder}` }}>
           {[{ icon: <AlertTriangle className="h-3.5 w-3.5" style={{ color: P.red }} />, label: "Overdue", value: animOverdue, color: P.red },
             { icon: <CalendarClock className="h-3.5 w-3.5" style={{ color: P.orange }} />, label: "Hari Ini", value: animDueToday, color: P.orange },
             { icon: <ClipboardList className="h-3.5 w-3.5" style={{ color: P.gray }} />, label: "Total", value: animTotal, color: P.ink }]
@@ -417,7 +417,7 @@ export default function ManagementTasksPage() {
               </div>
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-xl p-5 overflow-hidden" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+                  <div key={i} className="rounded-xl p-5 overflow-hidden" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
                     <div className="h-5 w-48 rounded mb-3 skeleton-shimmer" />
                     <div className="h-3 w-32 rounded skeleton-shimmer" />
                   </div>
@@ -425,18 +425,18 @@ export default function ManagementTasksPage() {
               </div>
             </>
           ) : isError ? (
-            <div className="flex flex-col items-center justify-center py-20 rounded-lg" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+            <div className="flex flex-col items-center justify-center py-20 rounded-lg" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
               <AlertTriangle className="w-12 h-12 mb-3" style={{ color: P.red }} />
               <p className="text-sm font-medium mb-1" style={{ color: P.red }}>Gagal memuat data</p>
               <p className="text-xs mb-4" style={{ color: P.gray }}>{queryError instanceof Error ? queryError.message : "Koneksi gagal. Periksa jaringan Anda."}</p>
-              <button onClick={() => refetch()} className="rounded-lg border px-4 py-2 text-sm font-medium transition" style={{ background: "#fff", borderColor: P.purple, color: P.purple }}>Coba Lagi</button>
+              <button onClick={() => refetch()} className="rounded-lg border px-4 py-2 text-sm font-medium transition" style={{ background: P.card, borderColor: P.purple, color: P.purple }}>Coba Lagi</button>
             </div>
           ) : (<>
           {alert && <div className="mb-4"><Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} /></div>}
 
           <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
             <div><h1 className="text-2xl leading-tight font-semibold" style={{ color: P.ink }}>Tugas</h1><p className="text-sm" style={{ color: P.gray }}>Kelola checklist tugas harian Anda</p></div>
-            {doneCount > 0 && <button onClick={() => setShowClearDone(true)} className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition" style={{ background: "#fff", borderColor: P.grayBorder, color: P.gray }}><Trash2 className="h-3.5 w-3.5" />Hapus {doneCount} Selesai</button>}
+            {doneCount > 0 && <button onClick={() => setShowClearDone(true)} className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition" style={{ background: P.card, borderColor: P.grayBorder, color: P.gray }}><Trash2 className="h-3.5 w-3.5" />Hapus {doneCount} Selesai</button>}
           </div>
 
           <div className="mb-6 flex gap-2 items-end flex-wrap">
@@ -448,7 +448,7 @@ export default function ManagementTasksPage() {
           {tasks.length > 0 && (
             <div className="flex gap-1 mb-4">
               {(["all", "pending", "done"] as const).map((key) => (
-                <button key={key} onClick={() => setFilter(key)} className="rounded-full px-3.5 py-1.5 text-xs font-medium transition-all" style={{ background: filter === key ? P.purple : "#fff", color: filter === key ? "#fff" : P.gray, border: filter === key ? "1px solid transparent" : `1px solid ${P.grayBorder}`, boxShadow: filter === key ? "0 0 10px rgba(124,58,237,0.35)" : "none" }}>
+                <button key={key} onClick={() => setFilter(key)} className="rounded-full px-3.5 py-1.5 text-xs font-medium transition-all" style={{ background: filter === key ? P.purple : "transparent", color: filter === key ? "#fff" : P.gray, border: filter === key ? "1px solid transparent" : `1px solid ${P.grayBorder}`, boxShadow: filter === key ? "0 0 10px rgba(124,58,237,0.35)" : "none" }}>
                   {key === "all" ? "Semua" : key === "pending" ? "Belum" : "Selesai"}
                 </button>
               ))}
@@ -456,7 +456,7 @@ export default function ManagementTasksPage() {
           )}
 
           {selectedTaskIds.size > 0 && (
-            <div className="mb-4 flex items-center gap-3 p-3 rounded-xl flex-wrap" style={{ background: "#fff", border: `1px solid ${P.purple}`, boxShadow: "0 2px 8px rgba(124,58,237,0.15)" }}>
+            <div className="mb-4 flex items-center gap-3 p-3 rounded-xl flex-wrap" style={{ background: P.card, border: `1px solid ${P.purple}`, boxShadow: "0 2px 8px rgba(124,58,237,0.15)" }}>
               <span className="text-sm font-medium" style={{ color: P.ink }}>{selectedTaskIds.size} dipilih</span>
               <div className="flex-1" />
               <button onClick={() => setBulkSubmitReviewConfirm(true)} disabled={bulkActionLoading || submittableCount === 0} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition disabled:opacity-50" style={{ background: P.purple, color: "#fff" }}><CheckCircle2 className="w-3.5 h-3.5" />Submit Review{submittableCount > 0 ? ` (${submittableCount})` : ""}</button>
@@ -466,7 +466,7 @@ export default function ManagementTasksPage() {
           )}
 
           {filteredTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 rounded-lg" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}><ClipboardList className="w-12 h-12 mb-3" style={{ color: P.gray }} /><p className="text-sm font-medium" style={{ color: P.gray }}>{tasks.length === 0 ? "Belum ada task" : filter === "done" ? "Belum ada task selesai" : "Semua task selesai"}</p></div>
+            <div className="flex flex-col items-center justify-center py-20 rounded-lg" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}><ClipboardList className="w-12 h-12 mb-3" style={{ color: P.gray }} /><p className="text-sm font-medium" style={{ color: P.gray }}>{tasks.length === 0 ? "Belum ada task" : filter === "done" ? "Belum ada task selesai" : "Semua task selesai"}</p></div>
           ) : statusGroups ? (
             <DragDropContext onDragEnd={handleDragEnd}>
               <div className="space-y-3">
@@ -479,11 +479,11 @@ export default function ManagementTasksPage() {
                     const isDropDisabled = key === "proses";
                     return (
                       <div key={key} className={idx > 0 ? "mt-6" : ""}>
-                        <button onClick={() => toggleGroup(key)} className="flex items-center gap-2 mb-2 pl-1 cursor-pointer group/gh text-gray-500">
+                        <button onClick={() => toggleGroup(key)} className="flex items-center gap-2 mb-2 pl-1 cursor-pointer group/gh text-white/50">
                           {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                           {icon}
                           <span className="text-[9px] uppercase tracking-[0.22em]">{label}</span>
-                          <span className="text-[10px] text-gray-400">{groupTasks.length}</span>
+                          <span className="text-[10px] text-white/40">{groupTasks.length}</span>
                         </button>
                         {!isCollapsed && (
                           <Droppable droppableId={key} isDropDisabled={isDropDisabled}>
@@ -537,7 +537,7 @@ export default function ManagementTasksPage() {
       {panelTask && (
         <>
           <div className="fixed inset-0 z-40 backdrop-blur-sm" style={{ background: "rgba(44,24,16,0.3)" }} onClick={closePanel} />
-          <div className="fixed right-0 top-0 bottom-0 z-50 w-full md:w-[420px] flex flex-col shadow-2xl animate-slide-in" style={{ background: "#fff", borderLeft: `1px solid ${P.grayBorder}` }}>
+          <div className="fixed right-0 top-0 bottom-0 z-50 w-full md:w-[420px] flex flex-col shadow-2xl animate-slide-in" style={{ background: P.card, borderLeft: `1px solid ${P.grayBorder}` }}>
             <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } } .animate-slide-in { animation: slideIn 200ms ease-out; }`}</style>
             <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ background: P.purpleLight, borderBottom: `0.5px solid ${P.grayBorder}`, borderTop: `2px solid ${P.purple}` }}>
               <div className="min-w-0">

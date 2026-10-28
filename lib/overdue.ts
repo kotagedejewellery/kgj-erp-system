@@ -25,10 +25,10 @@ export interface OverdueSeverity {
 
 export function getOverdueSeverity(daysOverdue: number): OverdueSeverity | null {
   if (daysOverdue <= 0) return null;
-  if (daysOverdue === 1) return { level: "today", label: "Hari ini", bg: "#fff7ed", color: "#ea580c", sort: 1 };
-  if (daysOverdue <= 3) return { level: "overdue-mild", label: `${daysOverdue} hari terlambat`, bg: "#fef2f2", color: "#dc2626", sort: 0 };
-  if (daysOverdue <= 7) return { level: "overdue-severe", label: `${daysOverdue} hari terlambat`, bg: "#fef2f2", color: "#b91c1c", sort: -1 };
-  return { level: "overdue-critical", label: `${daysOverdue} hari terlambat`, bg: "#7f1d1d", color: "#fff", sort: -2 };
+  if (daysOverdue === 1) return { level: "today", label: "Hari ini", bg: "#f9731622", color: "#f97316", sort: 1 };
+  if (daysOverdue <= 3) return { level: "overdue-mild", label: `${daysOverdue} hari terlambat`, bg: "#f8717122", color: "#f87171", sort: 0 };
+  if (daysOverdue <= 7) return { level: "overdue-severe", label: `${daysOverdue} hari terlambat`, bg: "#f8717122", color: "#ef4444", sort: -1 };
+  return { level: "overdue-critical", label: `${daysOverdue} hari terlambat`, bg: "#7f1d1d", color: "#fca5a5", sort: -2 };
 }
 
 export function getReviewWaitingDays(completedAt: string | null): number {

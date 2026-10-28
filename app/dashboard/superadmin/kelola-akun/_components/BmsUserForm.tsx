@@ -3,15 +3,14 @@
 import { ArrowLeft } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { type AlertState, type Branch } from "./shared";
+import { type AlertState } from "./shared";
 
 interface BmsFormState {
   username: string;
   full_name: string;
   email: string;
   password: string;
-  role: "superadmin" | "customer_service" | "marketing";
-  branch_id: string;
+  role: "superadmin" | "after_sales";
 }
 
 interface BmsUserFormProps {
@@ -19,7 +18,6 @@ interface BmsUserFormProps {
   isSaving: boolean;
   form: BmsFormState;
   setForm: (f: BmsFormState) => void;
-  activeBranches: Branch[];
   onSave: () => void;
   onClose: () => void;
   onBack: () => void;
@@ -31,7 +29,6 @@ export function BmsUserForm({
   isSaving,
   form,
   setForm,
-  activeBranches,
   onSave,
   onClose,
   onBack,
@@ -41,7 +38,7 @@ export function BmsUserForm({
       {!isEditMode && (
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 mb-2"
+          className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-bright mb-2"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Ganti tipe akun
@@ -82,48 +79,19 @@ export function BmsUserForm({
         disabled={isSaving}
       />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-cream mb-1">
           Role
         </label>
         <select
           value={form.role}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              role: e.target.value as BmsFormState["role"],
-              branch_id: "",
-            })
-          }
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+          onChange={(e) => setForm({ ...form, role: e.target.value as BmsFormState["role"] })}
+          className="w-full px-3 py-2 border border-gold/25 rounded-lg focus:ring-2 focus:ring-gold/30 bg-carbon text-cream"
           disabled={isSaving}
         >
           <option value="superadmin">Super Admin</option>
-          <option value="customer_service">Customer Service</option>
-          <option value="marketing">Marketing</option>
+          <option value="after_sales">After Sales</option>
         </select>
       </div>
-      {form.role === "customer_service" && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Cabang
-          </label>
-          <select
-            value={form.branch_id}
-            onChange={(e) =>
-              setForm({ ...form, branch_id: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-            disabled={isSaving}
-          >
-            <option value="">Pilih Cabang</option>
-            {activeBranches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} ({b.code})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
       <div className="flex justify-end gap-3 mt-6">
         <Button variant="secondary" onClick={onClose} disabled={isSaving}>
           Batal

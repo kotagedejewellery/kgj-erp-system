@@ -31,7 +31,6 @@ export async function sendNotification({
     console.error("[sendNotification] insert error:", error);
   }
 }
-
 const APPROVAL_SUPERVISOR: Record<string, "operational_supervisor" | "production_supervisor"> = {
   approval_penerimaan_order: "operational_supervisor",
   approval_racik_bahan: "operational_supervisor",
@@ -80,21 +79,4 @@ export async function notifySupervisors(
       sendNotification({ userId, title, message, type, link }),
     ),
   );
-}
-
-export async function notifyCsForOrder(orderId: string) {
-  const admin = createAdminClient();
-  const { data: order } = await admin
-    .from("cs_orders")
-    .select("created_by, order_number")
-    .eq("id", orderId)
-    .single();
-  if (!order) return;
-  await sendNotification({
-    userId: order.created_by,
-    title: "Order Selesai",
-    message: `Order ${order.order_number} telah selesai dan diterima pelanggan.`,
-    type: "success",
-    link: `/dashboard/cs/input-order`,
-  });
 }

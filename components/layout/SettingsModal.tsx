@@ -70,10 +70,10 @@ export default function SettingsModal({ profile, onClose, onSaved }: SettingsMod
     }
   };
 
-  const P = { purple: "#7c3aed", green: "#059669", gray: "#6b7280", grayBorder: "#e5e7eb", ink: "#111827", red: "#dc2626" };
+  const P = { purple: "#a78bfa", green: "#34d399", gray: "#a8a29e", grayBorder: "#c9a22733", ink: "#F5EFE3", red: "#f87171" };
 
-  const inputClass = "w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors";
-  const inputStyle = { borderColor: P.grayBorder, color: P.ink, background: "#fff" };
+  const inputClass = "w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors scheme-dark appearance-none";
+  const inputStyle = { borderColor: P.grayBorder, color: P.ink, background: "#2A2522" };
 
   return (
     <div
@@ -81,8 +81,8 @@ export default function SettingsModal({ profile, onClose, onSaved }: SettingsMod
       style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget && !isSaving) onClose(); }}
     >
-      <div className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ background: "#f5f3ff", borderBottom: `1px solid ${P.grayBorder}` }}>
+      <div className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ background: "#2A2522", border: `1px solid ${P.grayBorder}` }}>
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ background: "#7c3aed22", borderBottom: `1px solid ${P.grayBorder}` }}>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: P.purple }}>Pengaturan Profil</p>
             <p className="text-lg font-bold" style={{ color: P.ink }}>Edit Data</p>
@@ -94,7 +94,7 @@ export default function SettingsModal({ profile, onClose, onSaved }: SettingsMod
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {error && (
-            <div className="rounded-lg px-3 py-2 text-xs font-medium flex items-center gap-2" style={{ background: "#fef2f2", color: P.red }}>
+            <div className="rounded-lg px-3 py-2 text-xs font-medium flex items-center gap-2" style={{ background: "#f8717122", color: P.red }}>
               {error}
             </div>
           )}
@@ -136,8 +136,8 @@ export default function SettingsModal({ profile, onClose, onSaved }: SettingsMod
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-3 shrink-0" style={{ borderTop: `1px solid ${P.grayBorder}`, background: "#f9fafb" }}>
-          <button onClick={onClose} disabled={isSaving} className="rounded-xl px-4 py-2 text-xs font-medium transition-all active:scale-[0.96]" style={{ border: `1px solid ${P.grayBorder}`, color: "#374151", background: "#fff" }}>
+        <div className="flex items-center justify-end gap-2 px-6 py-3 shrink-0" style={{ borderTop: `1px solid ${P.grayBorder}`, background: "#1C1917" }}>
+          <button onClick={onClose} disabled={isSaving} className="rounded-xl px-4 py-2 text-xs font-medium transition-all active:scale-[0.96]" style={{ border: `1px solid ${P.grayBorder}`, color: "#E8E2D4", background: "#2A2522" }}>
             Batal
           </button>
           <button onClick={handleSave} disabled={isSaving} className="rounded-xl px-4 py-2 text-xs font-semibold text-white transition-all active:scale-[0.96] disabled:opacity-50" style={{ background: P.purple }}>

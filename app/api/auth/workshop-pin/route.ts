@@ -4,32 +4,41 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
 
+const MAX_ATTEMPTS = 3;
+const LOCK_MINUTES = 15;
+
 export async function POST(request: Request) {
   try {
     const { action, currentPin, newPin } = await request.json();
 
-    if (!action || !newPin) {
-      return NextResponse.json(
-        { error: "Action dan PIN baru wajib diisi" },
-        { status: 400 },
-      );
+    if (action === "verify") {
+      if (!currentPin || typeof currentPin !== "string" || currentPin.length !== 6 || !/^\d{6}$/.test(currentPin)) {
+        return NextResponse.json(
+          { error: "PIN harus berupa 6 digit angka" },
+          { status: 400 },
+        );
+      }
+    } else {
+      if (!action || !newPin) {
+        return NextResponse.json(
+          { error: "Action dan PIN baru wajib diisi" },
+          { status: 400 },
+        );
+      }
+      if (action !== "set" && action !== "change") {
+        return NextResponse.json(
+          { error: "Action harus 'set', 'change', atau 'verify'" },
+          { status: 400 },
+        );
+      }
+      if (typeof newPin !== "string" || newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
+        return NextResponse.json(
+          { error: "PIN harus berupa 6 digit angka" },
+          { status: 400 },
+        );
+      }
     }
 
-    if (action !== "set" && action !== "change") {
-      return NextResponse.json(
-        { error: "Action harus 'set' atau 'change'" },
-        { status: 400 },
-      );
-    }
-
-    if (typeof newPin !== "string" || newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
-      return NextResponse.json(
-        { error: "PIN harus berupa 6 digit angka" },
-        { status: 400 },
-      );
-    }
-
-    // Get current user from Supabase session
     const supabase = await createClient();
     const {
       data: { user: authUser },
@@ -45,10 +54,9 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    // Fetch user data with role info
     const { data: userData, error: userError } = await admin
       .from("users")
-      .select("id, full_name, pin_hash, status, role:roles!users_role_id_fkey(id, name, role_group)")
+      .select("id, full_name, pin_hash, pin_attempts, pin_locked_until, status, role:roles!users_role_id_fkey(id, name, role_group)")
       .eq("id", authUser.id)
       .is("deleted_at", null)
       .single();
@@ -69,12 +77,65 @@ export async function POST(request: Request) {
 
     const roleGroup = getRoleProps(userData).role_group;
 
-    // Only allow workshop roles (production, operational)
     if (roleGroup !== "production" && roleGroup !== "operational") {
       return NextResponse.json(
         { error: "Fitur ini hanya untuk pekerja workshop" },
         { status: 403 },
       );
+    }
+
+    const lockUntil = userData.pin_locked_until ? new Date(userData.pin_locked_until) : null;
+    if (lockUntil && lockUntil > new Date()) {
+      const remaining = Math.ceil((lockUntil.getTime() - Date.now()) / 60000);
+      return NextResponse.json(
+        { error: `Terlalu banyak percobaan. Coba lagi dalam ${remaining} menit.` },
+        { status: 429 },
+      );
+    }
+
+    if (action === "verify") {
+      if (!userData.pin_hash) {
+        return NextResponse.json(
+          { error: "PIN belum diatur." },
+          { status: 400 },
+        );
+      }
+
+      const pinValid = await bcrypt.compare(currentPin!, userData.pin_hash);
+
+      if (!pinValid) {
+        const newAttempts = (userData.pin_attempts ?? 0) + 1;
+        const locked = newAttempts >= MAX_ATTEMPTS
+          ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
+          : null;
+
+        await admin
+          .from("users")
+          .update({
+            pin_attempts: newAttempts,
+            pin_locked_until: locked,
+          })
+          .eq("id", userData.id);
+
+        const remaining = MAX_ATTEMPTS - newAttempts;
+        if (remaining > 0) {
+          return NextResponse.json(
+            { error: `PIN salah. ${remaining} percobaan tersisa.` },
+            { status: 401 },
+          );
+        }
+        return NextResponse.json(
+          { error: `Terlalu banyak percobaan. Akun terkunci ${LOCK_MINUTES} menit.` },
+          { status: 429 },
+        );
+      }
+
+      await admin
+        .from("users")
+        .update({ pin_attempts: 0, pin_locked_until: null })
+        .eq("id", userData.id);
+
+      return NextResponse.json({ success: true, message: "PIN valid" });
     }
 
     if (action === "set") {
@@ -120,9 +181,29 @@ export async function POST(request: Request) {
 
       const pinValid = await bcrypt.compare(currentPin, userData.pin_hash);
       if (!pinValid) {
+        const newAttempts = (userData.pin_attempts ?? 0) + 1;
+        const locked = newAttempts >= MAX_ATTEMPTS
+          ? new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString()
+          : null;
+
+        await admin
+          .from("users")
+          .update({
+            pin_attempts: newAttempts,
+            pin_locked_until: locked,
+          })
+          .eq("id", userData.id);
+
+        const remaining = MAX_ATTEMPTS - newAttempts;
+        if (remaining > 0) {
+          return NextResponse.json(
+            { error: `PIN saat ini salah. ${remaining} percobaan tersisa.` },
+            { status: 401 },
+          );
+        }
         return NextResponse.json(
-          { error: "PIN saat ini salah" },
-          { status: 401 },
+          { error: `Terlalu banyak percobaan. Akun terkunci ${LOCK_MINUTES} menit.` },
+          { status: 429 },
         );
       }
 

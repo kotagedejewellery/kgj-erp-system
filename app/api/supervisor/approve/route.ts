@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
 import { sendNotification } from "@/lib/notifications";
-import { STAGE_SEQUENCE } from "@/lib/stages";
+import { STAGE_SEQUENCE, effectiveNext } from "@/lib/stages";
+import { pushStageToYii2 } from "@/lib/legacy/push-status";
 
 const PRODUCTION_TO_APPROVAL_STAGE: Record<string, string> = {};
 const APPROVAL_STAGES: string[] = [];
@@ -52,6 +53,13 @@ export async function POST(request: Request) {
     const roleGroup: string = getRoleProps(profile).role_group;
     const allowedStages: string[] = getRoleProps(profile).allowed_stages;
 
+    if (roleName === "customer_service_supervisor") {
+      return NextResponse.json(
+        { error: "SPV CS hanya dapat memvalidasi intake order" },
+        { status: 403 },
+      );
+    }
+
     const isSupervisor =
       roleName === "superadmin" ||
       roleGroup === "management" ||
@@ -73,11 +81,11 @@ export async function POST(request: Request) {
         { status: 400 },
       );
 
-    if (action !== "approve" && action !== "reject")
-      return NextResponse.json(
-        { error: "action harus 'approve' atau 'reject'" },
-        { status: 400 },
-      );
+  if (action !== "approve" && action !== "reject" && action !== "cancel")
+    return NextResponse.json(
+      { error: "action harus 'approve', 'reject', atau 'cancel'" },
+      { status: 400 },
+    );
 
     if (!stage.startsWith("approval_"))
       return NextResponse.json(
@@ -136,18 +144,39 @@ export async function POST(request: Request) {
         ([, approvalStage]) => approvalStage === stage,
       )?.[0] ?? stage.replace("approval_", ""));
 
+    const { data: legacyRow } = await admin
+      .from("legacy_orders")
+      .select("legacy_id")
+      .eq("id", order_id)
+      .maybeSingle();
+    const legacyId = (legacyRow as { legacy_id?: number } | null)?.legacy_id ?? null;
+
     const now = new Date().toISOString();
       const supervisorName: string = (profile as { full_name?: string })?.full_name ?? "Supervisor";
 
     let nextStage: string | null = null;
     if (action === "approve") {
-      const idx = STAGE_SEQUENCE.indexOf(stage);
-      nextStage = idx >= 0 && idx < STAGE_SEQUENCE.length - 1 ? STAGE_SEQUENCE[idx + 1] : null;
+      nextStage = effectiveNext(stage);
     }
 
-    // ── 1. Update tracking pointer + log the decision in stage_history ──────────
-    // (legacy has no `approvals` table — decision captured here + activity_logs)
-    if (action === "approve") {
+    // ── 1. Update tracking pointer + log the decision ────────────────────────
+    if (action === "cancel") {
+      await admin
+        .from("tracking_stages")
+        .update({ current_stage: "selesai", stage_status: "cancelled", updated_at: now, updated_by: authUser.id })
+        .eq("order_id", order_id);
+
+      await admin.from("stage_history").insert({
+        order_id,
+        stage: "selesai",
+        status: "cancelled",
+        note: `Dibatalkan oleh ${supervisorName}${remarks ? ` — ${remarks}` : ""}`,
+        changed_by: authUser.id,
+        created_at: now,
+      });
+
+      await pushStageToYii2(order_id, legacyId, "dibatalkan");
+    } else if (action === "approve") {
       await admin
         .from("tracking_stages")
         .update(
@@ -165,6 +194,9 @@ export async function POST(request: Request) {
         changed_by: authUser.id,
         created_at: now,
       });
+
+      // Sinkronkan stage terkini ke Yii2.
+      await pushStageToYii2(order_id, legacyId, nextStage ?? "selesai");
     } else {
       await admin
         .from("tracking_stages")
@@ -189,6 +221,9 @@ export async function POST(request: Request) {
         logged_by: authUser.id,
         logged_at: now,
       });
+
+      // Order kembali ke stage produksi — sinkronkan ke Yii2.
+      await pushStageToYii2(order_id, legacyId, productionStage);
     }
 
     // ── 2. Notify worker ────────────────────────────────────────────────────────
@@ -239,6 +274,7 @@ export async function POST(request: Request) {
             ...((sr as { data?: Record<string, unknown> } | null)?.data ?? {}),
             _sv_action: action,
             _sv_by: supervisorName,
+            _sv_by_id: authUser.id,
             _sv_at: now,
             ...(remarks ? { _sv_notes: remarks } : {}),
           },
@@ -249,7 +285,7 @@ export async function POST(request: Request) {
     // ── 5. Activity log ────────────────────────────────────────────────────────
     await admin.from("activity_logs").insert({
       user_id: authUser.id,
-      action: action === "approve" ? "APPROVE_STAGE" : "REJECT_STAGE",
+      action: action === "approve" ? "APPROVE_STAGE" : action === "reject" ? "REJECT_STAGE" : "CANCEL_ORDER",
       entity_type: "approvals",
       entity_id: order_id,
       new_data: {
@@ -258,24 +294,26 @@ export async function POST(request: Request) {
         production_stage: productionStage,
         action,
         remarks: remarks ?? null,
-        next_stage: action === "approve" ? nextStage : productionStage,
+        next_stage: action === "cancel" ? "selesai" : action === "approve" ? nextStage : productionStage,
       },
     });
 
     return NextResponse.json({
       success: true,
       message:
-        action === "approve"
-          ? nextStage
-            ? `Disetujui. Order maju ke: ${nextStage}`
-            : "Disetujui. Order selesai."
-          : `Ditolak. Order dikembalikan ke ${productionStage} untuk perbaikan.`,
+        action === "cancel"
+          ? "Order dibatalkan."
+          : action === "approve"
+            ? nextStage
+              ? `Disetujui. Order maju ke: ${nextStage}`
+              : "Disetujui. Order selesai."
+            : `Ditolak. Order dikembalikan ke ${productionStage} untuk perbaikan.`,
       data: {
         order_id,
         stage,
         action,
         production_stage: productionStage,
-        next_stage: action === "approve" ? nextStage : productionStage,
+        next_stage: action === "cancel" ? "selesai" : action === "approve" ? nextStage : productionStage,
       },
     });
   } catch (error) {

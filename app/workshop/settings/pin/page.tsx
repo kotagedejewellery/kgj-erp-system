@@ -200,12 +200,24 @@ export default function PinSettingsPage() {
 
     if (step === "current" && mode === "change") {
       setSubmitting(true);
-      // Store old PIN, move to enter new PIN
-      oldPinRef.current = pin;
-      resetInput();
-      setStep("enter");
-      setStepLabel("Masukkan PIN Baru (6 digit)");
-      setSubmitting(false);
+      try {
+        const res = await fetch("/api/auth/workshop-pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verify", currentPin: pin }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? "PIN saat ini salah");
+        oldPinRef.current = pin;
+        resetInput();
+        setStep("enter");
+        setStepLabel("Masukkan PIN Baru (6 digit)");
+      } catch (err) {
+        setErrMsg(err instanceof Error ? err.message : "PIN saat ini salah");
+        setPin("");
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 

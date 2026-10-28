@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isAppRole } from "@/lib/routes";
 import { getRoleProps, isLoginRole } from "@/lib/auth/session";
 
+const RETIRED_LOGIN_ROLE_NAMES = new Set(["customer_service", "marketing"]);
+
 export async function POST(request: Request) {
   try {
     const { email, password, role } = await request.json();
@@ -57,7 +59,6 @@ export async function POST(request: Request) {
         email,
         full_name,
         username,
-        branch_id,
         status,
         last_login,
         role:roles!users_role_id_fkey (
@@ -66,11 +67,6 @@ export async function POST(request: Request) {
           role_group,
           description,
           permissions
-        ),
-        branches:branches!users_branch_id_fkey (
-          id,
-          name,
-          code
         )
       `,
       )
@@ -115,6 +111,14 @@ export async function POST(request: Request) {
       );
     }
 
+    if (RETIRED_LOGIN_ROLE_NAMES.has(userRoleName)) {
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        { error: "Akses dashboard untuk role ini sudah dihentikan." },
+        { status: 403 },
+      );
+    }
+
     // Role "management": allow any user whose DB role_group is "management"
     // (operational_supervisor, production_supervisor, superadmin)
     if (role === "management") {
@@ -139,7 +143,7 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Standard login roles: superadmin / customer_service / marketing
+      // Standard login role: superadmin
       if (!isLoginRole(userRoleName)) {
         await supabase.auth.signOut();
         return NextResponse.json(
@@ -192,7 +196,6 @@ export async function POST(request: Request) {
             description: roleProps.description,
             permissions: roleProps.permissions,
           },
-          branch: userData.branches ?? null,
         },
       },
       { status: 200 },

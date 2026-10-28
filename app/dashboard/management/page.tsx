@@ -51,8 +51,8 @@ export default function ManagementOverviewPage() {
   const total = allItems.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const P = { purple: "#7c3aed", purpleLight: "#f5f3ff", purpleMuted: "#c4b5fd", green: "#059669", greenLight: "#ecfdf5", gray: "#6b7280", grayLight: "#f9fafb", grayBorder: "#e5e7eb", orange: "#ea580c", orangeLight: "#fff7ed", red: "#dc2626", redLight: "#fef2f2", ink: "#111827" };
-  const bgStyle = { background: "#f8f9fb url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(139,92,246,0.06)'/%3E%3C/svg%3E\") repeat" };
+  const P = { purple: "#7c3aed", purpleLight: "#7c3aed22", purpleMuted: "#a78bfa", green: "#34d399", greenLight: "#05966922", greenMuted: "#6ee7b7", gray: "#a8a29e", grayLight: "#1C1917", grayBorder: "#c9a22733", orange: "#f97316", orangeLight: "#f9731622", blue: "#60a5fa", blueLight: "#60a5fa22", red: "#f87171", redLight: "#f8717122", ink: "#F5EFE3", card: "#2A2522" };
+  const bgStyle = { background: "#26211C url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(201,162,39,0.06)'/%3E%3C/svg%3E\") repeat" };
 
   const kpiCards = [
     { label: "Total Tasks", value: tasks.length, icon: ClipboardList, color: P.purple, bg: P.purpleLight },
@@ -69,7 +69,7 @@ export default function ManagementOverviewPage() {
         <main className="flex-1 overflow-y-auto p-6">
 
             {/* Gradient Banner */}
-            <div className="mb-8 p-5 rounded-2xl relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${P.purpleLight} 0%, #fff 60%)`, border: `1px solid ${P.grayBorder}` }}>
+            <div className="mb-8 p-5 rounded-2xl relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${P.purple}18 0%, transparent 60%)`, border: `1px solid ${P.grayBorder}` }}>
               <div className="absolute top-0 right-0 w-48 h-full pointer-events-none opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${P.purpleMuted} 0%, transparent 70%)` }} />
               <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div>
@@ -89,7 +89,7 @@ export default function ManagementOverviewPage() {
                 {/* KPI Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                   {kpiCards.map(({ label, value, icon: Icon, color, bg }) => (
-                    <div key={label} className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+                    <div key={label} className="rounded-2xl p-4" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl mb-3" style={{ background: bg }}>
                         <Icon className="h-5 w-5" style={{ color }} />
                       </div>
@@ -100,7 +100,7 @@ export default function ManagementOverviewPage() {
                 </div>
 
                 {/* Overall Progress */}
-                <div className="rounded-2xl p-5 mb-6" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+                <div className="rounded-2xl p-5 mb-6" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold" style={{ color: P.ink }}>Progress Keseluruhan</p>
                     <p className="text-sm font-bold" style={{ color: P.purple }}>{progress}%</p>
@@ -118,7 +118,7 @@ export default function ManagementOverviewPage() {
 
                 {/* Task Cards */}
                 {tasks.length === 0 ? (
-                  <div className="text-center py-12 rounded-2xl" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+                  <div className="text-center py-12 rounded-2xl" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
                     <ClipboardList className="mx-auto mb-3 h-10 w-10" style={{ color: P.gray }} /><p style={{ color: P.gray }}>Belum ada task.</p>
                   </div>
                 ) : (
@@ -130,7 +130,7 @@ export default function ManagementOverviewPage() {
                       const urgency = getDeadlineUrgency(task.deadline);
                       const borderStyle = urgency === "overdue" ? { borderLeft: `3px solid ${P.red}` } : urgency === "today" ? { borderLeft: `3px solid ${P.orange}` } : {};
                       return (
-                        <div key={task.id} className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${P.grayBorder}`, ...borderStyle }}>
+                        <div key={task.id} className="rounded-2xl p-4" style={{ background: P.card, border: `1px solid ${P.grayBorder}`, ...borderStyle }}>
                           <div className="flex items-center justify-between mb-2">
                             <div><p className="font-semibold" style={{ color: P.ink }}>{task.title}</p>
                               {task.deadline && <p className="text-[11px] flex items-center gap-1 mt-0.5" style={{ color: urgency === "overdue" ? P.red : urgency === "today" ? P.orange : P.gray }}><Calendar className="h-3 w-3" />{urgency === "overdue" ? "Terlambat — " : ""}{new Date(task.deadline).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</p>}

@@ -35,6 +35,7 @@ export async function POST(request: Request) {
           id,
           name,
           role_group,
+          description,
           permissions,
           allowed_stages
         )
@@ -136,6 +137,7 @@ export async function POST(request: Request) {
       message: "Login berhasil",
       user: {
         id: userData.id,
+        email: userData.email,
         fullName: userData.full_name,
         username: userData.username,
         role: roleName,
@@ -143,6 +145,7 @@ export async function POST(request: Request) {
           id: roleProps.id,
           name: roleProps.name,
           role_group: roleProps.role_group,
+          description: roleProps.description,
           permissions: roleProps.permissions,
           allowed_stages: roleProps.allowed_stages,
         },

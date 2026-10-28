@@ -48,7 +48,7 @@ export async function GET(request?: NextRequest) {
 
     // ========== FETCH ALL SECTIONS IN PARALLEL ==========
     // Legacy source: stage_history (submissions) + legacy_quality_checklist_results.
-    // Sections with no legacy equivalent (customer_confirmations, pricing/pelunasan,
+    // Sections with no legacy equivalent (pricing/pelunasan,
     // deliveries) return empty — the legacy schema does not carry that data.
     const [
       adminTasksResult,
@@ -244,24 +244,7 @@ export async function GET(request?: NextRequest) {
       timestamp: row.created_at,
     }));
 
-    // Fetch antrian racik
-    const [wiRacikResult] = await Promise.allSettled([
-      supabase
-        .from("work_instructions")
-        .select("parameters")
-        .eq("stage", "racik_bahan")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    const wiRacik =
-      wiRacikResult.status === "fulfilled" ? wiRacikResult.value.data : null;
-    const targetShrinkagePercent = (() => {
-      const params = (wiRacik as Record<string, unknown>)?.parameters as Record<string, unknown> | undefined;
-      const val = params?.shrinkage_buffer_percent as string | undefined;
-      return val ? parseFloat(val) || 5.0 : 5.0;
-    })();
+    const targetShrinkagePercent = 5.0;
     const totalBeratTeoritis = 0;
 
     // ========== LASER ==========

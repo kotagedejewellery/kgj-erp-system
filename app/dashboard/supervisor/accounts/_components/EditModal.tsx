@@ -83,12 +83,12 @@ export function EditModal({ account, roles, onClose, onUpdated }: EditModalProps
     <ModalShell
       title="Edit Akun"
       subtitle={account.full_name}
-      icon={<Pencil className="h-5 w-5 text-amber-600" />}
+      icon={<Pencil className="h-5 w-5 text-amber-300" />}
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 flex items-start gap-2">
+          <div className="rounded-lg bg-rose-500/10 px-4 py-3 text-sm text-rose-300 ring-1 ring-red-200 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -110,13 +110,13 @@ export function EditModal({ account, roles, onClose, onUpdated }: EditModalProps
         />
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-stone-700">
+          <label className="mb-1 block text-sm font-medium text-cream">
             Role
           </label>
           <select
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
-            className="w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 transition"
+            className="w-full rounded-lg border border-gold/15 bg-carbon px-3 py-2.5 text-sm text-cream focus:border-amber-400 focus:bg-cocoa focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
           >
             <option value="">Pilih role...</option>
             {Object.entries(groupedRoles).map(([group, groupRoles]) => (
@@ -132,20 +132,20 @@ export function EditModal({ account, roles, onClose, onUpdated }: EditModalProps
         </div>
 
         {/* Quick info */}
-        <div className="rounded-lg bg-stone-50 p-3 space-y-1.5">
+        <div className="rounded-lg bg-carbon p-3 space-y-1.5">
           <div className="flex justify-between text-xs">
-            <span className="text-stone-400">Status</span>
+            <span className="text-white/40">Status</span>
             <StatusBadge status={account.status} />
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-stone-400">Login Terakhir</span>
-            <span className="text-stone-600">
+            <span className="text-white/40">Login Terakhir</span>
+            <span className="text-white/70">
               {formatRelative(account.last_login)}
             </span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-stone-400">Dibuat</span>
-            <span className="text-stone-600">
+            <span className="text-white/40">Dibuat</span>
+            <span className="text-white/70">
               {formatDateTime(account.created_at)}
             </span>
           </div>
@@ -155,14 +155,14 @@ export function EditModal({ account, roles, onClose, onUpdated }: EditModalProps
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors"
+            className="flex-1 rounded-lg border border-gold/15 px-4 py-2.5 text-sm font-medium text-cream hover:bg-carbon transition-colors"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
+            className="flex-1 rounded-lg bg-amber-500/100 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
           >
             {loading ? "Menyimpan..." : "Simpan"}
           </button>

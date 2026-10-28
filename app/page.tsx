@@ -240,8 +240,8 @@ export default function Home() {
           </h1>
 
           <p className="sub">
-            Platform terpadu untuk tim CS, Marketing, Operasional, Produksi dan
-            Leadership — data real-time, satu tampilan, keputusan lebih cepat.
+            Platform terpadu untuk tim Operasional, Produksi, dan Leadership —
+            data real-time, satu tampilan, keputusan lebih cepat.
           </p>
 
           <div className="cta-group">

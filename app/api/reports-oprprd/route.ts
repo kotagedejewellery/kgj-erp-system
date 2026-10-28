@@ -294,7 +294,7 @@ export async function GET(request: Request) {
 
       const allStaff = staffRes.data ?? [];
       const allStages = stageRes.data ?? [];
-      const allScans: Array<{ user_id: string; order_id: string }> = []; // no legacy scan_events
+      const allScans: Array<{ user_id: string; order_id: string }> = [];
 
       const productionStaff = allStaff.filter((u) =>
         PRODUCTION_ROLES.includes(getRoleProps(u).name),

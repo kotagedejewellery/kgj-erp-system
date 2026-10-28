@@ -14,6 +14,7 @@ import OrderDetailPopup from "@/components/orders/OrderDetailPopup";
 import type { BottleneckData } from "@/types/bottleneck";
 import { Search, RefreshCw } from "lucide-react";
 import type { Channel } from "pusher-js";
+import { BRAND_FILTER_OPTIONS, getBrandFilterCode } from "@/lib/legacy/brands";
 import {
   buildUrl,
   ErrorState,
@@ -22,18 +23,12 @@ import {
   type ReworkData,
 } from "./_components/shared";
 import { OverviewTab } from "./_components/OverviewTab";
-import { ProduksiTab } from "./_components/ProduksiTab";
-import { OperasionalTab } from "./_components/OperasionalTab";
 import { FilterPresets } from "./_components/FilterPresets";
-
-type ActiveTab = "overview" | "produksi" | "operasional";
-
 export const dynamic = "force-dynamic";
 
 export default function MonitoringPage() {
   const router = useRouter();
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [bnFilter, setBnFilter] = useState<
     "all" | "production" | "operational" | "completed"
   >("all");
@@ -45,6 +40,7 @@ export default function MonitoringPage() {
 
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [brandFilter, setBrandFilter] = useState<string>("all");
 
   const queryClient = useQueryClient();
 
@@ -68,8 +64,13 @@ export default function MonitoringPage() {
         refetchInterval,
       },
       {
-        queryKey: ["monitoring", "supervisor", dateFrom, dateTo],
-        queryFn: () => fetcher<{ data: { completedOrders: Array<{ id: string; order_number: string; customer_name: string; completed_at: string }> } }>(buildUrl("/api/supervisor", dateFrom, dateTo)),
+        queryKey: ["monitoring", "supervisor", dateFrom, dateTo, brandFilter],
+        queryFn: () => {
+          const url = buildUrl("/api/supervisor", dateFrom, dateTo);
+          return fetcher<{ data: { completedOrders: Array<{ id: string; order_number: string; customer_name: string; completed_at: string }>; completedCount: number } }>(
+            `${url}${url.includes("?") ? "&" : "?"}brand=${brandFilter}`,
+          );
+        },
         refetchInterval,
       },
       {
@@ -90,6 +91,9 @@ export default function MonitoringPage() {
     (bnQuery.data as { data: BottleneckData } | undefined)?.data ?? null;
   const completedOrders: Array<{ id: string; order_number: string; customer_name: string; completed_at: string }> =
     (supervisorQuery.data as { data: { completedOrders: Array<{ id: string; order_number: string; customer_name: string; completed_at: string }> } } | undefined)?.data?.completedOrders ?? [];
+  const completedCount =
+    (supervisorQuery.data as { data: { completedCount: number } } | undefined)?.data?.completedCount ?? 0;
+  const filteredCompletedOrders = completedOrders.filter((o) => brandFilter === "all" || getBrandFilterCode(o.order_number) === brandFilter);
   const reworkData: ReworkData | null =
     (reworkQuery.data as { data: ReworkData } | undefined)?.data ?? null;
 
@@ -175,13 +179,15 @@ export default function MonitoringPage() {
       .filter((b) => bnFilter === "all" ? true : b.stage_group === bnFilter)
       .map((b) => ({
         ...b,
-        orders: !searchQuery ? b.orders : b.orders.filter(
-          (o) =>
-            o.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (o.customer_name ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+        orders: (!searchQuery && brandFilter === "all") ? b.orders : b.orders.filter(
+          (o) => {
+            const matchSearch = !searchQuery || o.order_number.toLowerCase().includes(searchQuery.toLowerCase()) || (o.customer_name ?? "").toLowerCase().includes(searchQuery.toLowerCase());
+            const matchBrand = brandFilter === "all" || getBrandFilterCode(o.order_number) === brandFilter;
+            return matchSearch && matchBrand;
+          }
         ),
       }))
-      .filter((b) => searchQuery ? b.orders.length > 0 : true) ?? [];
+      .filter((b) => (searchQuery || brandFilter !== "all") ? b.orders.length > 0 : true) ?? [];
   const prodBnCount =
     bnData?.bottlenecks.filter((b) => b.stage_group === "production").length ??
     0;
@@ -211,21 +217,7 @@ export default function MonitoringPage() {
     }
   }
 
-  const TABS: { key: ActiveTab; label: string; desc: string }[] = [
-    { key: "overview", label: "Overview", desc: "KPI & Bottleneck" },
-    {
-      key: "produksi",
-      label: "Produksi",
-      desc: "Tukang, Micro Setting, Yield",
-    },
-    {
-      key: "operasional",
-      label: "Operasional",
-      desc: "After Sales, QC, Racik/Laser",
-    },
-  ];
-
-  return (
+    return (
     <div className="flex h-screen bg-[#26211c]">
       <Sidebar role="superadmin" />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -234,7 +226,7 @@ export default function MonitoringPage() {
           {/* Page Header */}
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>
-              <h2 className="text-2xl font-bold text-[#f0f4ff] tracking-tight">
+              <h2 className="text-2xl font-bold text-ivory tracking-tight">
                 Monitoring OPR-PRD
               </h2>
               <p className="text-sm text-white/40 mt-0.5">
@@ -262,24 +254,24 @@ export default function MonitoringPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari order / customer..."
-                  className="w-52 rounded-md border border-[#c9a227]/10 bg-white px-3 py-1.5 pl-8 text-xs text-[#e8e2d4] shadow-sm placeholder:text-white/20 focus:border-slate-400 focus:outline-none"
+                  className="w-52 rounded-md border border-[#c9a227]/10 bg-carbon px-3 py-1.5 pl-8 text-xs text-cream shadow-sm placeholder:text-white/20 focus:border-gold/50 focus:outline-none"
                 />
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-36 rounded-md border border-[#c9a227]/10 bg-white px-2.5 py-1.5 text-xs text-[#e8e2d4] shadow-sm focus:border-slate-400 focus:outline-none"
+                  className="w-36 rounded-md border border-[#c9a227]/10 bg-carbon px-2.5 py-1.5 text-xs text-cream shadow-sm focus:border-gold/50 focus:outline-none"
                   title="Dari tanggal"
                 />
-                <span className="text-xs text-slate-400">—</span>
+                <span className="text-xs text-white/40">—</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-36 rounded-md border border-[#c9a227]/10 bg-white px-2.5 py-1.5 text-xs text-[#e8e2d4] shadow-sm focus:border-slate-400 focus:outline-none"
+                  className="w-36 rounded-md border border-[#c9a227]/10 bg-carbon px-2.5 py-1.5 text-xs text-cream shadow-sm focus:border-gold/50 focus:outline-none"
                   title="Sampai tanggal"
                 />
                 <FilterPresets
@@ -289,70 +281,51 @@ export default function MonitoringPage() {
                   setDateFrom={setDateFrom}
                   dateTo={dateTo}
                   setDateTo={setDateTo}
-                  activeTab={activeTab}
-                  setActiveTab={(v) => setActiveTab(v as ActiveTab)}
                   bnFilter={bnFilter}
                   setBnFilter={(v) => setBnFilter(v as "all" | "production" | "operational" | "completed")}
                 />
+                <select
+                  value={brandFilter}
+                  onChange={(e) => setBrandFilter(e.target.value)}
+                  className="rounded-md border border-[#c9a227]/10 bg-carbon px-2 py-1.5 text-xs text-cream focus:border-gold/50 focus:outline-none"
+                >
+                  <option value="all">Semua Brand</option>
+                  {BRAND_FILTER_OPTIONS.map((brand) => (
+                    <option key={brand.value} value={brand.value}>{brand.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
 
-          {/* Tab Bar */}
-          <div className="flex items-end border-b border-[#c9a227]/10 mb-6 gap-0">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`group flex flex-col items-start px-5 py-3 text-left transition-colors border-b-2 -mb-px ${
-                  activeTab === tab.key
-                    ? "border-slate-900 text-slate-900"
-                    : "border-transparent text-white/40 hover:text-[#e8e2d4] hover:border-slate-300"
-                }`}
-              >
-                <span className="text-sm font-semibold">{tab.label}</span>
-                <span
-                  className={`text-[10px] mt-0.5 transition-colors ${activeTab === tab.key ? "text-white/40" : "text-slate-400"}`}
-                >
-                  {tab.desc}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Content */}
+          {/* Content — single unified view */}
           {initialLoading ? (
             <Loading variant="skeleton" text="Memuat data monitoring..." />
           ) : error ? (
             <ErrorState error={error} onRetry={refreshAll} />
           ) : (
-            <>
-              {activeTab === "overview" && (
-                <OverviewTab
-                  prodData={prodData}
-                  opData={opData}
-                  bnData={bnData}
-                  activeExperts={activeExperts}
-                  avgYield={avgYield}
-                  urgentCount={urgentCount}
-                  qcPassRate={qcPassRate}
-                  criticalBn={criticalBn}
-                  bnFilter={bnFilter}
-                  setBnFilter={setBnFilter}
-                  filteredBn={filteredBn}
-                  prodBnCount={prodBnCount}
-                  opBnCount={opBnCount}
-                  completedOrders={completedOrders}
-                  reworkData={reworkData}
-                  onOrderClick={(orderId, orderNumber) => {
-                    setDetailOrderId(orderId);
-                    setDetailOrderNumber(orderNumber);
-                  }}
-                />
-              )}
-              {activeTab === "produksi" && <ProduksiTab data={prodData} searchQuery={searchQuery} />}
-              {activeTab === "operasional" && <OperasionalTab data={opData} searchQuery={searchQuery} />}
-            </>
+            <OverviewTab
+              prodData={prodData}
+              opData={opData}
+              bnData={bnData}
+              activeExperts={activeExperts}
+              avgYield={avgYield}
+              urgentCount={urgentCount}
+              qcPassRate={qcPassRate}
+              criticalBn={criticalBn}
+              bnFilter={bnFilter}
+              setBnFilter={setBnFilter}
+              filteredBn={filteredBn}
+              prodBnCount={prodBnCount}
+              opBnCount={opBnCount}
+              completedOrders={filteredCompletedOrders}
+              completedCount={completedCount}
+              reworkData={reworkData}
+              onOrderClick={(orderId, orderNumber) => {
+                setDetailOrderId(orderId);
+                setDetailOrderNumber(orderNumber);
+              }}
+            />
           )}
         </main>
         {detailOrderId && (

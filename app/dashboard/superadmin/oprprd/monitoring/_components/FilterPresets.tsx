@@ -8,7 +8,7 @@ interface Preset {
   searchQuery: string;
   dateFrom: string;
   dateTo: string;
-  activeTab: string;
+  activeTab?: string;
   bnFilter: string;
 }
 
@@ -33,8 +33,8 @@ export function FilterPresets({
   setDateFrom: (v: string) => void;
   dateTo: string;
   setDateTo: (v: string) => void;
-  activeTab: string;
-  setActiveTab: (v: string) => void;
+  activeTab?: string;
+  setActiveTab?: (v: string) => void;
   bnFilter: string;
   setBnFilter: (v: string) => void;
 }) {
@@ -85,7 +85,7 @@ export function FilterPresets({
     setSearchQuery(preset.searchQuery);
     setDateFrom(preset.dateFrom);
     setDateTo(preset.dateTo);
-    setActiveTab(preset.activeTab);
+    if (setActiveTab && preset.activeTab) setActiveTab(preset.activeTab);
     setBnFilter(preset.bnFilter);
     setIsOpen(false);
   };
@@ -98,15 +98,15 @@ export function FilterPresets({
     <div ref={ref} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
+        className="inline-flex items-center gap-1.5 rounded-md border border-gold/15 bg-cocoa px-3 py-1.5 text-xs font-medium text-white/70 shadow-sm transition hover:bg-carbon"
       >
         <Bookmark className="h-3.5 w-3.5" />
         Simpan Filter
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded-lg border border-slate-200 bg-white shadow-lg">
-          <div className="flex gap-1.5 border-b border-slate-100 p-2">
+        <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded-lg border border-gold/15 bg-cocoa shadow-lg">
+          <div className="flex gap-1.5 border-b border-gold/10 p-2">
             <input
               type="text"
               value={newName}
@@ -115,7 +115,7 @@ export function FilterPresets({
                 if (e.key === "Enter") savePreset();
               }}
               placeholder="Nama preset..."
-              className="flex-1 min-w-0 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+              className="flex-1 min-w-0 rounded-md border border-gold/15 px-2.5 py-1.5 text-xs text-cream placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
             />
             <button
               onClick={savePreset}
@@ -127,7 +127,7 @@ export function FilterPresets({
           </div>
 
           {presets.length === 0 ? (
-            <p className="px-3 py-4 text-center text-xs text-slate-400">
+            <p className="px-3 py-4 text-center text-xs text-white/40">
               Belum ada preset tersimpan
             </p>
           ) : (
@@ -135,17 +135,17 @@ export function FilterPresets({
               {presets.map((p, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between border-b border-slate-50 px-3 py-2 last:border-0 hover:bg-slate-50"
+                  className="flex items-center justify-between border-b border-white/5 px-3 py-2 last:border-0 hover:bg-carbon"
                 >
                   <button
                     onClick={() => applyPreset(p)}
-                    className="flex-1 text-left text-xs font-medium text-slate-700 truncate"
+                    className="flex-1 text-left text-xs font-medium text-cream truncate"
                   >
                     {p.name}
                   </button>
                   <button
                     onClick={() => deletePreset(i)}
-                    className="ml-2 shrink-0 rounded p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50"
+                    className="ml-2 shrink-0 rounded p-1 text-white/40 hover:text-rose-500 hover:bg-rose-500/10"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>

@@ -59,8 +59,10 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Dark Gold — background default seluruh app (anti kilatan putih saat load).
+     Halaman publik yang terang (order-form) meng-override dengan bg sendiri. */
+  --background: #26211C;
+  --foreground: #E8E2D4;
 }
 
 @theme inline {
@@ -72,11 +74,20 @@
   --font-inter: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ═══════════════════════════════════════════════════════════════════
+   Dark Gold — Luxury Atelier Design Tokens (dashboard gelap)
+   Dipakai lintas halaman dashboard: bg-night, bg-cocoa, text-gold, dst.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-night:       #26211C; /* background halaman */
+  --color-carbon:      #1C1917; /* permukaan tenggelam / sidebar / header */
+  --color-cocoa:       #2A2522; /* kartu */
+  --color-mocha:       #332D29; /* kartu terangkat / skeleton */
+  --color-gold:        #C9A227; /* aksen utama brand */
+  --color-gold-bright: #D4AF37; /* aksen hover / highlight */
+  --color-cream:       #E8E2D4; /* teks isi */
+  --color-ivory:       #F5EFE3; /* judul */
 }
 
 body {
@@ -117,6 +128,33 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Dark Scrollbar — konsisten dengan tema dark-gold di semua browser
+   ═══════════════════════════════════════════════════════════════════ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 39, 0.25) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 39, 0.25);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 162, 39, 0.45);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Parchment Warm — Goldsmith's Atelier Design Tokens
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -128,8 +166,8 @@ body {
   --color-parch-raised:  #E0D5C4;
   --color-parch-border:  #D4C4A8;
 
-  --color-gold:          #C9A84C;
-  --color-gold-bright:   #D4AF37;
+  /* --color-gold & --color-gold-bright kini didefinisikan global di @theme
+     (Dark Gold tokens) — jangan duplikasi di sini agar tidak menimpa. */
   --color-gold-muted:    #C9A84C55;
   --color-gold-dim:      #C9A84C22;
   --color-gold-text:     #B8960C;

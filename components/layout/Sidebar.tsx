@@ -7,8 +7,6 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef, startTransition } from "react";
 import {
   SUPERADMIN_ROUTES,
-  CS_ROUTES,
-  MARKETING_ROUTES,
   SUPERVISOR_ROUTES,
   MANAGEMENT_ROUTES,
 } from "@/lib/routes";
@@ -18,7 +16,6 @@ import {
   Users,
   FileText,
   Edit3,
-  Building2,
   Package,
   CalendarDays,
   Activity,
@@ -47,9 +44,9 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERADMIN_ROUTES.DASHBOARD,
     },
 
-    // Kelola seluruh akun dan cabang
+    // Kelola seluruh akun
     {
-      name: "Kelola Akun & Cabang",
+      name: "Kelola Akun",
       icon: "users",
       href: SUPERADMIN_ROUTES.KELOLA_AKUN,
     },
@@ -84,35 +81,12 @@ const menuItems: Record<string, MenuItem[]> = {
       ],
     },
 
-    // Menu besar BMS - berisi menu utama sebelumnya
-    {
-      name: "BMS",
-      icon: "bms",
-      submenu: [
-        {
-          name: "Dashboard",
-          icon: "dashboard",
-          href: SUPERADMIN_ROUTES.BMS_DASHBOARD,
-        },
-        {
-          name: "Data Statistik",
-          icon: "statistik",
-          href: SUPERADMIN_ROUTES.STATISTIK,
-        },
-        { name: "Laporan", icon: "report", href: SUPERADMIN_ROUTES.LAPORAN },
-      ],
-    },
 
     // Menu besar OPRPRD
     {
       name: "OPR-PRD",
       icon: "oprprd",
       submenu: [
-        {
-          name: "Dashboard",
-          icon: "dashboard",
-          href: SUPERADMIN_ROUTES.OPRPRD_DASHBOARD,
-        },
         {
           name: "Monitoring OPR-PRD",
           icon: "monitor",
@@ -128,27 +102,16 @@ const menuItems: Record<string, MenuItem[]> = {
           icon: "report",
           href: SUPERADMIN_ROUTES.OPRPRD_LAPORAN,
         },
+        {
+          name: "Riwayat Order",
+          icon: "order",
+          href: SUPERADMIN_ROUTES.OPRPRD_HISTORY,
+        },
       ],
-    },
-  ],
-  customer_service: [
-    { name: "Dashboard", icon: "dashboard", href: CS_ROUTES.DASHBOARD },
-    { name: "Input Leads", icon: "input", href: CS_ROUTES.INPUT_LEADS },
-    { name: "Input Order", icon: "order", href: CS_ROUTES.INPUT_ORDER },
-    { name: "Pelanggan", icon: "users", href: CS_ROUTES.PELANGGAN },
-  ],
-  marketing: [
-    { name: "Dashboard", icon: "dashboard", href: MARKETING_ROUTES.DASHBOARD },
-    { name: "Input Marketing", icon: "input", href: MARKETING_ROUTES.INPUT },
-    {
-      name: "Analisis Channel",
-      icon: "analisis",
-      href: MARKETING_ROUTES.ANALISIS,
     },
   ],
   supervisor: [
     { name: "Dashboard", icon: "dashboard", href: SUPERVISOR_ROUTES.DASHBOARD },
-    { name: "Monitoring", icon: "scan", href: SUPERVISOR_ROUTES.MONITORING },
     { name: "Persetujuan", icon: "approval", href: SUPERVISOR_ROUTES.APPROVAL },
     {
       name: "Kelola Akun Tim",
@@ -156,12 +119,13 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERVISOR_ROUTES.ACCOUNTS,
     },
     { name: "Personnel", icon: "personnel", href: SUPERVISOR_ROUTES.PERSONNEL },
-    {
-      name: "Slot Management",
-      icon: "slot",
-      href: SUPERVISOR_ROUTES.SLOT_MANAGEMENT,
-    },
     { name: "QR Code", icon: "qr", href: SUPERVISOR_ROUTES.QR_CODES },
+    { name: "Riwayat Order", icon: "order", href: SUPERVISOR_ROUTES.HISTORY },
+    {
+      name: "Riwayat Persetujuan",
+      icon: "approval",
+      href: SUPERVISOR_ROUTES.APPROVAL_HISTORY,
+    },
   ],
   management: [
     { name: "Dashboard", icon: "dashboard", href: MANAGEMENT_ROUTES.DASHBOARD },
@@ -176,7 +140,6 @@ const iconMap: Record<string, React.ReactNode> = {
   users: <Users className="w-5 h-5" />,
   report: <FileText className="w-5 h-5" />,
   input: <Edit3 className="w-5 h-5" />,
-  branch: <Building2 className="w-5 h-5" />,
   analisis: <BarChart3 className="w-5 h-5" />,
   bms: <Package className="w-5 h-5" />,
   oprprd: <CalendarDays className="w-5 h-5" />,
@@ -185,7 +148,6 @@ const iconMap: Record<string, React.ReactNode> = {
   production: <DollarSign className="w-5 h-5" />,
   approval: <CheckCircle className="w-5 h-5" />,
   order: <ClipboardList className="w-5 h-5" />,
-  slot: <CalendarDays className="w-5 h-5" />,
   personnel: <UserPlus className="w-5 h-5" />,
   chevronDown: <ChevronDown className="w-4 h-4" />,
   chevronRight: <ChevronRight className="w-4 h-4" />,
@@ -195,38 +157,21 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sidebar-collapsed") === "true";
+    }
+    return false;
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [actualRole, setActualRole] = useState<string | null>(null);
+  const [isIntakeValidator, setIsIntakeValidator] = useState(false);
   const [collapsedMenus, setCollapsedMenus] = useState<CollapseState>({
     BMS: false,
     OPRPRD: true,
   });
 
   const sidebarRef = useRef<HTMLElement>(null);
-  const [buttonLeft, setButtonLeft] = useState<number | null>(null);
-  const [headerBottom, setHeaderBottom] = useState<number | null>(null);
-
-  useEffect(() => {
-    const sidebar = sidebarRef.current;
-    if (!sidebar) return;
-    const observer = new ResizeObserver(() => {
-      const rect = sidebar.getBoundingClientRect();
-      setButtonLeft(rect.right - 11);
-    });
-    observer.observe(sidebar);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const header = document.getElementById("dashboard-header");
-    if (!header) return;
-    const observer = new ResizeObserver(() => {
-      setHeaderBottom(header.getBoundingClientRect().bottom);
-    });
-    observer.observe(header);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     startTransition(() => {
@@ -238,13 +183,24 @@ export default function Sidebar({ role }: { role: string }) {
     if (role !== "supervisor" && role !== "management") return;
     fetch("/api/me")
       .then((r) => r.json())
-      .then((j) => setActualRole(j.data?.role?.name ?? null))
+      .then((j) => {
+        setActualRole(j.data?.role?.name ?? null);
+        setIsIntakeValidator(j.data?.role?.permissions?.can_validate_intake === true);
+      })
       .catch(() => {});
   }, [role]);
 
   let items = menuItems[role as keyof typeof menuItems] || [];
   if (actualRole === "production_supervisor") {
     items = items.filter((i) => i.name !== "Slot Management");
+  }
+  if (role === "supervisor" && isIntakeValidator) {
+    items = items.filter((item) => [
+      "Dashboard",
+      "Persetujuan",
+      "Riwayat Order",
+      "Riwayat Persetujuan",
+    ].includes(item.name));
   }
 
   const toggleMenuCollapse = (menuName: string) => {
@@ -412,7 +368,7 @@ export default function Sidebar({ role }: { role: string }) {
       <aside
         ref={sidebarRef}
         className={`
-          fixed top-0 left-0 z-50 h-full bg-[#1C1917] flex flex-col overflow-hidden
+          fixed top-0 left-0 z-50 h-full bg-[#1C1917] flex flex-col
           transform transition-transform duration-300 ease-in-out
           md:sticky md:top-0 md:translate-x-0 md:flex-shrink-0
           ${isCollapsed ? "md:w-20" : "md:w-64"}
@@ -421,6 +377,22 @@ export default function Sidebar({ role }: { role: string }) {
           border-r border-[#c9a227]/10 shadow-xl md:shadow-none
         `}
       >
+        {/* Collapse Toggle — pure CSS positioning, no JS measurement */}
+        <button
+          onClick={() => {
+            const next = !isCollapsed;
+            setIsCollapsed(next);
+            localStorage.setItem("sidebar-collapsed", String(next));
+          }}
+          className="hidden md:flex absolute z-50 w-8 h-8 bg-[#1C1917] border border-gold rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
+          style={{ right: "0", transform: "translateX(50%)", top: "58px" }}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ChevronLeft
+            className={`w-5 h-5 text-gold-bright transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`}
+          />
+        </button>
+
         {/* Mobile close */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-[#c9a227]/10 md:hidden">
           <span className="text-sm font-bold text-[#f0f4ff]">Menu</span>
@@ -440,7 +412,7 @@ export default function Sidebar({ role }: { role: string }) {
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <div
-              className={`${isCollapsed ? "w-10 h-10" : "w-10 h-10"} flex-shrink-0 rounded-xl overflow-hidden`}
+              className={`${isCollapsed ? "w-12 h-12" : "w-12 h-12"} flex-shrink-0 rounded-xl overflow-hidden`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -454,9 +426,6 @@ export default function Sidebar({ role }: { role: string }) {
                 <h2 className="text-base font-bold bg-gradient-to-r from-[#e8e2d4] to-[#c9a227] bg-clip-text text-transparent whitespace-nowrap">
                   KGJ Dashboard
                 </h2>
-                <p className="text-sm font-semibold text-[#e8e2d4] whitespace-nowrap">
-                  ERP System
-                </p>
               </div>
             )}
           </div>
@@ -488,21 +457,6 @@ export default function Sidebar({ role }: { role: string }) {
           </div>
         </div>
       </aside>
-
-      {/* Collapse toggle — outside aside to avoid sticky stacking context */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="hidden md:flex fixed z-50 w-8 h-8 bg-[#1C1917] border border-[#c9a227]/10 rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
-        style={{
-          left: buttonLeft ?? (isCollapsed ? 67 : 243),
-          top: headerBottom != null ? headerBottom - 14 : 84,
-        }}
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <ChevronLeft
-          className={`w-5 h-5 text-[#e8e2d4] transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`}
-        />
-      </button>
     </>
   );
 }

@@ -144,11 +144,12 @@ export async function POST(request: Request) {
       .select("id")
       .eq("user_id", user_id)
       .eq("stage", stage)
-      .eq("sub_type", sub_type)
+      .eq("sub_type", sub_type ?? "")
+      .eq("person_code", person_code)
       .maybeSingle();
 
     if (existing)
-      return NextResponse.json({ error: "User sudah terdaftar di stage ini" }, { status: 409 });
+      return NextResponse.json({ error: "Kode person sudah digunakan untuk stage ini" }, { status: 409 });
 
     const { data, error } = await admin
       .from("stage_personnel")

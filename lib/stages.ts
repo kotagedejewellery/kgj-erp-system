@@ -130,3 +130,17 @@ export function isStageActive(stage: string, currentStage: string): boolean {
 export function isStageUpcoming(stage: string, currentStage: string): boolean {
   return getStageIndex(stage) > getStageIndex(currentStage);
 }
+
+// Stages to skip during normal progression (not removed from sequence to
+// preserve Yii2 1:1 mapping). effectiveNext() returns the next non-skipped
+// stage; use it wherever nextInSequence / STAGE_SEQUENCE[idx+1] was used.
+export const SKIP_STAGES = ["lebur_bahan", "cek_kadar"];
+
+export function effectiveNext(stage: string): string | null {
+  let idx = getStageIndex(stage);
+  while (idx >= 0 && idx < STAGE_SEQUENCE.length - 1) {
+    idx++;
+    if (!SKIP_STAGES.includes(STAGE_SEQUENCE[idx])) return STAGE_SEQUENCE[idx];
+  }
+  return null;
+}

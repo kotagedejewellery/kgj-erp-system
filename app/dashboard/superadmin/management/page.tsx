@@ -117,22 +117,16 @@ export default function ManagementDashboardPage() {
 
   const bgParchment = {
     background:
-      "#f8f9fb url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(139,92,246,0.06)'/%3E%3C/svg%3E\") repeat",
+      "#26211C url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='0.75' fill='rgba(201,162,39,0.06)'/%3E%3C/svg%3E\") repeat",
   };
 
-  const P = {
-    purple: "#7c3aed",
-    purpleLight: "#f5f3ff",
-    purpleMuted: "#c4b5fd",
-    green: "#059669",
-    greenLight: "#ecfdf5",
-    greenMuted: "#a7f3d0",
-    gray: "#6b7280",
-    grayLight: "#f9fafb",
-    grayBorder: "#e5e7eb",
-    orange: "#ea580c",
-    orangeLight: "#fff7ed",
-    ink: "#111827",
+    const P = {
+    purple: "#7c3aed", purpleLight: "#7c3aed22", purpleMuted: "#a78bfa",
+    green: "#34d399", greenLight: "#05966922", greenMuted: "#6ee7b7",
+    gray: "#a8a29e", grayLight: "#1C1917", grayBorder: "#c9a22733",
+    orange: "#f97316", orangeLight: "#f9731622",
+    red: "#f87171", redLight: "#f8717122",
+    ink: "#F5EFE3", card: "#2A2522",
   };
 
   const bend = (delay: number): React.CSSProperties => ({
@@ -143,7 +137,7 @@ export default function ManagementDashboardPage() {
   });
 
   const cardBase: React.CSSProperties = {
-    background: "#fff",
+    background: P.card,
     borderRadius: 16,
     border: `1px solid ${P.grayBorder}`,
     padding: 20,
@@ -179,12 +173,12 @@ export default function ManagementDashboardPage() {
           <Header userEmail="" role="superadmin" />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="lg:col-span-2 h-[100px] rounded-2xl bg-white/60 animate-pulse" />
-              <div className="lg:col-span-2 h-[100px] rounded-2xl bg-white/60 animate-pulse" />
-              <div className="lg:col-span-2 h-[200px] rounded-2xl bg-white/60 animate-pulse" />
-              <div className="h-[200px] rounded-2xl bg-white/60 animate-pulse" />
-              <div className="h-[200px] rounded-2xl bg-white/60 animate-pulse" />
-              <div className="lg:col-span-2 h-[200px] rounded-2xl bg-white/60 animate-pulse" />
+              <div className="lg:col-span-2 h-[100px] rounded-2xl bg-cocoa/60 animate-pulse" />
+              <div className="lg:col-span-2 h-[100px] rounded-2xl bg-cocoa/60 animate-pulse" />
+              <div className="lg:col-span-2 h-[200px] rounded-2xl bg-cocoa/60 animate-pulse" />
+              <div className="h-[200px] rounded-2xl bg-cocoa/60 animate-pulse" />
+              <div className="h-[200px] rounded-2xl bg-cocoa/60 animate-pulse" />
+              <div className="lg:col-span-2 h-[200px] rounded-2xl bg-cocoa/60 animate-pulse" />
             </div>
           </main>
         </div>
@@ -206,7 +200,7 @@ export default function ManagementDashboardPage() {
             </div>
           ) : (
             <div>
-              <div className="mb-6 p-5 rounded-2xl relative overflow-hidden" style={{ ...bend(0), background: `linear-gradient(135deg, ${P.purpleLight} 0%, #fff 60%)`, border: `1px solid ${P.grayBorder}` }}>
+              <div className="mb-6 p-5 rounded-2xl relative overflow-hidden" style={{ ...bend(0), background: `linear-gradient(135deg, ${P.purple}18 0%, transparent 60%)`, border: `1px solid ${P.grayBorder}` }}>
                 <div className="absolute top-0 right-0 w-48 h-full pointer-events-none opacity-30" style={{ background: `radial-gradient(ellipse at top right, ${P.purpleMuted} 0%, transparent 70%)` }} />
                 <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                   <div>
@@ -237,7 +231,7 @@ export default function ManagementDashboardPage() {
                 <p className="text-[11px] font-medium mb-1" style={{ color: P.gray }}>Completion Rate</p>
                 <div className="flex items-end gap-3">
                   <span className="text-[48px] leading-none font-bold" style={{ color: P.ink }}>{animatedRate}%</span>
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full mb-1.5 ${wowComparison.delta >= 0 ? "bg-green-50 text-green-600" : "bg-rose-50 text-rose-600"}`}>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full mb-1.5 ${wowComparison.delta >= 0 ? "bg-emerald-500/10 text-emerald-300" : "bg-rose-500/10 text-rose-300"}`}>
                     {wowComparison.delta >= 0 ? "↑" : "↓"} {Math.abs(wowComparison.delta)}
                   </span>
                 </div>
@@ -251,7 +245,7 @@ export default function ManagementDashboardPage() {
                   {[
                     { label: "Total Items", value: stats.total, color: P.purple, bg: P.purpleLight, icon: "◆", link: undefined as string | undefined },
                     { label: "Completed", value: stats.done, color: P.green, bg: P.greenLight, icon: "✓", link: undefined },
-                    { label: "Overdue", value: statusSum.overdue, color: "#dc2626", bg: "#fef2f2", icon: "!", link: undefined },
+                    { label: "Overdue", value: statusSum.overdue, color: P.red, bg: P.redLight, icon: "!", link: undefined },
                     { label: "Review", value: pendingReviews, color: P.purple, bg: P.purpleLight, icon: "⟳", link: "/dashboard/superadmin/management/monitoring" },
                   ].map(({ label, value, color, bg, icon, link }) => (
                     <a key={label} href={link} className={`rounded-xl p-3 block ${link ? "hover:ring-2 hover:ring-purple-300 transition-all cursor-pointer" : ""}`} style={{ background: bg }}>
@@ -306,7 +300,7 @@ export default function ManagementDashboardPage() {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: P.gray }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: "#fff", border: `1px solid ${P.grayBorder}`, borderRadius: 12, fontSize: 11, boxShadow: `0 4px 12px ${P.purple}10` }} />
+                    <Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.grayBorder}`, borderRadius: 12, fontSize: 11, boxShadow: `0 4px 12px ${P.purple}10` }} />
                     <Area type="monotone" dataKey="completed" stroke={P.purple} strokeWidth={2} fill="url(#areaPurple)" dot={false} activeDot={{ r: 4, fill: P.purple }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -318,7 +312,7 @@ export default function ManagementDashboardPage() {
                     <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={dualBar} margin={{ top: 4, right: 0, left: -8, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fontSize: 9, fill: P.gray }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" height={40} />
-                    <Tooltip contentStyle={{ background: "#fff", border: `1px solid ${P.grayBorder}`, borderRadius: 12, fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.grayBorder}`, borderRadius: 12, fontSize: 11 }} />
                     <Bar dataKey="done" fill={P.green} radius={[4, 4, 0, 0]} barSize={12} />
                     <Bar dataKey="overdue" fill={P.purple} radius={[4, 4, 0, 0]} barSize={12} />
                   </BarChart>
@@ -345,7 +339,7 @@ export default function ManagementDashboardPage() {
                       const initials = a.manager.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
                       return (
                         <div key={a.item.id} className="flex items-start gap-3 py-2 relative">
-                          <span className="w-[14px] h-[14px] rounded-full shrink-0 mt-0.5 z-10" style={{ background: a.status === "selesai" ? P.green : P.purple, border: `2px solid #fff` }} />
+                          <span className="w-[14px] h-[14px] rounded-full shrink-0 mt-0.5 z-10" style={{ background: a.status === "selesai" ? P.green : P.purple, border: `2px solid ${P.card}` }} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white" style={{ background: P.purple }}>{initials}</span>
@@ -366,7 +360,7 @@ export default function ManagementDashboardPage() {
                   <BarChart data={comparison.map((m, i) => ({ name: m.manager.full_name.split(" ").slice(0, 2).join(" "), rate: m.rate, isTop: i === 0 }))} layout="vertical" margin={{ top: 0, right: 8, left: 8, bottom: 0 }}>
                     <XAxis type="number" domain={[0, 100]} hide />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: P.gray }} axisLine={false} tickLine={false} width={90} />
-                    <Tooltip contentStyle={{ background: "#fff", border: `1px solid ${P.grayBorder}`, borderRadius: 12, fontSize: 11 }}
+                    <Tooltip contentStyle={{ background: P.card, border: `1px solid ${P.grayBorder}`, borderRadius: 12, fontSize: 11 }}
                       formatter={(v: unknown) => [`${v}%`, "Rate"]} />
                     <Bar dataKey="rate" radius={[0, 4, 4, 0]} barSize={14} onClick={(d: unknown) => {
                       const n = (d as { name?: string })?.name; if (n) { const f = managers.find((x) => x.full_name.startsWith(n.split(" ")[0])); if (f) setDrillManager(f); }
@@ -381,7 +375,7 @@ export default function ManagementDashboardPage() {
               <div style={{ ...cardBase, ...bend(280), background: `linear-gradient(135deg, ${P.purple}, #5b21b6)` }}>
                 <p className="text-[11px] font-semibold mb-1" style={{ color: "rgba(255,255,255,0.8)" }}>Monitoring</p>
                 <p className="text-xs mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>Pantau detail progress tiap manager</p>
-                <a href="/dashboard/superadmin/management/monitoring" className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all duration-150 active:scale-[0.96]" style={{ background: "#fff", color: P.purple }}>
+                <a href="/dashboard/superadmin/management/monitoring" className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all duration-150 active:scale-[0.96]" style={{ background: P.card, color: P.purple }}>
                   Buka Monitoring <ExternalLink size={12} />
                 </a>
               </div>
@@ -394,10 +388,10 @@ export default function ManagementDashboardPage() {
       </div>
       {drillManager && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }} onClick={(e) => { if (e.target === e.currentTarget) handleDrillClose(); }}>
-          <div className="w-full max-w-lg max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ background: "#fff", border: `1px solid ${P.grayBorder}` }}>
+          <div className="w-full max-w-lg max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ background: P.card, border: `1px solid ${P.grayBorder}` }}>
             <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: `1px solid ${P.grayBorder}`, background: P.purpleLight }}>
               <div><p className="text-[10px] font-semibold mb-0.5" style={{ color: P.purple }}>Manager Detail</p><p className="text-lg font-bold" style={{ color: P.ink }}>{drillManager.full_name}</p><p className="text-xs" style={{ color: P.gray }}>{ROLE_DISPLAY[drillManager.role_name] ?? drillManager.role_name}</p></div>
-              <button onClick={handleDrillClose} className="rounded-lg p-2 transition-all duration-150 active:scale-[0.92] hover:bg-white" style={{ color: P.gray }}><X className="h-5 w-5" /></button>
+              <button onClick={handleDrillClose} className="rounded-lg p-2 transition-all duration-150 active:scale-[0.92] hover:bg-white/5" style={{ color: P.gray }}><X className="h-5 w-5" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6">
               {(() => {

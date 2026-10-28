@@ -4,19 +4,18 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
+import { isRetiredDashboardRole } from "@/lib/routes";
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-const BMS_ROLE_NAMES = ["superadmin", "customer_service", "marketing"] as const;
-const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
+const BMS_ROLE_NAMES = ["superadmin", "after_sales"] as const;
+const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
 const ALL_ROLE_GROUPS = [
   "management",
   "operational",
   "production",
-  "marketing",
-  "customer_service",
 ] as const;
 
 type RoleGroup = (typeof ALL_ROLE_GROUPS)[number];
@@ -97,8 +96,6 @@ export function mapUserResponse(dbUser: Record<string, unknown>) {
     full_name: dbUser.full_name,
     username: dbUser.username,
     phone: dbUser.phone,
-    branch_id: dbUser.branch_id,
-    branches: dbUser.branches ?? null,
     status: dbUser.status,
     created_at: dbUser.created_at,
     updated_at: dbUser.updated_at,
@@ -121,9 +118,9 @@ export function mapUserResponse(dbUser: Record<string, unknown>) {
 // ════════════════════════════════════════════════════════════════════════════
 // GET /api/users
 // Query params:
-//   - role_group: 'management' | 'operational' | 'production' | 'marketing' | 'customer_service'
+//   - role_group: 'management' | 'operational' | 'production'
 //                 (bisa comma-separated: 'operational,production')
-//   - role_name:  filter spesifik nama role (customer_service, marketing, qc_1, dll)
+//   - role_name:  filter spesifik nama role (superadmin, qc_1, dll)
 //   - status:     'active' | 'inactive'
 //   - is_active:  'true' | 'false' (alias status, untuk kompat OPRPRD)
 //   - limit:      default 100, max 500
@@ -158,12 +155,11 @@ export async function GET(request: Request) {
       .select(
         `
         id, email, full_name, username, phone, pin_hash,
-        branch_id, role_id, status, last_login,
+        role_id, status, last_login,
         created_at, updated_at,
         role:roles!users_role_id_fkey (
           id, name, role_group, description, permissions, allowed_stages
-        ),
-        branches:branches!users_branch_id_fkey (id, name, code)
+        )
       `,
       )
       .is("deleted_at", null)
@@ -189,7 +185,10 @@ export async function GET(request: Request) {
     }
 
     // Filter role_group & role_name di aplikasi
-    let filtered = data ?? [];
+    let filtered = (data ?? []).filter((u) => {
+      const name = (u.role as unknown as Record<string, unknown>)?.name;
+      return name !== "customer_service" && name !== "marketing";
+    });
     if (roleGroups && roleGroups.length > 0) {
       filtered = filtered.filter((u) =>
         (roleGroups as string[]).includes((u.role as unknown as Record<string, unknown>)?.role_group as string),
@@ -215,8 +214,8 @@ export async function GET(request: Request) {
 // ════════════════════════════════════════════════════════════════════════════
 // POST /api/users — mendukung 3 mode
 //
-// MODE 1 (BMS): { full_name, email, password, role, branch_id? }
-//   role: 'superadmin' | 'customer_service' | 'marketing'
+// MODE 1 (Dashboard): { full_name, email, password, role }
+//   role: 'superadmin' | 'after_sales'
 //   → email wajib, login via dashboard
 //
 // MODE 2 (Management/Supervisor): { full_name, username, password, role }
@@ -245,8 +244,14 @@ export async function POST(request: Request) {
       role_id,
       username,
       phone,
-      branch_id,
     } = body;
+
+    if (isRetiredDashboardRole(role)) {
+      return NextResponse.json(
+        { error: "Role Customer Service dan Marketing sudah dinonaktifkan." },
+        { status: 410 },
+      );
+    }
 
     // Validasi dasar
     if (!full_name?.trim() || !password) {
@@ -286,12 +291,6 @@ export async function POST(request: Request) {
       if (!email?.trim()) {
         return NextResponse.json(
           { error: "Email wajib diisi untuk user BMS" },
-          { status: 400 },
-        );
-      }
-      if (role === "customer_service" && !branch_id) {
-        return NextResponse.json(
-          { error: "Cabang wajib dipilih untuk role Customer Service" },
           { status: 400 },
         );
       }
@@ -490,9 +489,6 @@ export async function POST(request: Request) {
 
     if (normalizedUsername) updatePayload.username = normalizedUsername;
     if (phone?.trim()) updatePayload.phone = phone.trim();
-    updatePayload.branch_id =
-      isBmsMode && role === "customer_service" ? branch_id : null;
-    // Management/supervisor accounts do not use branch
 
     // Pakai upsert agar tetap berjalan meski trigger handle_new_user tidak
     // sempat meng-insert baris public.users (misalnya saat role_id belum ada).
@@ -505,12 +501,11 @@ export async function POST(request: Request) {
       .select(
         `
     id, email, full_name, username, phone, pin_hash,
-    branch_id, role_id, status, last_login,
+    role_id, status, last_login,
     created_at, updated_at,
     role:roles!users_role_id_fkey (
       id, name, role_group, description, permissions, allowed_stages
-    ),
-    branches:branches!users_branch_id_fkey (id, name, code)
+    )
   `,
       )
       .single();

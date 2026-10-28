@@ -11,8 +11,6 @@ import { getDashboardPath, queryParamToAppRole } from "@/lib/routes";
 import { setClientUser, type LoginRole } from "@/lib/auth/session";
 import {
   Shield,
-  Headphones,
-  BarChart3,
   ArrowLeft,
   AlertCircle,
   Mail,
@@ -20,6 +18,7 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  BriefcaseBusiness,
 } from "lucide-react";
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -42,27 +41,7 @@ const ROLE_CONFIGS: RoleConfig[] = [
       bg: "rgba(240,201,107,0.1)",
       text: "#b8860b",
     },
-    icon: <Shield className="w-full h-full" />,
-  },
-  {
-    value: "customer_service",
-    label: "CS",
-    colors: {
-      border: "#4f8ef7",
-      bg: "rgba(79,142,247,0.1)",
-      text: "#2563eb",
-    },
-    icon: <Headphones className="w-full h-full" />,
-  },
-  {
-    value: "marketing",
-    label: "Marketing",
-    colors: {
-      border: "#82c882",
-      bg: "rgba(130,200,130,0.1)",
-      text: "#16a34a",
-    },
-    icon: <BarChart3 className="w-full h-full" />,
+    icon: <BriefcaseBusiness className="w-full h-full" />,
   },
   {
     value: "management",
@@ -73,6 +52,16 @@ const ROLE_CONFIGS: RoleConfig[] = [
       text: "#9333ea",
     },
     icon: <Shield className="w-full h-full" />,
+  },
+  {
+    value: "after_sales",
+    label: "After Sales",
+    colors: {
+      border: "#2dd4bf",
+      bg: "rgba(45,212,191,0.1)",
+      text: "#14b8a6",
+    },
+    icon: <BriefcaseBusiness className="w-full h-full" />,
   },
 ];
 
@@ -135,7 +124,6 @@ export default function LoginPage() {
         role: data.user.role,
         username: data.user.username ?? null,
         roleDetail: data.user.roleDetail ?? null,
-        branch: data.user.branch ?? null,
       });
 
       const targetPath = getDashboardPath(data.user.role);
@@ -210,14 +198,14 @@ export default function LoginPage() {
         </Link>
 
         {/* Main content column - larger spacing to fill page */}
-        <div className="relative z-10 flex flex-col items-center w-full max-w-[580px] px-6 sm:px-12 py-3 sm:py-4 gap-y-2 sm:gap-y-3">
+        <div className="relative z-10 flex flex-col items-center w-full max-w-[580px] px-6 sm:px-12 py-2 sm:py-4 gap-y-1.5 sm:gap-y-3">
           {/* Logo */}
           <Image
             src="/logo.png"
             alt="KGJ"
-            width={80}
-            height={80}
-            className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 object-contain shrink-0"
+            width={100}
+            height={100}
+            className="w-36 h-36 sm:w-44 sm:h-44 object-contain shrink-0"
             priority
           />
 
@@ -227,7 +215,7 @@ export default function LoginPage() {
           </h1>
 
           {/* Gold filigree ornament */}
-          <div className="w-48 sm:w-56 h-4 opacity-50">
+          <div className="w-48 sm:w-56 h-4 opacity-50 mb-1 sm:mb-3">
             <svg viewBox="0 0 200 12" className="w-full h-full text-[#c9a227]" fill="none">
               <line x1="0" y1="6" x2="72" y2="6" stroke="currentColor" strokeWidth="0.5" />
               <path d="M72 6 Q80 0 88 6" stroke="currentColor" strokeWidth="0.5" />
@@ -240,7 +228,7 @@ export default function LoginPage() {
           </div>
 
           {/* Frosted glass card - gold border + true glassmorphism with inner border */}
-          <div className="w-full rounded-[20px] border border-[#c9a227]/30 px-5 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-[#1C1917]/70 backdrop-blur-[20px] relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.35)]">
+           <div className="w-full rounded-[20px] border border-[#c9a227]/30 px-5 sm:px-6 md:px-8 py-3 sm:py-5 md:py-6 bg-[#1C1917]/70 backdrop-blur-[20px] relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.35)]">
             {/* Inner 1px border for glass refraction */}
             <div className="absolute inset-[1px] rounded-[19px] border border-white/[0.03] pointer-events-none" />
             <h2 className="font-[var(--font-dm-serif)] text-lg sm:text-2xl text-[#f0f4ff] text-center mb-2 tracking-[-0.01em] [text-wrap:balance]">
@@ -261,8 +249,8 @@ export default function LoginPage() {
               <p className="text-xs font-semibold text-white/35 text-center tracking-[0.06em] uppercase mb-2.5">
                 Pilih Role
               </p>
-              {/* Role selection - strict horizontal row with per-role colors */}
-              <div className="flex justify-center gap-3 mb-2">
+              {/* Role selection - responsive grid with per-role colors */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 {visibleRoles.map((config) => {
                   const isActive = role === config.value;
                   return (
@@ -271,7 +259,8 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setRole(config.value)}
                       disabled={isLoading}
-                      className={`flex flex-col items-center justify-center gap-1.5 py-3 px-4 rounded-xl border-2 text-[13px] font-medium transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed w-[100px] sm:w-[110px] ${
+                      aria-pressed={isActive}
+                      className={`flex min-h-[84px] flex-col items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border-2 text-[13px] font-medium transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed w-full ${
                         isActive
                           ? "text-white"
                           : "border-white/10 bg-white/[0.03] text-white/50 hover:bg-white/[0.06]"
@@ -375,18 +364,18 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            {isLoading && (
-              <div className="absolute inset-0 bg-[#15130f]/[0.85] backdrop-blur-[4px] rounded-[20px] flex items-center justify-center z-20">
-                <Loading
-                  variant="dots"
-                  size="lg"
-                  text="Memverifikasi akun..."
-                />
-              </div>
-            )}
           </div>
         </div>
+
+        {isLoading && (
+          <div className="fixed inset-0 bg-[#15130f]/[0.85] backdrop-blur-[4px] flex items-center justify-center z-50">
+            <Loading
+              variant="dots"
+              size="lg"
+              text="Memverifikasi akun..."
+            />
+          </div>
+        )}
 
         {/* Forgot Password Dialog */}
         {showForgotDialog && (

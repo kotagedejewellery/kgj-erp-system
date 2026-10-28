@@ -8,21 +8,31 @@ import { X, RefreshCw, AlertTriangle } from "lucide-react";
 import { getStageLabel } from "@/lib/stages";
 import { getStageDeadlineStatus } from "@/lib/stage-deadlines";
 import { formatAddsOnList } from "@/lib/adds-on";
+import { getOrderDetailTabs, type OrderDetailView } from "@/lib/orders/order-detail-view";
 import StageTimeline from "@/components/orders/StageTimeline";
 import EstimatedCompletion from "@/components/analytics/EstimatedCompletion";
+import WarrantyPreparation from "@/components/orders/WarrantyPreparation";
 
 export interface OrderDetail {
   order: {
     id: string;
     order_number: string;
+    no_nota: string | null;
+    produk_nama: string | null;
+    produk_sku: string | null;
+    produk_spesifikasi: string | null;
+    jenis_order: string | null;
     customer_name: string;
     customer_wa: string | null;
     customer_email: string | null;
     customer_instagram: string | null;
+    customer_hobby: string | null;
+    customer_job: string | null;
     tgl_chat: string | null;
     tgl_order: string | null;
     tgl_acara: string | null;
     deadline: string | null;
+    deadline_tukang: string | null;
     acara: string | null;
     kebutuhan_acara: string | null;
     alat_ukur: string | null;
@@ -37,7 +47,14 @@ export interface OrderDetail {
     font: string | null;
     laser_position: string | null;
     harga: number | null;
+    subtotal: number | null;
+    diskon: number | null;
+    ongkir: number | null;
     dp_amount: number | null;
+    jenis_pembayaran: string | null;
+    jumlah_bayar: number | null;
+    sisa_bayar: number | null;
+    proses_produksi: string | null;
     order_via: string | null;
     sumber_media: string | null;
     kategori: string | null;
@@ -111,7 +128,7 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 function formatCurrency(val: number | null) {
-  return val ? `Rp ${val.toLocaleString("id-ID")}` : "\u2014";
+  return val != null ? `Rp ${val.toLocaleString("id-ID")}` : "\u2014";
 }
 
 function formatDate(iso: string | null) {
@@ -210,12 +227,15 @@ export default function OrderDetailPopup({
   orderId,
   orderNumber,
   onClose,
+  view = "tracking",
 }: {
   orderId: string;
   orderNumber: string;
   onClose: () => void;
+  view?: OrderDetailView;
 }) {
   const [tab, setTab] = useState<"info" | "stages" | "approvals">("info");
+  const tabs = getOrderDetailTabs(view);
 
   const { data: detailRes, isLoading, error } = useQuery<{ data: OrderDetail }>({
     queryKey: ["order-detail", orderId],
@@ -244,7 +264,11 @@ export default function OrderDetailPopup({
               <h3 className="text-sm font-semibold text-[#f0f4ff] mt-0.5 truncate">
                 {o?.customer_name || "Memuat..."}
               </h3>
-              {o && (
+              {view === "intake" ? (
+                <span className="inline-block rounded-full border border-sky-400/20 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-200 mt-1">
+                  Menunggu Validasi SPV CS
+                </span>
+              ) : o && (
                 <span
                   className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium mt-1 ${
                     STAGE_COLORS[
@@ -280,7 +304,7 @@ export default function OrderDetailPopup({
           <>
             {/* Tabs */}
             <div className="flex border-b border-slate-100 px-5">
-              {(["info", "stages", "approvals"] as const).map((t) => (
+              {tabs.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -327,8 +351,49 @@ export default function OrderDetailPopup({
                           Instagram: {o.customer_instagram}
                         </p>
                       )}
+                      {o.customer_job && (
+                        <p className="text-xs text-white/40">
+                          Pekerjaan: {o.customer_job}
+                        </p>
+                      )}
+                      {o.customer_hobby && (
+                        <p className="text-xs text-white/40">
+                          Hobi: {o.customer_hobby}
+                        </p>
+                      )}
                     </div>
                   </div>
+
+                  {/* Produk (checkout dari katalog) */}
+                  {o.produk_nama && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40 mb-2">
+                        Produk
+                      </p>
+                      <div className="rounded-lg bg-[#1C1917] p-3 space-y-1.5">
+                        <p className="text-sm font-semibold text-[#f0f4ff]">
+                          {o.produk_nama}
+                        </p>
+                        {o.produk_sku && (
+                          <p className="font-mono text-xs text-white/40">
+                            SKU: {o.produk_sku}
+                          </p>
+                        )}
+                        {o.produk_spesifikasi && (
+                          <div
+                            className="text-xs text-white/60 leading-relaxed max-w-none [&_h2]:text-[10px] [&_h2]:font-semibold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-white/40 [&_h2]:mb-1 [&_blockquote]:mb-0.5 [&_p]:mb-1"
+                            dangerouslySetInnerHTML={{
+                              __html: o.produk_spesifikasi,
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {o.proses_produksi && (
+                    <InfoRow label="Proses Produksi" value={o.proses_produksi} />
+                  )}
 
                   {/* Ring specs */}
                   <div>
@@ -364,6 +429,8 @@ export default function OrderDetailPopup({
                       )}
                     </div>
                   </div>
+
+                  <WarrantyPreparation orderId={orderId} currentStage={o.current_stage} />
 
                   {/* Reference images */}
                   {(o.reference_image_pria_url ||
@@ -403,18 +470,70 @@ export default function OrderDetailPopup({
                       Harga
                     </p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
+                      {o.subtotal != null && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Subtotal</span>
+                          <p className="font-semibold text-[#e8e2d4]">
+                            {formatCurrency(o.subtotal)}
+                          </p>
+                        </div>
+                      )}
+                      {o.diskon != null && o.diskon > 0 && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Diskon</span>
+                          <p className="font-semibold text-rose-300">
+                            − {formatCurrency(o.diskon)}
+                          </p>
+                        </div>
+                      )}
+                      {o.ongkir != null && o.ongkir > 0 && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Biaya Kirim</span>
+                          <p className="font-semibold text-[#e8e2d4]">
+                            {formatCurrency(o.ongkir)}
+                          </p>
+                        </div>
+                      )}
                       <div className="bg-[#1C1917] rounded p-2">
-                        <span className="text-white/40">Total Harga</span>
+                        <span className="text-white/40">Harga Final</span>
                         <p className="font-semibold text-[#e8e2d4]">
                           {formatCurrency(o.harga)}
                         </p>
                       </div>
-                      <div className="bg-[#1C1917] rounded p-2">
-                        <span className="text-white/40">DP</span>
-                        <p className="font-semibold text-[#e8e2d4]">
-                          {formatCurrency(o.dp_amount)}
-                        </p>
-                      </div>
+                      {o.dp_amount != null && o.dp_amount > 0 && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">DP</span>
+                          <p className="font-semibold text-[#e8e2d4]">
+                            {formatCurrency(o.dp_amount)}
+                          </p>
+                        </div>
+                      )}
+                      {o.jumlah_bayar != null && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Dibayar</span>
+                          <p className="font-semibold text-[#e8e2d4]">
+                            {formatCurrency(o.jumlah_bayar)}
+                          </p>
+                        </div>
+                      )}
+                      {o.sisa_bayar != null && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Sisa Bayar</span>
+                          <p
+                            className={`font-semibold ${o.sisa_bayar > 0 ? "text-amber-300" : "text-emerald-300"}`}
+                          >
+                            {o.sisa_bayar > 0 ? formatCurrency(o.sisa_bayar) : "Lunas"}
+                          </p>
+                        </div>
+                      )}
+                      {o.jenis_pembayaran && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Metode Bayar</span>
+                          <p className="font-semibold text-[#e8e2d4]">
+                            {o.jenis_pembayaran}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -447,7 +566,7 @@ export default function OrderDetailPopup({
                               className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${dl.isOverdue ? "bg-rose-50 text-rose-700 ring-rose-200" : "bg-emerald-500/[0.08] text-emerald-300 ring-emerald-200"}`}
                             >
                               {dl.isOverdue
-                                ? `\u26a0 ${Math.abs(dl.daysRemaining)}h`
+                                ? `\u26a0 Terlambat ${Math.abs(dl.daysRemaining)} hari`
                                 : `\u2714 H-${Math.max(dl.daysRemaining, 1)}`}
                             </span>
                           );
@@ -458,6 +577,38 @@ export default function OrderDetailPopup({
                           <span className="text-white/40">Tgl Acara</span>
                           <p className="font-medium text-[#e8e2d4]">
                             {formatDate(o.tgl_acara)}
+                          </p>
+                        </div>
+                      )}
+                      {o.deadline_tukang && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Deadline Tukang</span>
+                          <p className="font-medium text-[#e8e2d4]">
+                            {formatDate(o.deadline_tukang)}
+                          </p>
+                        </div>
+                      )}
+                      {o.no_nota && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">No Nota</span>
+                          <p className="font-mono font-medium text-[#e8e2d4]">
+                            {o.no_nota}
+                          </p>
+                        </div>
+                      )}
+                      {o.jenis_order && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Jenis Order</span>
+                          <p className="font-medium text-[#e8e2d4]">
+                            {o.jenis_order}
+                          </p>
+                        </div>
+                      )}
+                      {o.sumber_media && (
+                        <div className="bg-[#1C1917] rounded p-2">
+                          <span className="text-white/40">Sumber</span>
+                          <p className="font-medium text-[#e8e2d4]">
+                            {o.sumber_media}
                           </p>
                         </div>
                       )}

@@ -25,13 +25,15 @@ import {
   ChevronLeft,
   ScanEye,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 import {
+  AFTER_SALES_ROUTES,
   SUPERADMIN_ROUTES,
-  CS_ROUTES,
-  MARKETING_ROUTES,
   SUPERVISOR_ROUTES,
 } from "@/lib/routes";
+import { getClientUser } from "@/lib/auth/session";
+import { getSupervisorMenuItems } from "@/lib/auth/supervisor-navigation";
 
 import type { MenuItem, CollapseState } from "@/types/layout";
 
@@ -50,7 +52,7 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERADMIN_ROUTES.DASHBOARD,
     },
     {
-      name: "Kelola Akun & Cabang",
+      name: "Kelola Akun",
       icon: "users",
       href: SUPERADMIN_ROUTES.KELOLA_AKUN,
     },
@@ -60,31 +62,9 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERADMIN_ROUTES.KELOLA_QR_CODES,
     },
     {
-      name: "BMS",
-      icon: "bms",
-      submenu: [
-        {
-          name: "Dashboard",
-          icon: "dashboard",
-          href: SUPERADMIN_ROUTES.BMS_DASHBOARD,
-        },
-        {
-          name: "Data Statistik",
-          icon: "statistik",
-          href: SUPERADMIN_ROUTES.STATISTIK,
-        },
-        { name: "Laporan", icon: "report", href: SUPERADMIN_ROUTES.LAPORAN },
-      ],
-    },
-    {
       name: "OPR-PRD",
       icon: "oprprd",
       submenu: [
-        {
-          name: "Dashboard",
-          icon: "dashboard",
-          href: SUPERADMIN_ROUTES.OPRPRD_DASHBOARD,
-        },
         {
           name: "Monitoring Operasional",
           icon: "monitor",
@@ -105,20 +85,12 @@ const menuItems: Record<string, MenuItem[]> = {
           icon: "report",
           href: SUPERADMIN_ROUTES.OPRPRD_LAPORAN,
         },
+        {
+          name: "Riwayat Order",
+          icon: "order",
+          href: SUPERADMIN_ROUTES.OPRPRD_HISTORY,
+        },
       ],
-    },
-  ],
-  customer_service: [
-    { name: "Dashboard", icon: "dashboard", href: CS_ROUTES.DASHBOARD },
-    { name: "Input Leads", icon: "input", href: CS_ROUTES.INPUT_LEADS },
-  ],
-  marketing: [
-    { name: "Dashboard", icon: "dashboard", href: MARKETING_ROUTES.DASHBOARD },
-    { name: "Input Marketing", icon: "input", href: MARKETING_ROUTES.INPUT },
-    {
-      name: "Analisis Channel",
-      icon: "analisis",
-      href: MARKETING_ROUTES.ANALISIS,
     },
   ],
   supervisor: [
@@ -127,16 +99,20 @@ const menuItems: Record<string, MenuItem[]> = {
       icon: "dashboard",
       href: SUPERVISOR_ROUTES.DASHBOARD,
     },
-    { name: "Monitoring", icon: "scan", href: SUPERVISOR_ROUTES.MONITORING },
     { name: "Persetujuan", icon: "approval", href: SUPERVISOR_ROUTES.APPROVAL },
     { name: "Kelola Akun", icon: "users", href: SUPERVISOR_ROUTES.ACCOUNTS },
     { name: "Personnel", icon: "personnel", href: SUPERVISOR_ROUTES.PERSONNEL },
-    {
-      name: "Slot Management",
-      icon: "slot",
-      href: SUPERVISOR_ROUTES.SLOT_MANAGEMENT,
-    },
     { name: "QR Code", icon: "qr", href: SUPERVISOR_ROUTES.QR_CODES },
+    { name: "Riwayat Order", icon: "order", href: SUPERVISOR_ROUTES.HISTORY },
+    {
+      name: "Riwayat Persetujuan",
+      icon: "approval",
+      href: SUPERVISOR_ROUTES.APPROVAL_HISTORY,
+    },
+  ],
+  after_sales: [
+    { name: "Aktivasi Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.AKTIVASI },
+    { name: "Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.GARANSI },
   ],
 };
 
@@ -154,20 +130,26 @@ const iconMap: Record<string, React.ReactNode> = {
   scan: <ScanEye className="w-5 h-5" />,
   production: <DollarSign className="w-5 h-5" />,
   approval: <CheckCircle className="w-5 h-5" />,
-  slot: <CalendarDays className="w-5 h-5" />,
   personnel: <UserPlus className="w-5 h-5" />,
   chevronDown: <ChevronDown className="w-4 h-4" />,
   chevronRight: <ChevronRight className="w-4 h-4" />,
   qr: <QrCode className="w-5 h-5" />,
   checklist: <ClipboardList className="w-5 h-5" />,
   order: <FileText className="w-5 h-5" />,
+  warranty: <ShieldCheck className="w-5 h-5" />,
 };
 
 export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sidebar-collapsed") === "true";
+    }
+    return false;
+  });
   const [actualRole, setActualRole] = useState<string | null>(null);
-  const [headerBottom, setHeaderBottom] = useState<number | null>(null);
+  const [isIntakeValidator, setIsIntakeValidator] = useState(false);
+  const [isSupervisorMenuReady, setIsSupervisorMenuReady] = useState(role !== "supervisor");
   const [collapsedMenus, setCollapsedMenus] = useState<CollapseState>({
     BMS: false,
     OPRPRD: true,
@@ -175,16 +157,31 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   useEffect(() => {
     if (role !== "supervisor") return;
+    const cachedUser = getClientUser();
+    if (cachedUser?.role === "supervisor" && cachedUser.roleDetail) {
+      setActualRole(cachedUser.roleDetail.name);
+      setIsIntakeValidator(cachedUser.roleDetail.permissions.can_validate_intake === true);
+      setIsSupervisorMenuReady(true);
+    }
+
     fetch("/api/me")
-      .then((r) => r.json())
-      .then((j) => setActualRole(j.data?.role?.name ?? null))
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then((j) => {
+        if (!j?.data?.role) return;
+        setActualRole(j.data?.role?.name ?? null);
+        setIsIntakeValidator(j.data?.role?.permissions?.can_validate_intake === true);
+        setIsSupervisorMenuReady(true);
+      })
       .catch(() => {});
   }, [role]);
 
-  let items = menuItems[role as keyof typeof menuItems] || [];
-  if (actualRole === "production_supervisor") {
-    items = items.filter((i) => i.name !== "Slot Management");
-  }
+  const baseItems = menuItems[role as keyof typeof menuItems] || [];
+  const items = role === "supervisor"
+    ? getSupervisorMenuItems(baseItems, actualRole, isIntakeValidator)
+    : baseItems;
 
   // Always hold the latest onClose without re-triggering effects
   const onCloseRef = useRef(onClose);
@@ -222,17 +219,6 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Observe header position for collapse button alignment
-  useEffect(() => {
-    const header = document.getElementById("dashboard-header");
-    if (!header) return;
-    const observer = new ResizeObserver(() => {
-      setHeaderBottom(header.getBoundingClientRect().bottom);
-    });
-    observer.observe(header);
-    return () => observer.disconnect();
   }, []);
 
   const toggleMenuCollapse = (menuName: string) => {
@@ -388,7 +374,9 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
               className="w-full h-full object-contain"
             />
           </div>
-          <span className="text-sm font-bold text-[#f0f4ff]">KGJ Dashboard</span>
+          <span className="text-sm font-bold text-[#f0f4ff]">
+            KGJ Dashboard
+          </span>
         </div>
         <button
           onClick={onClose}
@@ -406,7 +394,7 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         }`}
       >
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-10 h-10 flex-shrink-0 rounded-xl overflow-hidden">
+          <div className="w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
@@ -419,9 +407,6 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
               <h2 className="text-base font-bold bg-gradient-to-r from-[#e8e2d4] to-[#c9a227] bg-clip-text text-transparent whitespace-nowrap">
                 KGJ Dashboard
               </h2>
-              <p className="text-sm font-semibold text-[#e8e2d4] whitespace-nowrap">
-                ERP System
-              </p>
             </div>
           )}
         </div>
@@ -429,26 +414,26 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 mt-4 md:mt-6 px-3 overflow-y-auto">
-        {items.map((item, index) => renderMenuItem(item, index))}
+        {role === "supervisor" && !isSupervisorMenuReady ? (
+          <div className="space-y-2 animate-pulse" aria-label="Memuat menu supervisor">
+            {["one", "two", "three", "four"].map((key) => (
+              <div key={key} className="h-10 rounded-lg bg-white/5" />
+            ))}
+          </div>
+        ) : (
+          items.map((item, index) => renderMenuItem(item, index))
+        )}
       </nav>
 
       {/* Bottom Section */}
       <div
         className={`p-4 border-t border-[#c9a227]/5 ${
-          isCollapsed &&
-          typeof window !== "undefined" &&
-          window.innerWidth >= 768
-            ? "text-center"
-            : ""
+          isCollapsed ? "text-center" : ""
         }`}
       >
         <div
           className={`flex items-center ${
-            isCollapsed &&
-            typeof window !== "undefined" &&
-            window.innerWidth >= 768
-              ? "justify-center"
-              : "gap-3"
+            isCollapsed ? "justify-center" : "gap-3"
           }`}
         >
           <div className="w-8 h-8 bg-[#2a2522]/[0.04] rounded-full flex items-center justify-center flex-shrink-0">
@@ -490,23 +475,24 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         border-r border-[#c9a227]/10 shadow-xl md:shadow-none
       `}
       >
+        {/* Collapse Toggle — pure CSS positioning */}
+        <button
+          onClick={() => {
+            const next = !isCollapsed;
+            setIsCollapsed(next);
+            localStorage.setItem("sidebar-collapsed", String(next));
+          }}
+          className="hidden md:flex absolute z-50 w-8 h-8 bg-[#1C1917] border border-gold rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
+          style={{ right: "0", transform: "translateX(50%)", top: "58px" }}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ChevronLeft
+            className={`w-5 h-5 text-gold-bright transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`}
+          />
+        </button>
+
         {sidebarContent}
       </aside>
-
-      {/* Collapse toggle — outside aside to avoid sticky stacking context */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="hidden md:flex fixed z-50 w-7 h-7 bg-[#1C1917] border border-[#c9a227]/10 rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
-        style={{
-          left: isCollapsed ? "42px" : "182px",
-          top: headerBottom != null ? headerBottom - 12 : 84,
-        }}
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <ChevronLeft
-          className={`w-4 h-4 text-[#e8e2d4] transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`}
-        />
-      </button>
     </>
   );
 }

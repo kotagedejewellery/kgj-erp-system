@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     // 2. Look up user
     const { data: userData, error: userError } = await admin
       .from("users")
-      .select("id, email, full_name, username, status, pin_hash, pin_attempts, pin_locked_until, role:roles!users_role_id_fkey(id, name, role_group, allowed_stages)")
+      .select("id, email, full_name, username, status, pin_hash, pin_attempts, pin_locked_until, role:roles!users_role_id_fkey(id, name, role_group, description, permissions, allowed_stages)")
       .eq("id", user_id)
       .is("deleted_at", null)
       .single();
@@ -194,18 +194,6 @@ export async function POST(request: Request) {
       user_agent: request.headers.get("user-agent"),
     });
 
-    // 9. Log scan event
-    await admin.from("scan_events").insert({
-      user_id: userData.id,
-      stage: "login",
-      action: "open",
-      device_info: "QR Scanner (PIN)",
-      ip_address:
-        request.headers.get("x-forwarded-for") ||
-        request.headers.get("x-real-ip"),
-      scanned_at: new Date().toISOString(),
-    });
-
     const roleProps = getRoleProps(userData);
 
     return NextResponse.json({
@@ -222,6 +210,8 @@ export async function POST(request: Request) {
           id: roleProps.id,
           name: roleProps.name,
           role_group: roleProps.role_group,
+          description: roleProps.description,
+          permissions: roleProps.permissions,
           allowed_stages: roleProps.allowed_stages,
         },
       },

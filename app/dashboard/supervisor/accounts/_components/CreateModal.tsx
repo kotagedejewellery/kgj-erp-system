@@ -79,18 +79,18 @@ export function CreateModal({ roles, onClose, onCreated }: CreateModalProps) {
     return (
       <ModalShell
         title="Akun Berhasil Dibuat"
-        icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+        icon={<CheckCircle2 className="h-5 w-5 text-emerald-300" />}
         onClose={onClose}
       >
         <div className="space-y-4">
-          <div className="rounded-xl bg-emerald-50 p-4 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-              <UserPlus className="h-7 w-7 text-emerald-600" />
+          <div className="rounded-xl bg-emerald-500/10 p-4 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+              <UserPlus className="h-7 w-7 text-emerald-300" />
             </div>
             <p className="font-semibold text-emerald-800">
               {createdAccount.full_name}
             </p>
-            <p className="text-sm text-emerald-600">
+            <p className="text-sm text-emerald-300">
               @{createdAccount.username}
             </p>
             {createdAccount.role && (
@@ -99,7 +99,7 @@ export function CreateModal({ roles, onClose, onCreated }: CreateModalProps) {
               </p>
             )}
           </div>
-          <div className="rounded-lg bg-amber-50 p-3">
+          <div className="rounded-lg bg-amber-500/10 p-3">
             <p className="text-xs font-medium text-amber-800">
               Informasikan username dan password kepada anggota tim yang
               bersangkutan.
@@ -107,7 +107,7 @@ export function CreateModal({ roles, onClose, onCreated }: CreateModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+            className="w-full rounded-lg bg-amber-500/100 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
           >
             Selesai
           </button>
@@ -120,12 +120,12 @@ export function CreateModal({ roles, onClose, onCreated }: CreateModalProps) {
     <ModalShell
       title="Tambah Akun Tim"
       subtitle="Buat akun baru untuk anggota tim"
-      icon={<UserPlus className="h-5 w-5 text-amber-600" />}
+      icon={<UserPlus className="h-5 w-5 text-amber-300" />}
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 flex items-start gap-2">
+          <div className="rounded-lg bg-rose-500/10 px-4 py-3 text-sm text-rose-300 ring-1 ring-red-200 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -156,14 +156,14 @@ export function CreateModal({ roles, onClose, onCreated }: CreateModalProps) {
         />
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-stone-700">
+          <label className="mb-1 block text-sm font-medium text-cream">
             Role <span className="text-red-500">*</span>
           </label>
           <select
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
             required
-            className="w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 transition"
+            className="w-full rounded-lg border border-gold/15 bg-carbon px-3 py-2.5 text-sm text-cream focus:border-amber-400 focus:bg-cocoa focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
           >
             <option value="">Pilih role...</option>
             {Object.entries(groupedRoles).map(([group, groupRoles]) => (
@@ -190,14 +190,14 @@ export function CreateModal({ roles, onClose, onCreated }: CreateModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors"
+            className="flex-1 rounded-lg border border-gold/15 px-4 py-2.5 text-sm font-medium text-cream hover:bg-carbon transition-colors"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
+            className="flex-1 rounded-lg bg-amber-500/100 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
           >
             {loading ? "Menyimpan..." : "Buat Akun"}
           </button>

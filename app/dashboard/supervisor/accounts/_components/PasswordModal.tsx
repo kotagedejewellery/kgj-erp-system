@@ -57,7 +57,7 @@ export function PasswordModal({ account, onClose }: PasswordModalProps) {
     <ModalShell
       title="Reset Password"
       subtitle={account.full_name}
-      icon={<Key className="h-5 w-5 text-blue-600" />}
+      icon={<Key className="h-5 w-5 text-sky-300" />}
       onClose={onClose}
     >
       {success ? (
@@ -111,7 +111,7 @@ export function PasswordModal({ account, onClose }: PasswordModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors"
+              className="flex-1 rounded-lg border border-gold/15 px-4 py-2.5 text-sm font-medium text-cream hover:bg-carbon transition-colors"
             >
               Batal
             </button>

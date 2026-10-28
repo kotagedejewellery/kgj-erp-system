@@ -1,109 +1,52 @@
 # Database Migrations
 
-BMS-OPR-PRD ERP System — Supabase PostgreSQL schema migrations.
+Schema Main-ERP saat ini memakai model integrasi Yii2: `legacy_orders` sebagai data order intake dan `tracking_stages` + `stage_history` sebagai tracking produksi.
 
-> **Important:** These migration files were reverse-engineered from the production codebase (API route handlers, TypeScript types, and component patterns). They document the inferred schema — the actual production schema may differ slightly. Verify before applying to production.
+## Status migration
 
----
+| Kelompok | File | Status |
+|---|---|---|
+| Arsip model BMS lama | `001`–`004` | Jangan dijalankan ulang. Hanya catatan historis. |
+| Management | `005`, `006` | Schema task management aktif. |
+| Integrasi Yii2 dan tracking aktif | `009`–`020` | Menambahkan model order legacy, stage, sinkronisasi, brand, dan intake SPV CS. |
+| Pembersihan model lama | `021`–`024` | Sudah menghapus CS/Marketing lama, Slots, Cekat, Order Form, tabel BMS lama, cabang, dan work instruction. |
 
-## Files
+- Migration `027` menambahkan data PCS/berat per unit serta outbox aktivasi Warranty.
+- Migration `028` menambahkan inbox idempoten dan Contract Projection dari event Yii2.
+- Migration `029` menambahkan receipt command Candidate agar retry validasi/aktivasi memakai `request_id` yang sama.
+- Migration `030` menambahkan role dashboard `after_sales` untuk Garansi, tanpa mengubah role atau workspace SPV Operational.
+- Migration `031` menjaga `candidate_sequence` asli pada event aktivasi agar Candidate tidak berubah ketika unit awal dihapus sebelum Preparation dikunci.
+- Migration `032` menambahkan permission Claim non-workshop pada role `after_sales`, tanpa memberi akses Warranty ke SPV Operational.
+- Migration `033` menambahkan Claim Projection idempoten untuk event `warranty_claim_changed` dari Yii2.
 
-| File | Description |
-|------|-------------|
-| `001_initial_schema.sql` | Complete DDL for all 24 tables with indexes, constraints, comments |
-| `002_rls_policies.sql` | Row Level Security policies + 7 helper functions |
+## Tabel inti aktif
 
----
+- Identitas dan akses: `roles`, `users`, `activity_logs`, `notifications`, `qr_codes`, `stage_personnel`.
+- Order Yii2 dan produksi: `legacy_orders`, `tracking_stages`, `stage_history`, `legacy_rework_logs`, `legacy_deliveries`, `legacy_quality_checklist_results`.
+- Sinkronisasi dan intake: `sync_logs`, `legacy_status_sync_queue`, `legacy_approval_lock_sync_queue`, `legacy_order_intakes`, `brand_intake_policies`.
+- Migration `025` menambahkan metadata dan retry pengiriman rework SPV CS pada `legacy_order_intakes`.
+- Management: tabel `management_*` dan storage attachment terkait.
+- Warranty: `warranty_preparations`, `warranty_preparation_units`, `warranty_activation_outbox`.
+- Warranty inbound: `warranty_event_inbox`, `warranty_contract_projections`, `warranty_claim_projections`.
+- Warranty command receipt: `warranty_candidate_commands`.
 
-## Tables (24 total)
+Nama `legacy_*` di atas adalah tabel aktif. Jangan tertukar dengan tabel BMS lama tanpa prefix tersebut.
 
-| # | Table | Purpose |
-|---|-------|---------|
-| 1 | `roles` | Role definitions (login roles, supervisors, workshop workers) |
-| 2 | `branches` | Business branch locations |
-| 3 | `users` | All system users (FK matches Supabase auth.users.id) |
-| 4 | `cs_orders` | Primary order tracking (50+ columns, 20-stage workflow) |
-| 5 | `slot_categories` | Production slot capacity per order category |
-| 6 | `slot_overrides` | Per-date slot capacity overrides |
-| 7 | `marketing_channels` | Marketing channel definitions |
-| 8 | `cs_inputs` | CS daily lead/closing/omset per branch |
-| 9 | `marketing_inputs` | Marketing channel performance data |
-| 10 | `stage_results` | Worker stage submissions (jsonb data per stage) |
-| 11 | `order_stage_transitions` | Stage change history (advance/rework/complete) |
-| 12 | `approvals` | Supervisor approve/reject decisions |
-| 13 | `rework_logs` | Rework/rollback event log |
-| 14 | `scan_events` | QR scan audit trail |
-| 15 | `qr_codes` | Workstation QR code registry |
-| 16 | `deliveries` | Shipping/delivery tracking |
-| 17 | `notifications` | User notifications (Pusher realtime + DB persistence) |
-| 18 | `activity_logs` | Global audit log |
-| 19 | `reports` | Generated report records (BMS/OPRPRD) |
-| 20 | `stage_personnel` | Worker-to-stage assignment mapping |
-| 21 | `material_transactions` | Material usage tracking per order |
-| 22 | `work_instructions` | Stage-specific work parameters |
-| 23 | `quality_checklist_results` | Per-item QC checklist results |
-| 24 | `customer_confirmations` | Customer confirmation/rejection records |
+## Ketentuan penerapan
 
----
+1. Jangan menjalankan `001`–`004` pada database aktif atau database baru yang ditujukan untuk Main-ERP saat ini.
+2. Migration di folder ini adalah dokumentasi reverse-engineered; schema live Supabase tetap menjadi sumber kebenaran.
+   Khusus `roles.allowed_stages`, schema live bertipe `jsonb`; gunakan `'[]'::jsonb` untuk role tanpa stage.
+3. Sebelum migration baru, ekspor schema live dan pastikan dependensi view, policy RLS, constraint, serta data sudah diperiksa.
+4. Untuk verifikasi schema live, gunakan:
 
-## Key Design Decisions
-
-1. **UUIDs as PKs** — all tables use `gen_random_uuid()` defaults
-2. **Soft deletes** — `users` and `cs_orders` use `deleted_at` nullable timestamptz
-3. **JSONB for flexible data** — `stage_results.data`, `roles.permissions`, `activity_logs.old_data/new_data`
-4. **No attachments/payments tables** — attachment URLs stored in `cs_orders`; payments embedded in `cs_orders.harga`/`dp_amount`
-5. **Dual FK pattern** — `users.id` matches Supabase `auth.users.id` (not auto-generated)
-6. **RLS enabled** — all SELECT operations filtered by role; writes go through admin client (service role key)
-
----
-
-## How to Apply
-
-### Option A: Supabase SQL Editor
-1. Open Supabase Dashboard → SQL Editor
-2. Run `001_initial_schema.sql` first
-3. Run `002_rls_policies.sql` second
-4. Verify all 24 tables exist: `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
-
-### Option B: Supabase CLI
-```bash
-# Link project (first time)
-supabase link --project-ref <project-ref>
-
-# Apply migrations
-supabase db push
-
-# Or use migration system
-supabase migration new initial_schema
-# Copy content of 001_initial_schema.sql into the generated file
-supabase migration new rls_policies
-# Copy content of 002_rls_policies.sql into the generated file
-supabase db push
+```sql
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY table_name;
 ```
 
-### Option C: psql
-```bash
-psql "postgresql://postgres:<password>@<host>:5432/postgres" -f migrations/001_initial_schema.sql
-psql "postgresql://postgres:<password>@<host>:5432/postgres" -f migrations/002_rls_policies.sql
-```
+## Tabel yang sudah dipensiunkan
 
----
-
-## After Applying
-
-1. Verify `stage_personnel` table exists (required for personnel management feature)
-2. Verify all 8 env vars are set in `.env.local`
-3. Run `npm run build` to verify no breaking changes
-4. Insert seed data for roles and slot_categories as needed
-5. Create superadmin user via Supabase dashboard or `/api/users` endpoint
-
----
-
-## Warning
-
-**Do not run these on an existing production database without reviewing.** These files are reverse-engineered and:
-- May include columns that don't exist yet or may miss columns
-- Use `IF NOT EXISTS`-style safety in many places but not everywhere
-- Do not include data migration for the legacy `orders` table
-
-For production use, compare against the actual schema first: run `SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' ORDER BY table_name, ordinal_position;` in your Supabase SQL Editor.
+Migration `021`–`024` menghapus seluruh tabel model lama, termasuk `cs_orders`, `orders`, `branches`, `work_instructions`, Slots, Cekat, Marketing, dan Customer Service dashboard lama. Tabel tersebut tidak boleh dibuat kembali kecuali ada keputusan arsitektur baru.

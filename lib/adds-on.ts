@@ -19,6 +19,7 @@ export function formatAddsOn(key: string): string {
   return LABEL_MAP[key] ?? key;
 }
 
-export function formatAddsOnList(keys: string[]): string {
+export function formatAddsOnList(keys: string[] | null): string {
+  if (!keys || !Array.isArray(keys) || keys.length === 0) return "—";
   return keys.map(formatAddsOn).join(", ");
 }

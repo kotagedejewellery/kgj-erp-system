@@ -106,23 +106,23 @@ const REPORTS: ReportCard[] = [
 const TONE_MAP = {
   sky: {
     iconBg: "bg-sky-50 text-sky-600",
-    badge: "bg-sky-100 text-sky-700",
+    badge: "bg-sky-500/10 text-sky-300",
     btn: "bg-sky-600 hover:bg-sky-700 focus-visible:ring-sky-400",
   },
   emerald: {
-    iconBg: "bg-emerald-50 text-emerald-600",
-    badge: "bg-emerald-100 text-emerald-700",
-    btn: "bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-400",
+    iconBg: "bg-emerald-500/10 text-emerald-300",
+    badge: "bg-emerald-500/10 text-emerald-300",
+    btn: "bg-emerald-500/20 hover:bg-emerald-500/30 focus-visible:ring-emerald-400/30",
   },
   violet: {
-    iconBg: "bg-violet-50 text-violet-600",
-    badge: "bg-violet-100 text-violet-700",
-    btn: "bg-violet-600 hover:bg-violet-700 focus-visible:ring-violet-400",
+    iconBg: "bg-violet-500/10 text-violet-300",
+    badge: "bg-violet-500/10 text-violet-300",
+    btn: "bg-violet-500/20 hover:bg-violet-500/30 focus-visible:ring-violet-400/30",
   },
   amber: {
-    iconBg: "bg-amber-50 text-amber-600",
-    badge: "bg-amber-100 text-amber-700",
-    btn: "bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-400",
+    iconBg: "bg-amber-500/10 text-amber-300",
+    badge: "bg-amber-500/10 text-amber-300",
+    btn: "bg-amber-500/20 hover:bg-amber-500/30 focus-visible:ring-amber-400/30",
   },
 };
 
@@ -227,16 +227,16 @@ export default function LaporanPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Link
-                  href="/dashboard/superadmin/oprprd"
-                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  href="/dashboard/superadmin"
+                  className="inline-flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
                 >
                   <ArrowLeft className="h-3 w-3" /> OPR-PRD
                 </Link>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
+              <h2 className="text-2xl font-bold text-ivory tracking-tight leading-none">
                 Laporan OPR-PRD
               </h2>
-              <p className="text-sm text-slate-400 font-mono mt-1">
+              <p className="text-sm text-white/40 font-mono mt-1">
                 Unduh laporan produksi, QC, dan performa tim dalam format CSV
               </p>
             </div>
@@ -250,11 +250,11 @@ export default function LaporanPage() {
                   setLastDownloaded(null);
                   setDownloadError(null);
                 }}
-                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                className="rounded-md border border-gold/15 bg-cocoa px-3 py-1.5 text-xs font-medium text-cream shadow-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-white/40">
                 Periode:{" "}
-                <span className="font-medium text-slate-600">
+                <span className="font-medium text-white/70">
                   {periodLabel(period)}
                 </span>
               </p>
@@ -263,13 +263,13 @@ export default function LaporanPage() {
 
           {/* ── Error Banner ── */}
           {downloadError && (
-            <div className="mb-5 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 flex-none text-rose-600" />
+            <div className="mb-5 flex items-start gap-3 rounded-lg border border-rose-400/20 bg-rose-500/10 px-4 py-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-none text-rose-300" />
               <div>
-                <p className="text-sm font-medium text-rose-800">
+                <p className="text-sm font-medium text-rose-200">
                   Gagal mengunduh laporan
                 </p>
-                <p className="text-xs text-rose-700">{downloadError}</p>
+                <p className="text-xs text-rose-200">{downloadError}</p>
               </div>
             </div>
           )}
@@ -284,7 +284,7 @@ export default function LaporanPage() {
               return (
                 <div
                   key={report.type}
-                  className="rounded-lg border border-slate-200 bg-white p-5 flex flex-col gap-4 shadow-sm"
+                  className="rounded-lg border border-gold/15 bg-cocoa p-5 flex flex-col gap-4 shadow-sm"
                 >
                   {/* Card Header */}
                   <div className="flex items-start gap-3">
@@ -292,10 +292,10 @@ export default function LaporanPage() {
                       {report.icon}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-slate-900">
+                      <h3 className="text-sm font-semibold text-ivory">
                         {report.title}
                       </h3>
-                      <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">
+                      <p className="mt-0.5 text-xs text-white/50 leading-relaxed">
                         {report.description}
                       </p>
                     </div>
@@ -314,13 +314,13 @@ export default function LaporanPage() {
                   </div>
 
                   {/* Separator */}
-                  <div className="border-t border-slate-100" />
+                  <div className="border-t border-gold/10" />
 
                   {/* Footer */}
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-white/40">
                       Format:{" "}
-                      <span className="font-medium text-slate-600">
+                      <span className="font-medium text-white/70">
                         CSV (Excel-compatible)
                       </span>
                     </p>
@@ -353,27 +353,27 @@ export default function LaporanPage() {
           </div>
 
           {/* ── Info box ── */}
-          <div className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4">
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="mt-6 rounded-lg border border-gold/15 bg-cocoa px-5 py-4">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
               Petunjuk Penggunaan
             </h4>
-            <ul className="space-y-1.5 text-xs text-slate-600">
+            <ul className="space-y-1.5 text-xs text-white/70">
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-slate-400" />
+                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-white/40" />
                 Pilih <strong>periode (bulan)</strong> di sudut kanan atas
                 sebelum mengunduh.
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-slate-400" />
+                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-white/40" />
                 File CSV kompatibel dengan Microsoft Excel dan Google Sheets.
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-slate-400" />
+                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-white/40" />
                 <strong>Laporan Lengkap</strong> menggabungkan tiga laporan
                 sekaligus — cocok untuk arsip bulanan.
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-slate-400" />
+                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-white/40" />
                 Data susut hanya muncul untuk tahap <strong>Lebur Bahan</strong>
                 , <strong>Pembentukan Cincin</strong>, dan{" "}
                 <strong>Pemolesan</strong>.

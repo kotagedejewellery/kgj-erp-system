@@ -1,6 +1,6 @@
 // app/api/workshop/orders/route.ts
-// Returns legacy Yii2 orders (legacy_orders + tracking_stages) currently at the
-// authenticated worker's allowed stage(s). Response shape is unchanged.
+// Returns a page of legacy Yii2 orders (legacy_orders + tracking_stages) at the
+// authenticated worker's allowed stage(s).
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -62,7 +62,43 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("q")?.trim() ?? "";
-    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 100);
+    const requestedLimit = Number.parseInt(searchParams.get("limit") ?? "50", 10);
+    const requestedOffset = Number.parseInt(searchParams.get("offset") ?? "0", 10);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 100)
+      : 50;
+    const offset = Number.isFinite(requestedOffset)
+      ? Math.max(requestedOffset, 0)
+      : 0;
+
+    let matchingOrderIds: string[] | null = null;
+    if (search) {
+      const { data: matchingOrders, error: matchingOrdersError } = await admin
+        .from("legacy_orders")
+        .select("id")
+        .or(`kode_order.ilike.%${search}%,nama.ilike.%${search}%`);
+
+      if (matchingOrdersError) {
+        console.error(
+          "[GET /api/workshop/orders] search query error:",
+          matchingOrdersError,
+        );
+        return NextResponse.json(
+          { error: "Gagal mengambil data order" },
+          { status: 500 },
+        );
+      }
+
+      matchingOrderIds = (matchingOrders ?? []).map((order) => order.id);
+      if (matchingOrderIds.length === 0) {
+        return NextResponse.json({
+          success: true,
+          data: [],
+          total: 0,
+          next_offset: null,
+        });
+      }
+    }
 
     // Legacy orders live in legacy_orders; their current stage lives in
     // tracking_stages. Join in-app: filter tracking rows by stage, then hydrate.
@@ -70,16 +106,26 @@ export async function GET(request: Request) {
     // sync seeds it as 'completed' for the current stage).
     let trackingQuery = admin
       .from("tracking_stages")
-      .select("id, order_id, current_stage, stage_status, assigned_to, updated_at, updated_by")
+      .select(
+        "id, order_id, current_stage, stage_status, assigned_to, updated_at, updated_by",
+        { count: "exact" },
+      )
       .neq("current_stage", "selesai")
-      .order("updated_at", { ascending: false })
-      .limit(limit);
+      .order("updated_at", { ascending: false });
 
     if (workerStages.length > 0) {
       trackingQuery = trackingQuery.in("current_stage", workerStages);
     }
 
-    const { data: trackingRows, error: trackingError } = await trackingQuery;
+    if (matchingOrderIds) {
+      trackingQuery = trackingQuery.in("order_id", matchingOrderIds);
+    }
+
+    const {
+      data: trackingRows,
+      error: trackingError,
+      count: total,
+    } = await trackingQuery.range(offset, offset + limit - 1);
 
     if (trackingError) {
       console.error("[GET /api/workshop/orders] tracking query error:", trackingError);
@@ -93,16 +139,10 @@ export async function GET(request: Request) {
 
     let orders: LegacyOrderRow[] = [];
     if (orderIds.length > 0) {
-      let orderQuery = admin
+      const orderQuery = admin
         .from("legacy_orders")
         .select("*")
         .in("id", orderIds);
-
-      if (search) {
-        orderQuery = orderQuery.or(
-          `kode_order.ilike.%${search}%,nama.ilike.%${search}%`,
-        );
-      }
 
       const { data: orderRows, error } = await orderQuery;
       if (error) {
@@ -132,7 +172,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: result,
-      total: result.length,
+      total: total ?? 0,
+      next_offset:
+        offset + (trackingRows?.length ?? 0) < (total ?? 0)
+          ? offset + (trackingRows?.length ?? 0)
+          : null,
     });
   } catch (err) {
     console.error("[GET /api/workshop/orders] Error:", err);

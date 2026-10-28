@@ -29,11 +29,6 @@ export async function GET() {
           description,
           permissions,
           allowed_stages
-        ),
-        branch:branches!users_branch_id_fkey (
-          id,
-          name,
-          code
         )
       `)
       .eq("id", user.id)
@@ -58,7 +53,6 @@ export async function GET() {
         role_group: roleProps.role_group,
         description: roleProps.description,
       },
-      branch: userData.branch ?? null,
     });
   } catch (err) {
     console.error("[GET /api/profile]", err);

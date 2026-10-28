@@ -22,7 +22,9 @@ export async function GET(request?: NextRequest) {
       .single();
 
     const roleName: string = getRoleProps(profile).name;
-    if (roleName !== "superadmin")
+    const roleGroup: string = getRoleProps(profile).role_group;
+    const isSupervisor = roleName === "production_supervisor" || roleName === "operational_supervisor" || roleGroup === "management";
+    if (roleName !== "superadmin" && !isSupervisor)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const url = request?.url ? new URL(request.url) : null;
@@ -53,6 +55,7 @@ export async function GET(request?: NextRequest) {
       admin
         .from("legacy_orders")
         .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
         .gte("created_at", fromISO)
         .lte("created_at", toISO),
     ]);

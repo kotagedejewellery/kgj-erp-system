@@ -4,15 +4,17 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetcher } from "@/lib/api";
+import { fetcher, mutator } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/MobileSidebar";
 import Header from "@/components/layout/MobileHeader";
 import Alert from "@/components/ui/Alert";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import {
   AlertTriangle,
   Clock,
   Key,
+  KeyRound,
   Pencil,
   Plus,
   Search,
@@ -56,6 +58,9 @@ export default function SupervisorAccountsPage() {
   const [userEmail, setUserEmail] = useState("");
 
   const [alert, setAlert] = useState<{ type: "success" | "error" | "warning" | "info"; message: string } | null>(null);
+
+  const [resetPinTarget, setResetPinTarget] = useState<Account | null>(null);
+  const [reseatingPin, setReseatingPin] = useState(false);
 
   const [_filter, _setFilter] = useState<FilterTab>("all");
   const [supervisorGroup, setSupervisorGroup] =
@@ -130,6 +135,24 @@ export default function SupervisorAccountsPage() {
     closeModal();
   };
 
+  const handleResetPin = async () => {
+    if (!resetPinTarget) return;
+    setReseatingPin(true);
+    try {
+      const res = await mutator<{ success: boolean; message: string }>(
+        `/api/supervisor/accounts/${resetPinTarget.id}/reset-pin`,
+        { method: "POST" },
+      );
+      setAlert({ type: "success", message: res.message });
+      refetchAccounts();
+    } catch (err) {
+      setAlert({ type: "error", message: err instanceof Error ? err.message : "Gagal mereset PIN" });
+    } finally {
+      setReseatingPin(false);
+      setResetPinTarget(null);
+    }
+  };
+
   const filtered = accounts.filter((a) => {
     const matchSearch =
       !search ||
@@ -152,7 +175,7 @@ export default function SupervisorAccountsPage() {
         : "Semua Tim";
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-stone-50">
+    <div className="flex flex-col md:flex-row h-screen bg-carbon">
       {/* Sidebar */}
       <Sidebar
         role="supervisor"
@@ -177,27 +200,27 @@ export default function SupervisorAccountsPage() {
           <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg sm:text-xl font-bold text-stone-900">
+                <h1 className="text-lg sm:text-xl font-bold text-ivory">
                   Kelola Akun Tim
                 </h1>
                 {supervisorGroup === "production" && (
-                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  <span className="rounded-full bg-amber-500/10 border border-amber-400/20 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                     Supervisor Produksi
                   </span>
                 )}
                 {supervisorGroup === "operational" && (
-                  <span className="rounded-full bg-blue-100 border border-blue-200 px-2 py-0.5 text-[11px] font-semibold text-blue-800">
+                  <span className="rounded-full bg-sky-500/20 border border-sky-400/20 px-2 py-0.5 text-[11px] font-semibold text-blue-800">
                     Supervisor Operasional
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-xs sm:text-sm text-stone-500">
+              <p className="mt-0.5 text-xs sm:text-sm text-white/50">
                 {groupLabel} — {accounts.length} akun terdaftar
               </p>
             </div>
             <button
               onClick={() => setModal("create")}
-              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 active:scale-[0.98] transition-all min-h-[44px]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/100 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 active:scale-[0.98] transition-all min-h-[44px]"
             >
               <Plus className="h-4 w-4" />
               Tambah Akun
@@ -211,27 +234,27 @@ export default function SupervisorAccountsPage() {
                 label: "Total Akun",
                 value: accounts.length,
                 icon: Users,
-                color: "text-stone-700",
-                bg: "bg-stone-100",
+                color: "text-cream",
+                bg: "bg-white/10",
               },
               {
                 label: "Aktif",
                 value: activeCount,
                 icon: Shield,
-                color: "text-emerald-600",
-                bg: "bg-emerald-100",
+                color: "text-emerald-300",
+                bg: "bg-emerald-500/10",
               },
               {
                 label: "Nonaktif",
                 value: inactiveCount,
                 icon: ShieldOff,
-                color: "text-stone-400",
-                bg: "bg-stone-100",
+                color: "text-white/40",
+                bg: "bg-white/10",
               },
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <div
                 key={label}
-                className="rounded-xl border border-stone-200 bg-white px-3 sm:px-4 py-3 shadow-sm"
+                className="rounded-xl border border-gold/15 bg-cocoa px-3 sm:px-4 py-3 shadow-sm"
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -239,7 +262,7 @@ export default function SupervisorAccountsPage() {
                   >
                     <Icon className={`h-3.5 w-3.5 ${color}`} />
                   </div>
-                  <p className="text-[11px] sm:text-xs font-medium text-stone-500">
+                  <p className="text-[11px] sm:text-xs font-medium text-white/50">
                     {label}
                   </p>
                 </div>
@@ -253,24 +276,24 @@ export default function SupervisorAccountsPage() {
           {/* Filters */}
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
               <input
                 type="text"
                 placeholder="Cari nama, username, email, atau role..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-800 placeholder-stone-400 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100 transition"
+                className="w-full rounded-xl border border-gold/15 bg-cocoa py-2.5 pl-10 pr-4 text-sm text-cream placeholder:text-white/30 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100 transition"
               />
             </div>
-            <div className="flex gap-1 rounded-xl border border-stone-200 bg-white p-1">
+            <div className="flex gap-1 rounded-xl border border-gold/15 bg-cocoa p-1">
               {(["all", "active", "inactive"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setFilterStatus(s)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                     filterStatus === s
-                      ? "bg-amber-500 text-white shadow-sm"
-                      : "text-stone-500 hover:text-stone-700"
+                      ? "bg-amber-500/100 text-white shadow-sm"
+                      : "text-white/50 hover:text-cream"
                   }`}
                 >
                   {s === "all"
@@ -289,20 +312,20 @@ export default function SupervisorAccountsPage() {
           ) : queryError ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center px-4">
               <AlertTriangle className="mb-3 h-8 w-8 text-rose-400" />
-              <p className="text-sm font-medium text-stone-700">{queryError instanceof Error ? queryError.message : "Gagal memuat data"}</p>
+              <p className="text-sm font-medium text-cream">{queryError instanceof Error ? queryError.message : "Gagal memuat data"}</p>
               <button
                 onClick={() => refetchAccounts()}
-                className="mt-4 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 min-h-[44px]"
+                className="mt-4 rounded-md border border-gold/15 bg-cocoa px-4 py-2.5 text-sm text-cream hover:bg-carbon min-h-[44px]"
               >
                 Coba lagi
               </button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-xl border border-stone-100 bg-white py-16 text-center shadow-sm px-4">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-100">
-                <Users className="h-8 w-8 text-stone-400" />
+            <div className="rounded-xl border border-gold/10 bg-cocoa py-16 text-center shadow-sm px-4">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
+                <Users className="h-8 w-8 text-white/40" />
               </div>
-              <p className="text-sm font-medium text-stone-500">
+              <p className="text-sm font-medium text-white/50">
                 {search || filterStatus !== "all"
                   ? "Tidak ada akun yang sesuai filter"
                   : "Belum ada akun dalam tim ini"}
@@ -310,19 +333,19 @@ export default function SupervisorAccountsPage() {
               {!search && filterStatus === "all" && (
                 <button
                   onClick={() => setModal("create")}
-                  className="mt-3 text-sm font-semibold text-amber-600 hover:text-amber-700"
+                  className="mt-3 text-sm font-semibold text-amber-300 hover:text-amber-300"
                 >
                   + Tambah akun pertama
                 </button>
               )}
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-gold/15 bg-cocoa shadow-sm">
               {/* Desktop table */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-stone-100 bg-stone-50">
+                    <tr className="border-b border-gold/10 bg-carbon">
                       {[
                         "Nama / Username",
                         "Role",
@@ -333,27 +356,27 @@ export default function SupervisorAccountsPage() {
                       ].map((h) => (
                         <th
                           key={h}
-                          className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500"
+                          className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50"
                         >
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-100">
+                  <tbody className="divide-y divide-white/5">
                     {filtered.map((account) => (
                       <tr
                         key={account.id}
-                        className="hover:bg-stone-50/60 transition-colors"
+                        className="hover:bg-carbon/60 transition-colors"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <Avatar name={account.full_name} />
                             <div>
-                              <p className="font-medium text-stone-800">
+                              <p className="font-medium text-cream">
                                 {account.full_name}
                               </p>
-                              <p className="text-xs text-stone-400">
+                              <p className="text-xs text-white/40">
                                 @{account.username}
                               </p>
                             </div>
@@ -362,7 +385,7 @@ export default function SupervisorAccountsPage() {
                         <td className="px-4 py-3">
                           {account.role ? (
                             <div className="flex flex-col gap-0.5">
-                              <span className="inline-flex rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
+                              <span className="inline-flex rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300 ring-1 ring-amber-400/20">
                                 {roleLabel(account.role.name)}
                               </span>
                               <span
@@ -374,19 +397,19 @@ export default function SupervisorAccountsPage() {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-stone-400">—</span>
+                            <span className="text-white/40">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={account.status} />
                         </td>
-                        <td className="px-4 py-3 text-xs text-stone-500">
+                        <td className="px-4 py-3 text-xs text-white/50">
                           <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-stone-400" />
+                            <Clock className="h-3 w-3 text-white/40" />
                             {formatRelative(account.last_login)}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-stone-500">
+                        <td className="px-4 py-3 text-xs text-white/50">
                           {formatDate(account.created_at)}
                         </td>
                         <td className="px-4 py-3">
@@ -398,7 +421,7 @@ export default function SupervisorAccountsPage() {
                                 setModal("edit");
                               }}
                               title="Edit"
-                              className="rounded-lg p-1.5 text-stone-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                              className="rounded-lg p-1.5 text-white/40 hover:bg-amber-500/100/10 hover:text-amber-300 transition-colors"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -409,10 +432,20 @@ export default function SupervisorAccountsPage() {
                                 setModal("password");
                               }}
                               title="Reset Password"
-                              className="rounded-lg p-1.5 text-stone-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                              className="rounded-lg p-1.5 text-white/40 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
                             >
                               <Key className="h-4 w-4" />
                             </button>
+                            {/* Reset PIN — hanya untuk workshop worker */}
+                            {account.role?.role_group === "production" || account.role?.role_group === "operational" ? (
+                              <button
+                                onClick={() => setResetPinTarget(account)}
+                                title="Reset PIN"
+                                className="rounded-lg p-1.5 text-white/40 hover:bg-amber-500/10 hover:text-amber-300 transition-colors"
+                              >
+                                <KeyRound className="h-4 w-4" />
+                              </button>
+                            ) : null}
                             {/* Deactivate/Activate */}
                             <button
                               onClick={() => {
@@ -426,8 +459,8 @@ export default function SupervisorAccountsPage() {
                               }
                               className={`rounded-lg p-1.5 transition-colors ${
                                 account.status === "active"
-                                  ? "text-stone-400 hover:bg-yellow-50 hover:text-yellow-600"
-                                  : "text-stone-300 hover:bg-emerald-50 hover:text-emerald-600"
+                                  ? "text-white/40 hover:bg-yellow-50 hover:text-yellow-600"
+                                  : "text-white/30 hover:bg-emerald-500/100/10 hover:text-emerald-300"
                               }`}
                             >
                               {account.status === "active" ? (
@@ -443,7 +476,7 @@ export default function SupervisorAccountsPage() {
                                 setModal("delete");
                               }}
                               title="Hapus Akun"
-                              className="rounded-lg p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              className="rounded-lg p-1.5 text-white/40 hover:bg-rose-500/100/10 hover:text-rose-300 transition-colors"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -456,24 +489,24 @@ export default function SupervisorAccountsPage() {
               </div>
 
               {/* Mobile cards */}
-              <div className="divide-y divide-stone-100 md:hidden">
+              <div className="divide-y divide-white/5 md:hidden">
                 {filtered.map((account) => (
                   <div key={account.id} className="p-4">
                     <div className="flex items-start gap-3">
                       <Avatar name={account.full_name} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate font-medium text-stone-800">
+                          <p className="truncate font-medium text-cream">
                             {account.full_name}
                           </p>
                           <StatusBadge status={account.status} />
                         </div>
-                        <p className="text-xs text-stone-400">
+                        <p className="text-xs text-white/40">
                           @{account.username}
                         </p>
                         {account.role && (
                           <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                            <span className="inline-flex rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
+                            <span className="inline-flex rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300 ring-1 ring-amber-400/20">
                               {roleLabel(account.role.name)}
                             </span>
                             <span
@@ -485,7 +518,7 @@ export default function SupervisorAccountsPage() {
                             </span>
                           </div>
                         )}
-                        <div className="mt-1.5 flex items-center gap-3 text-xs text-stone-400">
+                        <div className="mt-1.5 flex items-center gap-3 text-xs text-white/40">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {formatRelative(account.last_login)}
@@ -500,7 +533,7 @@ export default function SupervisorAccountsPage() {
                           setSelectedAccount(account);
                           setModal("edit");
                         }}
-                        className="flex-1 rounded-lg border border-stone-200 py-2.5 text-xs font-medium text-stone-700 hover:bg-stone-50 active:bg-stone-100 transition-colors flex items-center justify-center gap-1"
+                        className="flex-1 rounded-lg border border-gold/15 py-2.5 text-xs font-medium text-cream hover:bg-carbon active:bg-white/10 transition-colors flex items-center justify-center gap-1"
                       >
                         <Pencil className="h-3 w-3" />
                         Edit
@@ -510,11 +543,20 @@ export default function SupervisorAccountsPage() {
                           setSelectedAccount(account);
                           setModal("password");
                         }}
-                        className="flex-1 rounded-lg border border-blue-100 py-2.5 text-xs font-medium text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+                        className="flex-1 rounded-lg border border-sky-400/20 py-2.5 text-xs font-medium text-sky-300 hover:bg-sky-500/10 active:bg-sky-500/20 transition-colors flex items-center justify-center gap-1"
                       >
                         <Key className="h-3 w-3" />
                         Reset PW
                       </button>
+                      {account.role?.role_group === "production" || account.role?.role_group === "operational" ? (
+                        <button
+                          onClick={() => setResetPinTarget(account)}
+                          className="rounded-lg border border-amber-400/20 px-2.5 py-2.5 text-xs font-medium text-amber-300 hover:bg-amber-500/10 active:bg-amber-500/20 transition-colors flex items-center justify-center"
+                          title="Reset PIN"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
                       <button
                         onClick={() => {
                           setSelectedAccount(account);
@@ -523,7 +565,7 @@ export default function SupervisorAccountsPage() {
                         className={`rounded-lg border px-2.5 py-2.5 text-xs font-medium transition-colors flex items-center justify-center ${
                           account.status === "active"
                             ? "border-yellow-200 text-yellow-600 hover:bg-yellow-50 active:bg-yellow-100"
-                            : "border-emerald-200 text-emerald-600 hover:bg-emerald-50 active:bg-emerald-100"
+                            : "border-emerald-200 text-emerald-300 hover:bg-emerald-500/100/10 active:bg-emerald-500/10"
                         }`}
                         title={
                           account.status === "active"
@@ -542,7 +584,7 @@ export default function SupervisorAccountsPage() {
                           setSelectedAccount(account);
                           setModal("delete");
                         }}
-                        className="rounded-lg border border-red-100 px-2.5 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
+                        className="rounded-lg border border-red-100 px-2.5 py-2.5 text-xs font-medium text-red-500 hover:bg-rose-500/100/10 active:bg-rose-500/10 transition-colors flex items-center justify-center"
                         title="Hapus Akun"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -589,6 +631,18 @@ export default function SupervisorAccountsPage() {
           onDeleted={handleDeleted}
         />
       )}
+
+      {/* Reset PIN confirmation */}
+      <ConfirmDialog
+        isOpen={resetPinTarget !== null}
+        title="Reset PIN"
+        message={`Reset PIN untuk ${resetPinTarget?.full_name}? Worker harus mengatur PIN baru saat login berikutnya.`}
+        confirmText="Reset PIN"
+        variant="warning"
+        isLoading={reseatingPin}
+        onConfirm={handleResetPin}
+        onCancel={() => setResetPinTarget(null)}
+      />
     </div>
   );
 }

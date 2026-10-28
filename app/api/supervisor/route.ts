@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
 import { STAGE_SEQUENCE, STAGE_GROUP, STAGE_LABELS } from "@/lib/stages";
 import { mapLegacyStatus } from "@/lib/legacy/adapter";
+import { getBrandIdFromFilterCode } from "@/lib/legacy/brands";
 
 const APPROVAL_STAGES = STAGE_SEQUENCE.filter((s) => s.startsWith("approval_"));
 
@@ -99,11 +100,16 @@ export async function GET(request?: NextRequest) {
     const url = request?.url ? new URL(request.url) : null;
     const fromParam = url?.searchParams.get("from");
     const toParam = url?.searchParams.get("to");
+    const brand = url?.searchParams.get("brand") ?? "all";
+    const brandId = brand === "all" ? null : getBrandIdFromFilterCode(brand);
+    if (brand !== "all" && brandId === null) {
+      return NextResponse.json({ error: "Brand tidak valid" }, { status: 400 });
+    }
 
     const fromISO = fromParam ? new Date(fromParam).toISOString() : todayStart.toISOString();
     const toISO = toParam ? new Date(toParam + "T23:59:59").toISOString() : now.toISOString();
 
-    const [ordersResult, completedResult, submissionsTodayResult, ordersCreatedTodayResult, ordersCompletedTodayResult] = await Promise.allSettled([
+    const [ordersResult, completedResult, completedCountResult, submissionsTodayResult, ordersCreatedTodayResult, ordersCompletedTodayResult] = await Promise.allSettled([
       admin
         .from("tracking_stages")
         .select(
@@ -117,13 +123,31 @@ export async function GET(request?: NextRequest) {
         let q = admin
           .from("tracking_stages")
           .select(
-            "order_id, current_stage, stage_status, updated_at, legacy_orders!tracking_stages_order_id_fkey(id, kode_order, nama, tgl_order, tgl_selesai)",
+            `order_id, current_stage, stage_status, updated_at, legacy_orders!tracking_stages_order_id_fkey${brandId ? "!inner" : ""}(id, kode_order, nama, tgl_order, tgl_selesai)`,
           )
           .eq("current_stage", "selesai");
         if (fromParam || toParam) {
           q = q.gte("updated_at", fromISO).lte("updated_at", toISO);
         }
+        if (brandId) q = q.eq("legacy_orders.id_brand", brandId);
         return q.order("updated_at", { ascending: false }).limit(50);
+      })(),
+
+      (() => {
+        let q = admin
+          .from("tracking_stages")
+          .select(
+            brandId
+              ? "id, legacy_orders!tracking_stages_order_id_fkey!inner(id_brand)"
+              : "id",
+            { count: "exact" },
+          )
+          .eq("current_stage", "selesai");
+        if (fromParam || toParam) {
+          q = q.gte("updated_at", fromISO).lte("updated_at", toISO);
+        }
+        if (brandId) q = q.eq("legacy_orders.id_brand", brandId);
+        return q.limit(1);
       })(),
 
       admin
@@ -137,6 +161,7 @@ export async function GET(request?: NextRequest) {
       admin
         .from("legacy_orders")
         .select("id", { count: "exact" })
+        .is("deleted_at", null)
         .gte("created_at", todayStart.toISOString())
         .limit(1),
 
@@ -177,6 +202,10 @@ export async function GET(request?: NextRequest) {
       ordersResult.status === "fulfilled" ? flatten(ordersResult.value.data || []) : [];
     const completedOrdersRaw =
       completedResult.status === "fulfilled" ? flatten(completedResult.value.data || []) : [];
+    const completedCount =
+      completedCountResult.status === "fulfilled"
+        ? completedCountResult.value.count || 0
+        : 0;
     const submissionsToday =
       submissionsTodayResult.status === "fulfilled"
         ? submissionsTodayResult.value.count || 0
@@ -364,6 +393,7 @@ export async function GET(request?: NextRequest) {
         },
         orders: scopedOrders,
         completedOrders,
+        completedCount,
       },
     });
   } catch (error) {
