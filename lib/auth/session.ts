@@ -8,6 +8,7 @@ export const LOGIN_ROLES = [
   "superadmin",
   "management",
   "supervisor",
+  "after_sales",
 ] as const;
 
 export type LoginRole = (typeof LOGIN_ROLES)[number];
@@ -41,6 +42,14 @@ export interface RolePermissions {
   can_update: boolean;
   can_delete: boolean;
   can_validate_intake?: boolean;
+  warranty_administrator?: boolean;
+  "warranty.activation.validate"?: boolean;
+  "warranty.activation.activate"?: boolean;
+  "warranty.contract.read"?: boolean;
+  "warranty.claim.read"?: boolean;
+  "warranty.claim.create"?: boolean;
+  "warranty.claim.submit"?: boolean;
+  "warranty.claim.complete_non_workshop"?: boolean;
 }
 
 /**
@@ -64,7 +73,7 @@ export interface ClientUser {
   email: string;
   fullName: string;
   username: string | null;
-  /** Nama role — strict union 3 role BMS yang bisa login via form. */
+  /** Nama role dashboard yang bisa login via form. */
   role: LoginRole;
   /** Detail role lengkap dari database (permissions, role_group, dll). */
   roleDetail: UserRoleDetail | null;
@@ -275,6 +284,7 @@ export function getRoleDisplayName(role: LoginRole): string {
     superadmin: "Super Admin",
     management: "Management",
     supervisor: "Supervisor",
+    after_sales: "After Sales",
   };
   return map[role];
 }

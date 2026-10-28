@@ -25,7 +25,7 @@ export interface UnifiedUser {
   email: string | null;
   username: string | null;
   phone: string | null;
-  role: "superadmin" | null;
+  role: "superadmin" | "after_sales" | null;
   roles: RoleOPRPRD | null;
   role_id: string | null;
   status: "active" | "inactive" | null;
@@ -47,7 +47,7 @@ export type NewUserType = "bms" | "supervisor" | "oprprd" | "management" | null;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const BMS_ROLES = ["superadmin"] as const;
+export const BMS_ROLES = ["superadmin", "after_sales"] as const;
 
 export const ROLE_GROUP_LABELS: Record<string, { label: string; bg: string }> = {
   management: { label: "Manajemen", bg: "bg-purple-100 text-purple-800" },
@@ -57,7 +57,7 @@ export const ROLE_GROUP_LABELS: Record<string, { label: string; bg: string }> = 
 
 export const SEGMENT_OPTIONS: { value: UserSegment; label: string }[] = [
   { value: "all", label: "Semua" },
-  { value: "bms", label: "Superadmin" },
+  { value: "bms", label: "Dashboard" },
   { value: "management", label: "Manajemen" },
   { value: "operational", label: "Operasional" },
   { value: "production", label: "Produksi" },
@@ -70,7 +70,7 @@ export const EMPTY_BMS_FORM = {
   full_name: "",
   email: "",
   password: "",
-  role: "superadmin" as const,
+  role: "superadmin" as "superadmin" | "after_sales",
 };
 
 export const EMPTY_OPRPRD_FORM = {
@@ -180,6 +180,7 @@ export const getRoleBadge = (user: UnifiedUser) => {
   if (user.userType === "bms") {
     const map: Record<string, { bg: string; label: string }> = {
       superadmin: { bg: "bg-purple-100 text-purple-800", label: "Super Admin" },
+      after_sales: { bg: "bg-teal-500/10 text-teal-700", label: "After Sales" },
     };
     const cfg = map[user.role ?? ""] ?? {
       bg: "bg-white/10 text-cream",
@@ -190,7 +191,7 @@ export const getRoleBadge = (user: UnifiedUser) => {
         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${cfg.bg}`}>
           {cfg.label}
         </span>
-        <span className="text-[10px] text-white/40">Superadmin</span>
+        <span className="text-[10px] text-white/40">Dashboard</span>
       </div>
     );
   }

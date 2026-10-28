@@ -7,14 +7,14 @@ export const BmsUserSchema = z.object({
   full_name: z.string().min(1, "Nama lengkap wajib diisi"),
   email: z.string().email("Format email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter"),
-  role: z.literal("superadmin"),
+  role: z.enum(["superadmin", "after_sales"]),
 });
 
 export const BmsEditUserSchema = z.object({
   username: z.string().optional(),
   full_name: z.string().min(1, "Nama lengkap wajib diisi"),
   email: z.string().email("Format email tidak valid"),
-  role: z.literal("superadmin"),
+  role: z.enum(["superadmin", "after_sales"]),
 });
 
 export const OprprdUserSchema = z.object({

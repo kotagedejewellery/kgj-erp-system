@@ -22,8 +22,9 @@ describe("retired BMS account roles", () => {
     password: "rahasia-aman",
   };
 
-  it("hanya mengizinkan pembuatan akun Super Admin", () => {
+  it("mengizinkan akun dashboard yang aktif", () => {
     expect(BmsUserSchema.safeParse({ ...baseAccount, role: "superadmin" }).success).toBe(true);
+    expect(BmsUserSchema.safeParse({ ...baseAccount, role: "after_sales" }).success).toBe(true);
     expect(BmsUserSchema.safeParse({ ...baseAccount, role: "customer_service" }).success).toBe(false);
     expect(BmsUserSchema.safeParse({ ...baseAccount, role: "marketing" }).success).toBe(false);
   });

@@ -53,6 +53,16 @@ const ROLE_CONFIGS: RoleConfig[] = [
     },
     icon: <Shield className="w-full h-full" />,
   },
+  {
+    value: "after_sales",
+    label: "After Sales",
+    colors: {
+      border: "#2dd4bf",
+      bg: "rgba(45,212,191,0.1)",
+      text: "#14b8a6",
+    },
+    icon: <BriefcaseBusiness className="w-full h-full" />,
+  },
 ];
 
 // ════════════════════════════════════════════════════════════════════════════

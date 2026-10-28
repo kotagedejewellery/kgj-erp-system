@@ -10,7 +10,7 @@ import { isRetiredDashboardRole } from "@/lib/routes";
 // CONSTANTS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-const BMS_ROLE_NAMES = ["superadmin"] as const;
+const BMS_ROLE_NAMES = ["superadmin", "after_sales"] as const;
 const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
 const ALL_ROLE_GROUPS = [
   "management",
@@ -214,8 +214,8 @@ export async function GET(request: Request) {
 // ════════════════════════════════════════════════════════════════════════════
 // POST /api/users — mendukung 3 mode
 //
-// MODE 1 (Superadmin): { full_name, email, password, role }
-//   role: 'superadmin'
+// MODE 1 (Dashboard): { full_name, email, password, role }
+//   role: 'superadmin' | 'after_sales'
 //   → email wajib, login via dashboard
 //
 // MODE 2 (Management/Supervisor): { full_name, username, password, role }

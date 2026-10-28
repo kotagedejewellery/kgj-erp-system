@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperadmin, mapUserResponse } from "../route";
 
-const BMS_ROLE_NAMES = ["superadmin"] as const;
+const BMS_ROLE_NAMES = ["superadmin", "after_sales"] as const;
 const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
 type BmsRoleName = (typeof BMS_ROLE_NAMES)[number];
 
@@ -76,8 +76,6 @@ export async function GET(
 //
 // Catatan: username tidak bisa diubah setelah create (design choice).
 // ════════════════════════════════════════════════════════════════════════════
-const admin = createAdminClient();
-
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -87,6 +85,7 @@ export async function PUT(
     const supabase = await createClient();
     const auth = await requireSuperadmin(supabase);
     if ("error" in auth) return auth.error;
+    const admin = createAdminClient();
 
     const body = await request.json();
     const { full_name, email, phone, password, role, role_id } =
@@ -140,7 +139,7 @@ export async function PUT(
         return NextResponse.json(
           {
             error:
-              "Role harus: superadmin, operational_supervisor, production_supervisor, atau customer_service_supervisor",
+              "Role harus: superadmin, after_sales, operational_supervisor, production_supervisor, atau customer_service_supervisor",
           },
           { status: 400 },
         );

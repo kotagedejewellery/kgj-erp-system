@@ -11,6 +11,7 @@ import { formatAddsOnList } from "@/lib/adds-on";
 import { getOrderDetailTabs, type OrderDetailView } from "@/lib/orders/order-detail-view";
 import StageTimeline from "@/components/orders/StageTimeline";
 import EstimatedCompletion from "@/components/analytics/EstimatedCompletion";
+import WarrantyPreparation from "@/components/orders/WarrantyPreparation";
 
 export interface OrderDetail {
   order: {
@@ -428,6 +429,8 @@ export default function OrderDetailPopup({
                       )}
                     </div>
                   </div>
+
+                  <WarrantyPreparation orderId={orderId} currentStage={o.current_stage} />
 
                   {/* Reference images */}
                   {(o.reference_image_pria_url ||

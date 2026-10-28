@@ -10,7 +10,7 @@ interface BmsFormState {
   full_name: string;
   email: string;
   password: string;
-  role: "superadmin";
+  role: "superadmin" | "after_sales";
 }
 
 interface BmsUserFormProps {
@@ -89,6 +89,7 @@ export function BmsUserForm({
           disabled={isSaving}
         >
           <option value="superadmin">Super Admin</option>
+          <option value="after_sales">After Sales</option>
         </select>
       </div>
       <div className="flex justify-end gap-3 mt-6">

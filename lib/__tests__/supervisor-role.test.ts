@@ -32,3 +32,14 @@ describe("retired CS and marketing dashboards", () => {
     expect(canAccessPath("marketing", "/workshop/input")).toBe(false);
   });
 });
+
+describe("after sales role", () => {
+  it("masuk hanya ke workspace After Sales", () => {
+    expect(getDashboardPath("after_sales")).toBe("/dashboard/after-sales/garansi");
+    expect(canAccessPath("after_sales", "/dashboard/after-sales/garansi")).toBe(true);
+    expect(canAccessPath("after_sales", "/dashboard/after-sales/aktivasi")).toBe(true);
+    expect(canAccessPath("after_sales", "/dashboard/supervisor/approval")).toBe(false);
+    expect(canAccessPath("operational_supervisor", "/dashboard/supervisor/warranty")).toBe(false);
+    expect(isWorkshopRole("after_sales")).toBe(false);
+  });
+});

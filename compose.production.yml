@@ -1,0 +1,42 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set in .env.production}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?set in .env.production}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?set in .env.production}
+        NEXT_PUBLIC_PUSHER_KEY: ${NEXT_PUBLIC_PUSHER_KEY:?set in .env.production}
+        NEXT_PUBLIC_PUSHER_CLUSTER: ${NEXT_PUBLIC_PUSHER_CLUSTER:?set in .env.production}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set in .env.production}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?set in .env.production}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?set in .env.production}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?set in .env.production}
+      NEXT_PUBLIC_PUSHER_KEY: ${NEXT_PUBLIC_PUSHER_KEY:?set in .env.production}
+      NEXT_PUBLIC_PUSHER_CLUSTER: ${NEXT_PUBLIC_PUSHER_CLUSTER:?set in .env.production}
+      PUSHER_APP_ID: ${PUSHER_APP_ID:?set in .env.production}
+      PUSHER_SECRET: ${PUSHER_SECRET:?set in .env.production}
+      LIVE_SYSTEM_BASE_URL: ${LIVE_SYSTEM_BASE_URL:?set in .env.production}
+      CRON_SECRET: ${CRON_SECRET:?set in .env.production}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.erp-http.entrypoints: web
+      traefik.http.routers.erp-http.rule: Host(`erp.kotagedejewellery.tech`)
+      traefik.http.routers.erp-http.middlewares: erp-https
+      traefik.http.middlewares.erp-https.redirectscheme.scheme: https
+      traefik.http.routers.erp.entrypoints: websecure
+      traefik.http.routers.erp.rule: Host(`erp.kotagedejewellery.tech`)
+      traefik.http.routers.erp.tls: "true"
+      traefik.http.routers.erp.tls.certresolver: letsencrypt
+      traefik.http.services.erp.loadbalancer.server.port: "3000"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

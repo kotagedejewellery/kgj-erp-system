@@ -131,7 +131,7 @@ export default function KelolaAkunPage() {
 
   useEffect(() => {
     if (rolesData?.data) {
-      const BMS_NAMES = new Set(["superadmin"]);
+      const BMS_NAMES = new Set(["superadmin", "after_sales"]);
       setRoles(
         ((rolesData.data ?? []) as unknown as RoleOPRPRD[]).filter(
           (r: RoleOPRPRD) => !BMS_NAMES.has(r.name),
@@ -273,7 +273,7 @@ export default function KelolaAkunPage() {
       );
       const json = await res.json();
       if (!res.ok) { showAlert("error", parseApiError(json.error, res.status)); return; }
-      showAlert("success", isEditMode ? "Akun berhasil diperbarui!" : "Akun Superadmin baru berhasil dibuat!");
+      showAlert("success", isEditMode ? "Akun berhasil diperbarui!" : "Akun dashboard baru berhasil dibuat!");
       setIsModalOpen(false);
       setTimeout(() => { refetchUsers(); }, 500);
     } finally {

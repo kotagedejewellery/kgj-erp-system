@@ -74,6 +74,7 @@ export const ROUTES = {
   // Dashboards per role (entry point)
   DASHBOARD_SUPERADMIN: "/dashboard/superadmin",
   DASHBOARD_SUPERVISOR: "/dashboard/supervisor",
+  DASHBOARD_AFTER_SALES: "/dashboard/after-sales",
 
   // Workshop / QR access
   QR_LOGIN: "/workshop/login",
@@ -120,12 +121,18 @@ export const SUPERVISOR_ROUTES = {
   QR_CODES: "/dashboard/supervisor/qr-codes",
   HISTORY: "/dashboard/supervisor/history",
   APPROVAL_HISTORY: "/dashboard/supervisor/history-approval",
+  WARRANTY: "/dashboard/supervisor/warranty",
 } as const;
 
 export const MANAGEMENT_ROUTES = {
   DASHBOARD: "/dashboard/management",
   TASKS: "/dashboard/management/tasks",
   HISTORY: "/dashboard/management/history",
+} as const;
+
+export const AFTER_SALES_ROUTES = {
+  GARANSI: "/dashboard/after-sales/garansi",
+  AKTIVASI: "/dashboard/after-sales/aktivasi",
 } as const;
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -228,6 +235,9 @@ export function getDashboardPath(role: unknown): string | null {
       case "supervisor":
         return SUPERVISOR_ROUTES.DASHBOARD;
 
+      case "after_sales":
+        return AFTER_SALES_ROUTES.GARANSI;
+
       default: {
         const _exhaustive: never = role;
         console.warn(`[getDashboardPath] unknown AppRole:`, _exhaustive);
@@ -264,8 +274,13 @@ export function canAccessPath(role: string, path: string): boolean {
     return !path.startsWith(ROUTES.DASHBOARD_SUPERVISOR);
   }
 
+  if (role === "after_sales") {
+    return path.startsWith(ROUTES.DASHBOARD_AFTER_SALES) || path.startsWith("/api/");
+  }
+
   // Supervisor roles — hanya akses dashboard supervisor
   if (role === "supervisor" || isSupervisorRoleName(role)) {
+    if (path.startsWith(SUPERVISOR_ROUTES.WARRANTY)) return false;
     return (
       path.startsWith(ROUTES.DASHBOARD_SUPERVISOR) || path.startsWith("/api/")
     );

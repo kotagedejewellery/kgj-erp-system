@@ -25,8 +25,10 @@ import {
   ChevronLeft,
   ScanEye,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 import {
+  AFTER_SALES_ROUTES,
   SUPERADMIN_ROUTES,
   SUPERVISOR_ROUTES,
 } from "@/lib/routes";
@@ -108,6 +110,10 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERVISOR_ROUTES.APPROVAL_HISTORY,
     },
   ],
+  after_sales: [
+    { name: "Aktivasi Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.AKTIVASI },
+    { name: "Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.GARANSI },
+  ],
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -130,6 +136,7 @@ const iconMap: Record<string, React.ReactNode> = {
   qr: <QrCode className="w-5 h-5" />,
   checklist: <ClipboardList className="w-5 h-5" />,
   order: <FileText className="w-5 h-5" />,
+  warranty: <ShieldCheck className="w-5 h-5" />,
 };
 
 export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
