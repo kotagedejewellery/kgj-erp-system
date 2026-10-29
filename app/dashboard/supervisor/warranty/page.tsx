@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CircleAlert, Search, ShieldCheck, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ApiError, fetcher } from "@/lib/api";
 import Header from "@/components/layout/MobileHeader";
 import Sidebar from "@/components/layout/MobileSidebar";
@@ -61,6 +62,18 @@ type ClaimDetailResult = {
   };
 };
 
+type WarrantySummary = {
+  data: {
+    active_contracts: number;
+    expiring_within_30_days: number;
+    active_works: number;
+    pending_exceptions: number;
+    failed_outbox: number;
+    dead_letter_outbox: number;
+    last_synced_at: string | null;
+  };
+};
+
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -113,6 +126,12 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
     enabled: Boolean(selectedClaim) && canReadClaim,
     retry: false,
   });
+  const summary = useQuery<WarrantySummary>({
+    queryKey: ["warranty-summary"],
+    queryFn: () => fetcher<WarrantySummary>("/api/warranty/summary"),
+    enabled: role === "supervisor",
+    retry: false,
+  });
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,6 +155,18 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
               <h1 className="text-xl font-bold text-ivory sm:text-2xl">Garansi</h1>
               <p className="mt-1 text-sm text-white/55">Cari Contract aktif berdasarkan pelanggan, telepon, nomor order, atau referensi Contract.</p>
             </div>
+
+            {role === "supervisor" && summary.data && (
+              <section className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg border border-white/10 bg-[#1C1917] p-4"><p className="text-xs text-white/45">Contract aktif</p><p className="mt-2 text-2xl font-semibold text-[#f0f4ff]">{summary.data.data.active_contracts}</p><p className="mt-1 text-xs text-amber-200">{summary.data.data.expiring_within_30_days} berakhir ≤ 30 hari</p></div>
+                  <div className="rounded-lg border border-white/10 bg-[#1C1917] p-4"><p className="text-xs text-white/45">Work aktif</p><p className="mt-2 text-2xl font-semibold text-[#f0f4ff]">{summary.data.data.active_works}</p><p className="mt-1 text-xs text-white/50">PIC, proses, QC, atau konfirmasi Core</p></div>
+                  <Link href="/dashboard/supervisor/warranty/exceptions" className="rounded-lg border border-[#c9a227]/30 bg-[#1C1917] p-4 transition-colors hover:bg-[#2a2522]"><p className="text-xs text-white/45">Exception menunggu SPV</p><p className="mt-2 text-2xl font-semibold text-[#c9a227]">{summary.data.data.pending_exceptions}</p><p className="mt-1 text-xs text-white/50">Buka untuk mengambil keputusan</p></Link>
+                  <div className={`rounded-lg border p-4 ${summary.data.data.dead_letter_outbox > 0 ? "border-rose-400/35 bg-rose-500/10" : "border-white/10 bg-[#1C1917]"}`}><p className="text-xs text-white/45">Kesehatan integrasi</p><p className="mt-2 text-2xl font-semibold text-[#f0f4ff]">{summary.data.data.failed_outbox + summary.data.data.dead_letter_outbox}</p><p className="mt-1 text-xs text-white/50">{summary.data.data.dead_letter_outbox} dead-letter · {summary.data.data.failed_outbox} menunggu retry</p></div>
+                </div>
+                <p className="text-xs text-white/40">Sinkronisasi Warranty terakhir: {summary.data.data.last_synced_at ? formatDate(summary.data.data.last_synced_at) : "belum ada"}</p>
+              </section>
+            )}
 
             <form onSubmit={submit} className="flex gap-2">
               <label className="sr-only" htmlFor="warranty-search">Cari Contract</label>

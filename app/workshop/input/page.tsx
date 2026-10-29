@@ -1724,12 +1724,22 @@ function WorkshopInputContent() {
             >
               {roleLabel}
             </span>
-            <button
-              onClick={handleLogout}
-              className="text-[11px] text-stone-400 hover:text-red-500 transition-colors"
-            >
-              Keluar
-            </button>
+            <div className="flex items-center gap-3">
+              {user.role.permissions?.["warranty.work.update"] && (
+                <button
+                  onClick={() => router.push("/workshop/warranty")}
+                  className="text-[11px] text-amber-600 hover:text-amber-700 transition-colors"
+                >
+                  Garansi
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-[11px] text-stone-400 hover:text-red-500 transition-colors"
+              >
+                Keluar
+              </button>
+            </div>
           </div>
         </div>
 

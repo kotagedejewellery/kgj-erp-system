@@ -1,5 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifySupervisors } from "@/lib/notifications";
 
 const WARRANTY_EVENT_PATH = "/api/warranty/v1/events";
 const WARRANTY_EVENT_TIMEOUT_MS = 15_000;
@@ -88,6 +89,15 @@ async function failDelivery(
       attempt,
       status: isDeadLetter ? "dead_letter" : "failed",
     });
+    if (attempt === 3 || isDeadLetter) {
+      await notifySupervisors(
+        "operational_supervisor",
+        "Integrasi Garansi perlu perhatian",
+        isDeadLetter ? "Event aktivasi Garansi masuk dead-letter." : "Pengiriman event aktivasi Garansi gagal tiga kali.",
+        "error",
+        "/dashboard/supervisor/warranty",
+      );
+    }
   }
   return { status: isDeadLetter ? "dead_letter" : "failed", httpStatus, error };
 }

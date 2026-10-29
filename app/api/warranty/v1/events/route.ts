@@ -108,6 +108,69 @@ export async function POST(request: Request) {
       });
       result = response.data;
       error = response.error;
+    } else if (event.event_type === "warranty_work_requested") {
+      const claimReference = requiredText(event.claim_reference);
+      const benefitCode = requiredText(data?.benefit_code);
+      const conditionNotes = typeof data?.condition_notes === "string" ? data.condition_notes : null;
+      const requiresQc = typeof data?.requires_qc === "boolean" ? data.requires_qc : null;
+      const requiresFinalWeight = typeof data?.requires_final_weight === "boolean" ? data.requires_final_weight : null;
+      const requiresAttachment = typeof data?.requires_attachment === "boolean" ? data.requires_attachment : null;
+      if (!claimReference || !benefitCode || requiresQc === null || requiresFinalWeight === null || requiresAttachment === null) {
+        return NextResponse.json({ error: "Payload Warranty tidak valid" }, { status: 400 });
+      }
+      const response = await admin.rpc("apply_warranty_work_requested", {
+        p_source: "yii2",
+        p_event_id: eventId,
+        p_order_source_id: orderSourceId,
+        p_order_reference: orderReference,
+        p_claim_reference: claimReference,
+        p_benefit_code: benefitCode,
+        p_condition_notes: conditionNotes,
+        p_requires_qc: requiresQc,
+        p_requires_final_weight: requiresFinalWeight,
+        p_requires_attachment: requiresAttachment,
+        p_payload: event,
+      });
+      result = response.data;
+      error = response.error;
+    } else if (event.event_type === "warranty_work_cancellation_requested") {
+      const claimReference = requiredText(event.claim_reference);
+      const workReference = requiredText(data?.work_reference);
+      const reason = requiredText(data?.reason);
+      if (!claimReference || !workReference || !reason) {
+        return NextResponse.json({ error: "Payload Warranty tidak valid" }, { status: 400 });
+      }
+      const response = await admin.rpc("apply_warranty_work_cancellation_requested", {
+        p_source: "yii2",
+        p_event_id: eventId,
+        p_order_source_id: orderSourceId,
+        p_order_reference: orderReference,
+        p_claim_reference: claimReference,
+        p_work_reference: workReference,
+        p_reason: reason,
+        p_payload: event,
+      });
+      result = response.data;
+      error = response.error;
+    } else if (event.event_type === "warranty_exception_requested") {
+      const claimReference = requiredText(event.claim_reference);
+      const exceptionRequestId = requiredText(data?.exception_request_id);
+      const reason = requiredText(data?.reason);
+      if (!claimReference || !exceptionRequestId || !reason) {
+        return NextResponse.json({ error: "Payload Warranty tidak valid" }, { status: 400 });
+      }
+      const response = await admin.rpc("apply_warranty_exception_requested", {
+        p_source: "yii2",
+        p_event_id: eventId,
+        p_order_source_id: orderSourceId,
+        p_order_reference: orderReference,
+        p_claim_reference: claimReference,
+        p_exception_request_id: exceptionRequestId,
+        p_reason: reason,
+        p_payload: event,
+      });
+      result = response.data;
+      error = response.error;
     } else {
       return NextResponse.json({ error: "Payload Warranty tidak valid" }, { status: 400 });
     }

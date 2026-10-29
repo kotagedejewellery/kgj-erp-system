@@ -10,6 +10,7 @@ const supervisorItems = [
   { name: "QR Code", icon: "qr" },
   { name: "Riwayat Order", icon: "order" },
   { name: "Riwayat Persetujuan", icon: "approval" },
+  { name: "Garansi", icon: "warranty" },
 ];
 
 describe("supervisor navigation", () => {
@@ -23,6 +24,9 @@ describe("supervisor navigation", () => {
     expect(
       getSupervisorMenuItems(supervisorItems, "production_supervisor", false).map((item) => item.name),
     ).not.toContain("Slot Management");
+    expect(
+      getSupervisorMenuItems(supervisorItems, "production_supervisor", false).map((item) => item.name),
+    ).not.toContain("Garansi");
   });
 
   it("mempertahankan menu SPV Operational", () => {

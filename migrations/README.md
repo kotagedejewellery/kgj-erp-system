@@ -18,6 +18,14 @@ Schema Main-ERP saat ini memakai model integrasi Yii2: `legacy_orders` sebagai d
 - Migration `031` menjaga `candidate_sequence` asli pada event aktivasi agar Candidate tidak berubah ketika unit awal dihapus sebelum Preparation dikunci.
 - Migration `032` menambahkan permission Claim non-workshop pada role `after_sales`, tanpa memberi akses Warranty ke SPV Operational.
 - Migration `033` menambahkan Claim Projection idempoten untuk event `warranty_claim_changed` dari Yii2.
+- Migration `034` memberi SPV Operational akses baca Garansi tanpa hak aktivasi atau Claim.
+- Migration `035` menambahkan Warranty Work terpisah dan penerimaan idempoten `warranty_work_requested` dari Yii2.
+- Migration `036` menambahkan outbox atomik untuk pembaruan Warranty Work ke Yii2.
+- Migration `037` memberi After Sales permission untuk membatalkan Claim dan mengajukan Exception kuota.
+- Migration `038` memberi role workshop yang sudah ada permission khusus untuk memperbarui Warranty Work; SPV tidak mendapat akses ini.
+- Migration `039` menyimpan ID bukti kerja dari Yii2 secara atomik pada Warranty Work aktif.
+- Migration `040` menahan completion sebagai `completion_pending` sampai Claim kanonik selesai dan menambah handshake pembatalan Warranty Work.
+- Migration `041` menerima Exception request dari Yii2 dan menulis keputusan SPV beserta outbox secara atomik.
 
 ## Tabel inti aktif
 

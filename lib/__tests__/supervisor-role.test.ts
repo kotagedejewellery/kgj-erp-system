@@ -39,7 +39,9 @@ describe("after sales role", () => {
     expect(canAccessPath("after_sales", "/dashboard/after-sales/garansi")).toBe(true);
     expect(canAccessPath("after_sales", "/dashboard/after-sales/aktivasi")).toBe(true);
     expect(canAccessPath("after_sales", "/dashboard/supervisor/approval")).toBe(false);
-    expect(canAccessPath("operational_supervisor", "/dashboard/supervisor/warranty")).toBe(false);
+    expect(canAccessPath("operational_supervisor", "/dashboard/supervisor/warranty")).toBe(true);
+    expect(canAccessPath("customer_service_supervisor", "/dashboard/supervisor/warranty")).toBe(false);
+    expect(canAccessPath("production_supervisor", "/dashboard/supervisor/warranty")).toBe(false);
     expect(isWorkshopRole("after_sales")).toBe(false);
   });
 });

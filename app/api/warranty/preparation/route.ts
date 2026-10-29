@@ -31,10 +31,16 @@ async function authorize() {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("users")
-    .select("id, role:roles!users_role_id_fkey(name, permissions)")
+    .select("id, status, role:roles!users_role_id_fkey(name, permissions)")
     .eq("id", user.id)
     .is("deleted_at", null)
     .single();
+  if (!profile) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  if (profile.status !== "active") {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
   const role = getRoleProps(profile);
   if (role.name !== "superadmin" && !canManageWarrantyPreparation(role.permissions)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };

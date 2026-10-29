@@ -4,14 +4,16 @@ import { getRoleProps } from "@/lib/auth/session";
 import {
   hasWarrantyPermission,
   WARRANTY_CLAIM_COMPLETE_NON_WORKSHOP_PERMISSION,
+  WARRANTY_CLAIM_CANCEL_PERMISSION,
   WARRANTY_CLAIM_CREATE_PERMISSION,
   WARRANTY_CLAIM_SUBMIT_PERMISSION,
+  WARRANTY_EXCEPTION_REQUEST_PERMISSION,
 } from "@/lib/warranty/permissions";
 import { sendYiiWarrantyCommand } from "@/lib/warranty/yii-command";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-type Action = "create" | "submit" | "complete_non_workshop";
+type Action = "create" | "submit" | "complete_non_workshop" | "cancel" | "request_quota_exception";
 
 const actions: Record<Action, { permission: string; path: string }> = {
   create: {
@@ -25,6 +27,14 @@ const actions: Record<Action, { permission: string; path: string }> = {
   complete_non_workshop: {
     permission: WARRANTY_CLAIM_COMPLETE_NON_WORKSHOP_PERMISSION,
     path: "/api/warranty/v1/commands/claims/complete-non-workshop",
+  },
+  cancel: {
+    permission: WARRANTY_CLAIM_CANCEL_PERMISSION,
+    path: "/api/warranty/v1/commands/claims/cancel",
+  },
+  request_quota_exception: {
+    permission: WARRANTY_EXCEPTION_REQUEST_PERMISSION,
+    path: "/api/warranty/v1/commands/claims/request-quota-exception",
   },
 };
 
@@ -51,11 +61,12 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: profile, error: profileError } = await admin
       .from("users")
-      .select("id, full_name, email, role:roles!users_role_id_fkey(name, permissions)")
+      .select("id, full_name, email, status, role:roles!users_role_id_fkey(name, permissions)")
       .eq("id", user.id)
       .is("deleted_at", null)
       .single();
     if (profileError || !profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (profile.status !== "active") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const role = getRoleProps(profile);
     const { permission, path } = actions[action];
@@ -93,6 +104,13 @@ export async function POST(request: Request) {
           data.final_weight_gram = numericWeight;
         }
       }
+      if (action === "cancel" || action === "request_quota_exception") {
+        const reason = text(body?.reason);
+        if (!reason) {
+          return NextResponse.json({ error: "Alasan wajib diisi" }, { status: 400 });
+        }
+        data.reason = reason;
+      }
       const response = await sendYiiWarrantyCommand(path, {
         schema_version: 1,
         request_id: randomUUID(),
@@ -104,7 +122,37 @@ export async function POST(request: Request) {
         },
         data,
       });
-      if (response.status >= 200 && response.status < 300) return NextResponse.json({ success: true, data: response.body });
+      if (response.status >= 200 && response.status < 300) {
+        if (action === "request_quota_exception") {
+          const payload = response.body?.data as Record<string, unknown> | undefined;
+          const exceptionRequest = payload?.exception_request as Record<string, unknown> | undefined;
+          const exceptionRequestId = text(exceptionRequest?.reference, 120);
+          if (exceptionRequestId) {
+            const { error: auditError } = await admin.from("activity_logs").insert({
+              user_id: user.id,
+              action: "WARRANTY_EXCEPTION_REQUESTED",
+              entity_type: "warranty_exception_request",
+              entity_id: exceptionRequestId,
+            });
+            if (auditError) console.error("[POST /api/warranty/claims] exception audit:", auditError);
+            const { error: requesterError } = await admin.from("warranty_exception_request_actors").upsert({
+              exception_request_id: exceptionRequestId,
+              requested_by: user.id,
+            }, { onConflict: "exception_request_id" });
+            if (requesterError) {
+              console.error("[POST /api/warranty/claims] exception requester:", requesterError);
+            } else {
+              const { error: requestError } = await admin
+                .from("warranty_exception_requests")
+                .update({ requested_by: user.id, updated_at: new Date().toISOString() })
+                .eq("exception_request_id", exceptionRequestId)
+                .is("requested_by", null);
+              if (requestError) console.error("[POST /api/warranty/claims] exception request actor:", requestError);
+            }
+          }
+        }
+        return NextResponse.json({ success: true, data: response.body });
+      }
       return NextResponse.json({ error: response.error ?? "Warranty Core menolak Claim" }, { status: response.status });
     }
 

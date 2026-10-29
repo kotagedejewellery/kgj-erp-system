@@ -39,6 +39,27 @@ function query(result: unknown, onEq?: (field: string) => void) {
 describe("POST /api/warranty/preparation", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("menolak akun nonaktif sebelum memproses Warranty Preparation", async () => {
+    const userQuery = {
+      select: vi.fn(), eq: vi.fn(), is: vi.fn(), single: vi.fn(),
+    };
+    userQuery.select.mockReturnValue(userQuery);
+    userQuery.eq.mockReturnValue(userQuery);
+    userQuery.is.mockReturnValue(userQuery);
+    userQuery.single.mockResolvedValue({
+      data: { id: "warranty-admin-1", status: "inactive", role: { name: "after_sales", permissions: { warranty_administrator: true } } },
+    });
+    mocks.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "warranty-admin-1" } } }) },
+    });
+    mocks.createAdminClient.mockReturnValue({ from: vi.fn(() => userQuery) });
+
+    const response = await POST(new Request("http://localhost/api/warranty/preparation", { method: "POST", body: JSON.stringify({}) }));
+
+    if (!response) throw new Error("Route tidak mengembalikan respons");
+    expect(response.status).toBe(403);
+  });
+
   it("menolak pengguna tanpa permission Warranty Administrator", async () => {
     const userQuery = {
       select: vi.fn(),
@@ -50,7 +71,7 @@ describe("POST /api/warranty/preparation", () => {
     userQuery.eq.mockReturnValue(userQuery);
     userQuery.is.mockReturnValue(userQuery);
     userQuery.single.mockResolvedValue({
-      data: { id: "user-1", role: { name: "customer_service", permissions: {} } },
+      data: { id: "user-1", status: "active", role: { name: "customer_service", permissions: {} } },
     });
 
     mocks.createClient.mockResolvedValue({
@@ -80,7 +101,7 @@ describe("POST /api/warranty/preparation", () => {
     userQuery.is.mockReturnValue(userQuery);
     userQuery.single.mockResolvedValue({
       data: {
-        id: "warranty-admin-1",
+        id: "warranty-admin-1", status: "active",
         role: { name: "after_sales", permissions: { warranty_administrator: true } },
       },
     });
@@ -108,7 +129,7 @@ describe("POST /api/warranty/preparation", () => {
   it("menolak Plan Version yang tidak sesuai brand dan matriks v1", async () => {
     const profile = query({
       data: {
-        id: "warranty-admin-1",
+        id: "warranty-admin-1", status: "active",
         role: { name: "after_sales", permissions: { warranty_administrator: true } },
       },
     });
@@ -139,7 +160,7 @@ describe("POST /api/warranty/preparation", () => {
   it("memuat Preparation untuk nomor order After Sales beserta command Candidate berdasarkan unit", async () => {
     const profile = query({
       data: {
-        id: "warranty-admin-1",
+        id: "warranty-admin-1", status: "active",
         role: { name: "after_sales", permissions: { warranty_administrator: true } },
       },
     });

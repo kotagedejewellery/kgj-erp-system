@@ -25,7 +25,7 @@ type CommandResponse = {
   };
 };
 
-type ConfirmAction = "submit" | "complete" | null;
+type ConfirmAction = "submit" | "complete" | "cancel" | "request_exception" | null;
 
 export default function WarrantyClaimActions({
   contractReference,
@@ -47,7 +47,9 @@ export default function WarrantyClaimActions({
   const [benefitCode, setBenefitCode] = useState<string | null>(null);
   const [conditionNotes, setConditionNotes] = useState("");
   const [finalWeight, setFinalWeight] = useState("");
+  const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [submitNeedsReview, setSubmitNeedsReview] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
 
@@ -84,6 +86,7 @@ export default function WarrantyClaimActions({
     if (!claim) return;
     setLoading(true);
     setError("");
+    setSubmitNeedsReview(false);
     try {
       await mutator("/api/warranty/claims", {
         body: { action: "submit", claim_reference: claim.reference, expected_version: claim.claim_version },
@@ -92,7 +95,9 @@ export default function WarrantyClaimActions({
       onChanged();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Claim tidak dapat diajukan");
+      setSubmitNeedsReview(true);
       setConfirmAction(null);
+      onChanged();
     } finally {
       setLoading(false);
     }
@@ -115,6 +120,30 @@ export default function WarrantyClaimActions({
       onChanged();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Claim tidak dapat diselesaikan");
+      setConfirmAction(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runClaimAction(action: "cancel" | "request_quota_exception") {
+    if (!claim || !reason.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      await mutator("/api/warranty/claims", {
+        body: {
+          action,
+          claim_reference: claim.reference,
+          expected_version: claim.claim_version,
+          reason: reason.trim(),
+        },
+      });
+      setReason("");
+      setConfirmAction(null);
+      onChanged();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Tindakan Claim tidak dapat diproses");
       setConfirmAction(null);
     } finally {
       setLoading(false);
@@ -150,9 +179,8 @@ export default function WarrantyClaimActions({
               <button
                 key={item.benefit_code}
                 type="button"
-                disabled={item.quota_available < 1}
                 onClick={() => setBenefitCode(item.benefit_code)}
-                className="rounded-md border border-[#c9a227]/45 px-3 py-2 text-xs font-medium text-[#e8e2d4] transition-colors hover:bg-[#c9a227]/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30"
+                className="rounded-md border border-[#c9a227]/45 px-3 py-2 text-xs font-medium text-[#e8e2d4] transition-colors hover:bg-[#c9a227]/10"
               >
                 {item.benefit_code} · sisa {item.quota_available}
               </button>
@@ -217,6 +245,30 @@ export default function WarrantyClaimActions({
           </button>
         </div>
       )}
+      {!(["completed", "cancelled"] as string[]).includes(claim.status) && (
+        <div className="mt-3 border-t border-white/10 pt-3">
+          <label className="block text-xs text-white/55">
+            Alasan pembatalan atau Exception
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={2}
+              className="mt-1 w-full resize-y rounded-md border border-white/10 bg-[#1C1917] px-2 py-2 text-sm text-[#e8e2d4] outline-none focus:border-[#c9a227]/60"
+              placeholder="Wajib diisi sebelum mengajukan tindakan"
+            />
+          </label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {(claim.status === "draft" || claim.status === "awaiting_spv_exception") && (entitlement?.quota_available === 0 || submitNeedsReview) && (
+              <button type="button" disabled={loading || !reason.trim()} onClick={() => setConfirmAction("request_exception")} className="rounded-md border border-[#c9a227]/60 px-3 py-2 text-xs font-semibold text-[#e8e2d4] hover:bg-[#c9a227]/10 disabled:opacity-50">
+                Ajukan Exception kuota
+              </button>
+            )}
+            <button type="button" disabled={loading || !reason.trim()} onClick={() => setConfirmAction("cancel")} className="rounded-md border border-rose-300/35 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-500/10 disabled:opacity-50">
+              Batalkan Claim
+            </button>
+          </div>
+        </div>
+      )}
       {error && <p className="mt-2 text-xs text-rose-200">{error}</p>}
       <ConfirmDialog
         isOpen={confirmAction === "submit"}
@@ -236,6 +288,26 @@ export default function WarrantyClaimActions({
         variant="warning"
         isLoading={loading}
         onConfirm={completeClaim}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        isOpen={confirmAction === "request_exception"}
+        title="Ajukan Exception kuota?"
+        message="Permintaan akan masuk ke SPV Operational. Kuota tidak berubah sebelum keputusan disetujui oleh Warranty Core."
+        confirmText="Ajukan Exception"
+        variant="warning"
+        isLoading={loading}
+        onConfirm={() => runClaimAction("request_quota_exception")}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        isOpen={confirmAction === "cancel"}
+        title="Batalkan Claim?"
+        message="Untuk Claim yang sudah memiliki Warranty Work, Warranty Core menunggu konfirmasi pembatalan dari Workshop sebelum reservation dilepas."
+        confirmText="Batalkan Claim"
+        variant="danger"
+        isLoading={loading}
+        onConfirm={() => runClaimAction("cancel")}
         onCancel={() => setConfirmAction(null)}
       />
     </section>

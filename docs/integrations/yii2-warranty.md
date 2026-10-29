@@ -33,9 +33,10 @@ buat draft, ajukan dan reservasi kuota, unggah bukti, serta selesaikan Claim
 bila benefit tidak memerlukan Workshop Work. Claim memakai `benefit_code`,
 sesuai endpoint Yii2 yang aktif saat ini.
 
-Yang **belum** diaktifkan pada Main-ERP: Warranty Work, cancellation workshop,
-exception SPV, dan dashboard Warranty. Jangan mengasumsikan fitur tersebut telah
-tersedia hanya karena tercantum dalam kontrak v1.
+Warranty Work, cancellation workshop, Exception SPV, serta ringkasan operasional
+Garansi tersedia pada Main-ERP. Dashboard analitik per periode/brand/cabang
+tetap bukan bagian dari delivery v1; projection tidak boleh dipakai untuk
+menghitung atau mengubah kuota.
 
 Worklist Contract read-only tersedia pada workspace **After Sales → Garansi** untuk operator dengan
 permission `warranty.contract.read`. Operator dapat membuka detail Contract,
@@ -110,16 +111,26 @@ boolean administrator:
 
 Role `after_sales` juga memakai `warranty.claim.create`,
 `warranty.claim.submit`, dan `warranty.claim.complete_non_workshop` untuk
-Claim reguler. Permission exception dan Workshop belum diaktifkan.
-`operational_supervisor` tetap tidak berubah; pada fase exception nanti ia
-hanya menerima antrean persetujuan dan tidak dapat mengubah kuota langsung atau
-menyetujui permintaan sendiri.
+Claim reguler, serta `warranty.claim.cancel` dan
+`warranty.exception.request` bila diperlukan. Workshop memakai permission
+`warranty.work.update` yang hanya diberikan ke role produksi/QC terkait.
+`operational_supervisor` memakai `warranty.exception.decide`: ia hanya
+memutuskan request, tidak mengubah kuota lokal dan tidak dapat menyetujui
+permohonannya sendiri.
+
+Main-ERP juga memiliki Warranty Work terpisah untuk PIC, progres, QC,
+lampiran, berat akhir, dan handshake pembatalan. Completion hanya tampil final
+setelah event `warranty_claim_changed` dari Yii2 mengonfirmasi Claim selesai.
+Superadmin memantau dead-letter dan Exception yang kehilangan identitas pemohon
+di **Superadmin → Integrasi Garansi**. Replay selalu memakai `event_id` dan
+payload yang sama; pemulihan pemohon hanya menggunakan satu identitas yang
+tercatat pada audit request asli.
 
 ## Mengaktifkan delivery
 
 1. Buat atau verifikasi loader server-only yang di-ignore Git pada Yii2.
-2. Simpan Secret A/B di Vercel dan storage server-only Yii2; simpan Secret C
-   hanya untuk endpoint cron HTTP Main-ERP.
+2. Simpan Secret A/B pada environment deployment Main-ERP dan storage
+   server-only Yii2; simpan Secret C hanya untuk endpoint cron HTTP Main-ERP.
 3. Deploy ulang Main-ERP dan Yii2.
 4. Jadwalkan dispatcher Yii2 sesuai kontrak:
 
@@ -136,16 +147,10 @@ menyetujui permintaan sendiri.
    Authorization: Bearer <CRON_SECRET>
    ```
 
-   Bila memakai Vercel Cron, tambahkan jadwal berikut ke `vercel.json` dan
-   deploy ulang:
-
-   ```json
-   {
-     "crons": [{ "path": "/api/warranty/cron", "schedule": "* * * * *" }]
-   }
-   ```
-
-   Jangan menambah jadwal ini sebelum kedua secret dan receiver Yii2 siap.
+   Di cron-job.org, buat satu job GET setiap menit ke
+   `https://<domain-main-erp>/api/warranty/cron` dan kirim header
+   `Authorization: Bearer <CRON_SECRET>`. Jangan menambah jadwal ini sebelum
+   kedua secret dan receiver Yii2 siap.
 
 6. Worker menerima hanya HTTP `202` sebagai delivery sukses. Retry selalu
    menggunakan `event_id` asli; setelah kegagalan ke-12, event menjadi

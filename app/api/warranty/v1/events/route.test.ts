@@ -124,6 +124,81 @@ describe("POST /api/warranty/v1/events", () => {
     }));
   });
 
+  it("menerima permintaan Warranty Work dan membuat satu Work idempoten", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: "applied", error: null });
+    mocks.createAdminClient.mockReturnValue({ rpc });
+    const event = {
+      schema_version: 1,
+      event_id: "00000000-0000-4000-8000-000000000004",
+      event_type: "warranty_work_requested",
+      occurred_at: new Date().toISOString(),
+      order: { source_id: "123", reference: "KGJ10260001" },
+      claim_reference: "WCL-000001",
+      data: {
+        benefit_code: "RESIZE",
+        condition_notes: "Ukuran perlu disesuaikan",
+        requires_qc: true,
+        requires_final_weight: true,
+        requires_attachment: true,
+      },
+    };
+
+    const response = await POST(signedRequest(JSON.stringify(event), event.occurred_at));
+
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith("apply_warranty_work_requested", expect.objectContaining({
+      p_source: "yii2",
+      p_event_id: event.event_id,
+      p_claim_reference: "WCL-000001",
+      p_benefit_code: "RESIZE",
+      p_requires_qc: true,
+    }));
+  });
+
+  it("menerima permintaan pembatalan Work dan meneruskannya ke inbox atomik", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: "applied", error: null });
+    mocks.createAdminClient.mockReturnValue({ rpc });
+    const event = {
+      schema_version: 1,
+      event_id: "00000000-0000-4000-8000-000000000005",
+      event_type: "warranty_work_cancellation_requested",
+      occurred_at: new Date().toISOString(),
+      order: { source_id: "123", reference: "KGJ10260001" },
+      claim_reference: "WCL-000001",
+      data: { work_reference: "WW-WCL-000001", reason: "Pelanggan membatalkan permintaan" },
+    };
+
+    const response = await POST(signedRequest(JSON.stringify(event), event.occurred_at));
+
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith("apply_warranty_work_cancellation_requested", expect.objectContaining({
+      p_claim_reference: "WCL-000001",
+      p_work_reference: "WW-WCL-000001",
+    }));
+  });
+
+  it("menerima permintaan Exception untuk inbox SPV", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: "applied", error: null });
+    mocks.createAdminClient.mockReturnValue({ rpc });
+    const event = {
+      schema_version: 1,
+      event_id: "00000000-0000-4000-8000-000000000006",
+      event_type: "warranty_exception_requested",
+      occurred_at: new Date().toISOString(),
+      order: { source_id: "123", reference: "KGJ10260001" },
+      claim_reference: "WCL-000001",
+      data: { exception_request_id: "WER-000001", reason: "Kasus khusus pelanggan" },
+    };
+
+    const response = await POST(signedRequest(JSON.stringify(event), event.occurred_at));
+
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith("apply_warranty_exception_requested", expect.objectContaining({
+      p_exception_request_id: "WER-000001",
+      p_claim_reference: "WCL-000001",
+    }));
+  });
+
   it("menolak event ID yang bukan UUID sebelum menyentuh inbox", async () => {
     const rpc = vi.fn();
     mocks.createAdminClient.mockReturnValue({ rpc });

@@ -28,11 +28,12 @@ export async function POST(
     const admin = createAdminClient();
     const { data: profile, error: profileError } = await admin
       .from("users")
-      .select("id, role:roles!users_role_id_fkey(name, permissions)")
+      .select("id, status, role:roles!users_role_id_fkey(name, permissions)")
       .eq("id", user.id)
       .is("deleted_at", null)
       .single();
     if (profileError || !profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (profile.status !== "active") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const role = getRoleProps(profile);
     if (role.name !== "superadmin" && !hasWarrantyPermission(role.permissions, WARRANTY_CLAIM_COMPLETE_NON_WORKSHOP_PERMISSION)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -30,7 +30,7 @@ describe("POST /api/warranty/claims", () => {
     });
     mocks.createAdminClient.mockReturnValue({
       from: vi.fn(() => profileQuery({
-        id: "after-sales-1",
+        id: "after-sales-1", status: "active",
         full_name: "After Sales",
         role: { name: "after_sales", permissions: { "warranty.claim.create": true } },
       })),
@@ -70,7 +70,60 @@ describe("POST /api/warranty/claims", () => {
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "operator-1" } } }) },
     });
     mocks.createAdminClient.mockReturnValue({
-      from: vi.fn(() => profileQuery({ id: "operator-1", role: { name: "after_sales", permissions: {} } })),
+      from: vi.fn(() => profileQuery({ id: "operator-1", status: "active", role: { name: "after_sales", permissions: {} } })),
+    });
+
+    const response = await POST(new Request("http://localhost/api/warranty/claims", {
+      method: "POST",
+      body: JSON.stringify({ action: "create", contract_reference: "WCT-1", benefit_code: "resize", condition_notes: "Catatan" }),
+    }));
+
+    expect(response.status).toBe(403);
+    expect(mocks.sendYiiWarrantyCommand).not.toHaveBeenCalled();
+  });
+
+  it("meneruskan pembatalan Claim dengan alasan dan versi kanonik", async () => {
+    mocks.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "after-sales-1", email: "after@example.test" } } }) },
+    });
+    mocks.createAdminClient.mockReturnValue({
+      from: vi.fn(() => profileQuery({
+        id: "after-sales-1", status: "active",
+        full_name: "After Sales",
+        role: { name: "after_sales", permissions: { "warranty.claim.cancel": true } },
+      })),
+    });
+    mocks.sendYiiWarrantyCommand.mockResolvedValue({ status: 202, error: null, body: { data: { status: "cancellation_requested" } } });
+
+    const response = await POST(new Request("http://localhost/api/warranty/claims", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "cancel",
+        claim_reference: "WCL-1",
+        expected_version: 3,
+        reason: "Pelanggan membatalkan permintaan",
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.sendYiiWarrantyCommand).toHaveBeenCalledWith(
+      "/api/warranty/v1/commands/claims/cancel",
+      expect.objectContaining({
+        expected_version: 3,
+        data: { claim_reference: "WCL-1", reason: "Pelanggan membatalkan permintaan" },
+      }),
+    );
+  });
+
+  it("menolak akun nonaktif sebelum meneruskan command Claim", async () => {
+    mocks.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "after-sales-1" } } }) },
+    });
+    mocks.createAdminClient.mockReturnValue({
+      from: vi.fn(() => profileQuery({
+        id: "after-sales-1", status: "inactive",
+        role: { name: "after_sales", permissions: { "warranty.claim.create": true } },
+      })),
     });
 
     const response = await POST(new Request("http://localhost/api/warranty/claims", {

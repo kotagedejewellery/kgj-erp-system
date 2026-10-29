@@ -100,6 +100,7 @@ export const SUPERADMIN_ROUTES = {
   MONITORING_MANAJEMEN: "/dashboard/superadmin/management/monitoring",
   MANAGEMENT_DASHBOARD: "/dashboard/superadmin/management",
   MANAGEMENT_HISTORY: "/dashboard/superadmin/management/history",
+  WARRANTY_INTEGRATION: "/dashboard/superadmin/warranty/integration",
 } as const;
 
 /**
@@ -122,6 +123,7 @@ export const SUPERVISOR_ROUTES = {
   HISTORY: "/dashboard/supervisor/history",
   APPROVAL_HISTORY: "/dashboard/supervisor/history-approval",
   WARRANTY: "/dashboard/supervisor/warranty",
+  WARRANTY_EXCEPTIONS: "/dashboard/supervisor/warranty/exceptions",
 } as const;
 
 export const MANAGEMENT_ROUTES = {
@@ -280,7 +282,7 @@ export function canAccessPath(role: string, path: string): boolean {
 
   // Supervisor roles — hanya akses dashboard supervisor
   if (role === "supervisor" || isSupervisorRoleName(role)) {
-    if (path.startsWith(SUPERVISOR_ROUTES.WARRANTY)) return false;
+    if (path.startsWith(SUPERVISOR_ROUTES.WARRANTY)) return role === "operational_supervisor";
     return (
       path.startsWith(ROUTES.DASHBOARD_SUPERVISOR) || path.startsWith("/api/")
     );

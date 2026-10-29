@@ -62,6 +62,11 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERADMIN_ROUTES.KELOLA_QR_CODES,
     },
     {
+      name: "Integrasi Garansi",
+      icon: "warranty",
+      href: SUPERADMIN_ROUTES.WARRANTY_INTEGRATION,
+    },
+    {
       name: "OPR-PRD",
       icon: "oprprd",
       submenu: [
@@ -109,6 +114,8 @@ const menuItems: Record<string, MenuItem[]> = {
       icon: "approval",
       href: SUPERVISOR_ROUTES.APPROVAL_HISTORY,
     },
+    { name: "Garansi", icon: "warranty", href: SUPERVISOR_ROUTES.WARRANTY },
+    { name: "Exception Garansi", icon: "approval", href: SUPERVISOR_ROUTES.WARRANTY_EXCEPTIONS },
   ],
   after_sales: [
     { name: "Aktivasi Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.AKTIVASI },
@@ -150,6 +157,7 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const [actualRole, setActualRole] = useState<string | null>(null);
   const [isIntakeValidator, setIsIntakeValidator] = useState(false);
   const [isSupervisorMenuReady, setIsSupervisorMenuReady] = useState(role !== "supervisor");
+  const [pendingExceptions, setPendingExceptions] = useState(0);
   const [collapsedMenus, setCollapsedMenus] = useState<CollapseState>({
     BMS: false,
     OPRPRD: true,
@@ -177,6 +185,14 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
       })
       .catch(() => {});
   }, [role]);
+
+  useEffect(() => {
+    if (role !== "supervisor" || actualRole !== "operational_supervisor") return;
+    fetch("/api/warranty/summary")
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((result) => setPendingExceptions(Number(result?.data?.pending_exceptions) || 0))
+      .catch(() => {});
+  }, [role, actualRole]);
 
   const baseItems = menuItems[role as keyof typeof menuItems] || [];
   const items = role === "supervisor"
@@ -356,6 +372,9 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         )}
         {isActive && !isCollapsed && (
           <div className="ml-auto w-1.5 h-1.5 bg-[#c9a227] rounded-full"></div>
+        )}
+        {item.name === "Exception Garansi" && pendingExceptions > 0 && (
+          <span className="ml-auto rounded-full bg-[#c9a227] px-1.5 py-0.5 text-[10px] font-bold text-[#1C1917]">{pendingExceptions}</span>
         )}
       </Link>
     );

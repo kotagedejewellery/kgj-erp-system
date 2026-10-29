@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { retryPendingWarrantyActivations } from "@/lib/warranty/push-activation";
+import { retryPendingWarrantyWorkUpdates } from "@/lib/warranty/push-work";
 
 export const maxDuration = 300;
 
@@ -16,7 +17,11 @@ export async function GET(request: Request) {
   try {
     const requestedLimit = Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10", 10);
     const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 10) : 10;
-    return NextResponse.json({ success: true, activation: await retryPendingWarrantyActivations(limit) });
+    const [activation, work] = await Promise.all([
+      retryPendingWarrantyActivations(limit),
+      retryPendingWarrantyWorkUpdates(limit),
+    ]);
+    return NextResponse.json({ success: true, activation, work });
   } catch (error) {
     console.error("[GET /api/warranty/cron] unexpected:", error);
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });

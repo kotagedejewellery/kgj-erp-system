@@ -23,7 +23,7 @@ describe("POST /api/warranty/claims/[reference]/attachments", () => {
     profile.eq.mockReturnValue(profile);
     profile.is.mockReturnValue(profile);
     profile.single.mockResolvedValue({
-      data: { id: "after-sales-1", role: { name: "after_sales", permissions: { "warranty.claim.complete_non_workshop": true } } },
+      data: { id: "after-sales-1", status: "active", role: { name: "after_sales", permissions: { "warranty.claim.complete_non_workshop": true } } },
       error: null,
     });
     const insert = vi.fn().mockResolvedValue({ error: null });
@@ -50,5 +50,27 @@ describe("POST /api/warranty/claims/[reference]/attachments", () => {
       entity_type: "warranty_claim",
       entity_id: "WCL-1",
     }));
+  });
+
+  it("menolak akun nonaktif sebelum membaca file atau menghubungi Yii2", async () => {
+    const profile = { select: vi.fn(), eq: vi.fn(), is: vi.fn(), single: vi.fn() };
+    profile.select.mockReturnValue(profile);
+    profile.eq.mockReturnValue(profile);
+    profile.is.mockReturnValue(profile);
+    profile.single.mockResolvedValue({
+      data: { id: "after-sales-1", status: "inactive", role: { name: "after_sales", permissions: { "warranty.claim.complete_non_workshop": true } } },
+      error: null,
+    });
+    mocks.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "after-sales-1" } } }) },
+    });
+    mocks.createAdminClient.mockReturnValue({ from: vi.fn(() => profile) });
+
+    const response = await POST({ formData: vi.fn() } as unknown as Request, {
+      params: Promise.resolve({ reference: "WCL-1" }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(mocks.sendYiiWarrantyAttachment).not.toHaveBeenCalled();
   });
 });

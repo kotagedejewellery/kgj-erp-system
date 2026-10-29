@@ -44,11 +44,12 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: profile, error: profileError } = await admin
       .from("users")
-      .select("id, full_name, email, role:roles!users_role_id_fkey(name, permissions)")
+      .select("id, full_name, email, status, role:roles!users_role_id_fkey(name, permissions)")
       .eq("id", user.id)
       .is("deleted_at", null)
       .single();
     if (profileError || !profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (profile.status !== "active") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const role = getRoleProps(profile);
     const permission = actionConfig[action].permission;

@@ -50,6 +50,10 @@ export interface RolePermissions {
   "warranty.claim.create"?: boolean;
   "warranty.claim.submit"?: boolean;
   "warranty.claim.complete_non_workshop"?: boolean;
+  "warranty.claim.cancel"?: boolean;
+  "warranty.exception.request"?: boolean;
+  "warranty.work.update"?: boolean;
+  "warranty.exception.decide"?: boolean;
 }
 
 /**
