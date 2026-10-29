@@ -121,6 +121,8 @@ permohonannya sendiri.
 Main-ERP juga memiliki Warranty Work terpisah untuk PIC, progres, QC,
 lampiran, berat akhir, dan handshake pembatalan. Completion hanya tampil final
 setelah event `warranty_claim_changed` dari Yii2 mengonfirmasi Claim selesai.
+Setiap event `warranty_work_updated` membawa `data.actor_id` dari operator yang
+melakukan tindakan; `pic_id` tetap hanya identitas PIC Work.
 Superadmin memantau dead-letter dan Exception yang kehilangan identitas pemohon
 di **Superadmin → Integrasi Garansi**. Replay selalu memakai `event_id` dan
 payload yang sama; pemulihan pemohon hanya menggunakan satu identitas yang

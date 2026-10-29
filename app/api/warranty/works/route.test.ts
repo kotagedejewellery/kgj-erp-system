@@ -74,4 +74,29 @@ describe("POST /api/warranty/works", () => {
     expect(response.status).toBe(403);
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  it("meneruskan identitas QC sebagai actor yang berbeda dari PIC Work", async () => {
+    mocks.createClient.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "qc-1" } } }) },
+    });
+    const rpc = vi.fn().mockResolvedValue({ data: [{ status: "completion_pending" }], error: null });
+    mocks.createAdminClient.mockReturnValue({
+      from: vi.fn((table: string) => table === "users"
+        ? profileQuery({ id: "qc-1", status: "active", role: { name: "qc_1", permissions: { "warranty.work.update": true } } })
+        : workQuery({ id: "work-1", status: "qc", pic_id: "worker-1", attachment_ids: [] })),
+      rpc,
+    });
+
+    const response = await POST(new Request("http://localhost/api/warranty/works", {
+      method: "POST",
+      body: JSON.stringify({ work_id: "work-1", action: "complete" }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("enqueue_warranty_work_update", expect.objectContaining({
+      p_actor_id: "qc-1",
+      p_pic_id: null,
+      p_status: "completion_pending",
+    }));
+  });
 });

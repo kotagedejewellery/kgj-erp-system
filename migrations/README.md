@@ -26,6 +26,7 @@ Schema Main-ERP saat ini memakai model integrasi Yii2: `legacy_orders` sebagai d
 - Migration `039` menyimpan ID bukti kerja dari Yii2 secara atomik pada Warranty Work aktif.
 - Migration `040` menahan completion sebagai `completion_pending` sampai Claim kanonik selesai dan menambah handshake pembatalan Warranty Work.
 - Migration `041` menerima Exception request dari Yii2 dan menulis keputusan SPV beserta outbox secara atomik.
+- Migration `042` mewajibkan `actor_id` pada event Work ke Yii2 dan melengkapi event Work yang belum terkirim dari audit Work lokal.
 
 ## Tabel inti aktif
 
