@@ -23,6 +23,7 @@ interface SyncResult {
 
 const FETCH_TIMEOUT_MS = 60_000;
 const FETCH_MAX_ATTEMPTS = 2;
+const PULL_INGEST_BATCH_SIZE = 5;
 
 // Fetch with a hard timeout so a slow upstream (Yii2) can't hang the function
 // until Vercel's maxDuration kills it without a traceable error.
@@ -149,6 +150,16 @@ export async function computeSinceWatermark(db: Db): Promise<string> {
   return `${watermark.toISOString().split("T")[0]} 00:00:00`;
 }
 
+async function processInBatches<T>(
+  items: T[],
+  batchSize: number,
+  process: (item: T) => Promise<void>,
+): Promise<void> {
+  for (let start = 0; start < items.length; start += batchSize) {
+    await Promise.all(items.slice(start, start + batchSize).map(process));
+  }
+}
+
 export async function syncNewOrders(
   since?: string,
   syncType: "cron" | "manual" = "cron",
@@ -170,7 +181,7 @@ export async function syncNewOrders(
     return result;
   }
 
-  for (const order of orders.orders) {
+  await processInBatches(orders.orders, PULL_INGEST_BATCH_SIZE, async (order) => {
     try {
       const ingest = await ingestLegacyOrder(db, order);
       if (ingest.action === "inserted" || ingest.stageChanged) {
@@ -183,7 +194,7 @@ export async function syncNewOrders(
       console.error("[sync] Ingest error:", order.kode_order, err);
       result.errors++;
     }
-  }
+  });
 
   await logSync(db, syncType, result, result.errors > 0 ? `${result.errors} order gagal disinkron` : null);
   return result;
