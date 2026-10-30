@@ -109,14 +109,14 @@ export default function WarrantyPreparation({ orderId, currentStage }: { orderId
   const preparation = query.data.data;
   const canEdit = !preparation.is_ready;
   const activationLabel = preparation.activation?.status === "delivered"
-    ? "Aktivasi sudah dikirim ke Warranty Core."
+    ? "Candidate telah dikirim ke Warranty Core. Lanjutkan validasi unit ketika tersedia."
     : preparation.activation?.status === "dead_letter"
       ? "Aktivasi gagal dikirim. Hubungi administrator Warranty."
     : preparation.activation
       ? "Aktivasi masuk antrean pengiriman ke Warranty Core."
       : currentStage === "selesai"
         ? "Tandai persiapan siap untuk membuat antrean aktivasi."
-        : "Aktivasi akan diantrikan setelah order selesai.";
+        : `Belum dapat dikirim — order masih pada tahap ${currentStage.replaceAll("_", " ")}. Candidate dibuat otomatis setelah tahap selesai.`;
 
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -152,7 +152,7 @@ export default function WarrantyPreparation({ orderId, currentStage }: { orderId
                     {unit.contract ? (
                       <span className="text-emerald-300">Contract aktif: {unit.contract.contract_reference}</span>
                     ) : preparation.activation?.status !== "delivered" ? (
-                      <span className="text-white/40">Menunggu Candidate diterima Warranty Core.</span>
+                      <span className="text-white/65">{currentStage === "selesai" ? "Menunggu Candidate dikirim ke Warranty Core." : "Candidate belum dikirim karena order belum selesai."}</span>
                     ) : unit.commands.validate?.status !== "completed" ? (
                       <button
                         type="button"

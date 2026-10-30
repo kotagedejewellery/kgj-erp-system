@@ -6,8 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
 import { STAGE_LABELS } from "@/lib/stages";
 import { mapLegacyStatus } from "@/lib/legacy/adapter";
-import { getBrandPrefix } from "@/lib/legacy/brands";
-import { PERSONAL_HISTORY_ACTIONS } from "@/lib/supervisor/history";
+import { getBrandIdFromFilterCode, getBrandPrefix } from "@/lib/legacy/brands";
+import { getHistoryPagination, PERSONAL_HISTORY_ACTIONS } from "@/lib/supervisor/history";
 
 async function verifyAccess(userId: string) {
   const admin = createAdminClient();
@@ -52,14 +52,13 @@ export async function GET(request: Request) {
     const brand = searchParams.get("brand") ?? "all";
     const q = searchParams.get("q") ?? "";
     const scope = searchParams.get("scope") ?? "all";
-    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
-    const offset = Math.max(Number(searchParams.get("offset") ?? 0), 0);
+    const { limit, offset, page } = getHistoryPagination(searchParams);
     if (scope !== "all" && scope !== "mine") {
       return NextResponse.json({ error: "Scope riwayat tidak valid" }, { status: 400 });
     }
 
     const admin = createAdminClient();
-    let handledOrderIds: string[] | null = null;
+    let filteredOrderIds: string[] | null = null;
 
     if (scope === "mine") {
       const { data: activities, error: activitiesError } = await admin
@@ -74,21 +73,46 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Gagal mengambil riwayat supervisor" }, { status: 500 });
       }
 
-      handledOrderIds = [...new Set((activities ?? []).map((activity) => activity.entity_id))];
-      if (handledOrderIds.length === 0) {
-        return NextResponse.json({ success: true, data: { orders: [], total: 0 } });
+      filteredOrderIds = [...new Set((activities ?? []).map((activity) => activity.entity_id))];
+      if (filteredOrderIds.length === 0) {
+        return NextResponse.json({ success: true, data: { orders: [], total: 0, pagination: { page, page_size: limit } } });
+      }
+    }
+
+    if (q || brand !== "all") {
+      let orderFilter = admin.from("legacy_orders").select("id");
+      if (q) orderFilter = orderFilter.or(`kode_order.ilike.%${q}%,nama.ilike.%${q}%`);
+      if (brand !== "all") {
+        const brandId = getBrandIdFromFilterCode(brand);
+        if (brandId === null) {
+          return NextResponse.json({ success: true, data: { orders: [], total: 0, pagination: { page, page_size: limit } } });
+        }
+        orderFilter = orderFilter.eq("id_brand", brandId);
+      }
+
+      const { data: matchingOrders, error: matchingOrdersError } = await orderFilter;
+      if (matchingOrdersError) {
+        console.error("[GET /api/orders/history] order filter error:", matchingOrdersError.message);
+        return NextResponse.json({ error: "Gagal mengambil data" }, { status: 500 });
+      }
+
+      const matchingIds = new Set((matchingOrders ?? []).map((order) => order.id));
+      filteredOrderIds = filteredOrderIds
+        ? filteredOrderIds.filter((id) => matchingIds.has(id))
+        : [...matchingIds];
+      if (filteredOrderIds.length === 0) {
+        return NextResponse.json({ success: true, data: { orders: [], total: 0, pagination: { page, page_size: limit } } });
       }
     }
 
     let query = admin
       .from("tracking_stages")
       .select(
-        `order_id, current_stage, stage_status, updated_at,
-         legacy_orders!tracking_stages_order_id_fkey(id, kode_order, nama, tgl_order, tgl_selesai)`,
+        "order_id, current_stage, stage_status, updated_at",
         { count: "exact" },
       );
 
-    if (handledOrderIds) query = query.in("order_id", handledOrderIds);
+    if (filteredOrderIds) query = query.in("order_id", filteredOrderIds);
 
     if (status === "active") query = query.neq("current_stage", "selesai");
     else if (status === "completed") query = query.eq("current_stage", "selesai");
@@ -104,18 +128,31 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Gagal mengambil data" }, { status: 500 });
     }
 
-    type LegacyEmbed = {
+    const orderIds = (rows ?? []).map((row) => row.order_id);
+    const { data: orderRows, error: ordersError } = orderIds.length > 0
+      ? await admin
+        .from("legacy_orders")
+        .select("id, kode_order, nama, tgl_order, tgl_selesai, id_brand")
+        .in("id", orderIds)
+      : { data: [], error: null };
+    if (ordersError) {
+      console.error("[GET /api/orders/history] orders error:", ordersError.message);
+      return NextResponse.json({ error: "Gagal mengambil data" }, { status: 500 });
+    }
+
+    type LegacyOrder = {
       id: string; kode_order: string; nama: string | null;
-      tgl_order: string | null; tgl_selesai: string | null;
+      tgl_order: string | null; tgl_selesai: string | null; id_brand: number | null;
     };
     type TrackRow = {
       order_id: string; current_stage: string; stage_status: string; updated_at: string | null;
-      legacy_orders?: LegacyEmbed | LegacyEmbed[] | null;
     };
+
+    const ordersById = new Map((orderRows as LegacyOrder[]).map((order) => [order.id, order]));
 
     const orders = (rows as TrackRow[] ?? [])
       .map((t) => {
-        const lo = Array.isArray(t.legacy_orders) ? t.legacy_orders[0] : t.legacy_orders;
+        const lo = ordersById.get(t.order_id);
         const orderNumber = lo?.kode_order ?? "—";
         return {
           id: t.order_id,
@@ -130,19 +167,11 @@ export async function GET(request: Request) {
           updated_at: t.updated_at,
           completed_at: t.current_stage === "selesai" ? t.updated_at : null,
         };
-      })
-      .filter((o) => {
-        const matchBrand = brand === "all" || o.brand === brand;
-        const matchQ =
-          !q ||
-          o.order_number.toLowerCase().includes(q.toLowerCase()) ||
-          (o.customer_name ?? "").toLowerCase().includes(q.toLowerCase());
-        return matchBrand && matchQ;
       });
 
     return NextResponse.json({
       success: true,
-      data: { orders, total: count ?? 0 },
+      data: { orders, total: count ?? 0, pagination: { page, page_size: limit } },
     });
   } catch (err) {
     console.error("[GET /api/orders/history] Error:", err);

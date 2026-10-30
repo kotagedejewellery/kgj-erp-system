@@ -4,10 +4,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
-import { Search, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleAlert, Search, RefreshCw } from "lucide-react";
 import OrderDetailPopup from "@/components/orders/OrderDetailPopup";
 import { STAGE_SEQUENCE, STAGE_LABELS } from "@/lib/stages";
 import { BRAND_FILTER_OPTIONS } from "@/lib/legacy/brands";
@@ -26,6 +26,14 @@ interface HistoryOrder {
   completed_at: string | null;
 }
 
+type HistoryResponse = {
+  data: {
+    orders: HistoryOrder[];
+    total: number;
+    pagination: { page: number; page_size: number };
+  };
+};
+
 const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
   completed: { label: "Selesai", cls: "bg-emerald-500/10 text-emerald-300" },
   waiting_approval: { label: "Menunggu Approval", cls: "bg-amber-500/10 text-amber-300" },
@@ -43,12 +51,22 @@ function formatDate(iso: string | null): string {
 }
 
 export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "mine" }) {
+  const [input, setInput] = useState("");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [brand, setBrand] = useState("all");
   const [stage, setStage] = useState("");
+  const [page, setPage] = useState(1);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailNumber, setDetailNumber] = useState("");
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setPage(1);
+      setQ(input.trim());
+    }, 350);
+    return () => window.clearTimeout(timeout);
+  }, [input]);
 
   const params = new URLSearchParams();
   if (status !== "all") params.set("status", status);
@@ -56,20 +74,21 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
   if (scope === "mine") params.set("scope", scope);
   if (stage) params.set("stage", stage);
   if (q) params.set("q", q);
-  params.set("limit", "100");
+  params.set("limit", "25");
+  params.set("page", String(page));
   const queryString = params.toString();
 
-  const { data, isLoading, isFetching, refetch } = useQuery<{
-    data: { orders: HistoryOrder[]; total: number };
-  }>({
+  const { data, error, isLoading, isFetching, refetch } = useQuery<HistoryResponse>({
     queryKey: ["orders-history", queryString],
-    queryFn: () => fetcher<{ data: { orders: HistoryOrder[]; total: number } }>(
+    queryFn: () => fetcher<HistoryResponse>(
       `/api/orders/history?${queryString}`,
     ),
+    retry: false,
   });
 
   const orders = data?.data.orders ?? [];
   const total = data?.data.total ?? 0;
+  const totalPages = data ? Math.max(1, Math.ceil(total / data.data.pagination.page_size)) : 1;
 
   return (
     <div className="space-y-4">
@@ -79,8 +98,8 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
           <input
             type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Cari order / customer..."
             className="w-full rounded-lg border border-gold/15 bg-carbon py-2 pl-9 pr-3 text-sm text-cream placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
           />
@@ -88,7 +107,7 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
 
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
           className="rounded-lg border border-gold/15 bg-carbon px-2.5 py-2 text-xs text-cream focus:border-gold/50 focus:outline-none"
         >
           <option value="all">Semua Status</option>
@@ -98,7 +117,7 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
 
         <select
           value={brand}
-          onChange={(e) => setBrand(e.target.value)}
+          onChange={(e) => { setBrand(e.target.value); setPage(1); }}
           className="rounded-lg border border-gold/15 bg-carbon px-2.5 py-2 text-xs text-cream focus:border-gold/50 focus:outline-none"
         >
           <option value="all">Semua Brand</option>
@@ -109,7 +128,7 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
 
         <select
           value={stage}
-          onChange={(e) => setStage(e.target.value)}
+          onChange={(e) => { setStage(e.target.value); setPage(1); }}
           className="rounded-lg border border-gold/15 bg-carbon px-2.5 py-2 text-xs text-cream focus:border-gold/50 focus:outline-none"
         >
           <option value="">Semua Tahap</option>
@@ -128,7 +147,7 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
         </button>
       </div>
 
-      <p className="text-xs text-white/40">{total} order ditemukan</p>
+      {data && <p className="text-xs text-white/55">{total} order ditemukan</p>}
 
       {/* Table */}
       <div className="rounded-xl border border-gold/10 bg-cocoa overflow-hidden">
@@ -144,7 +163,17 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {isLoading ? (
+              {error ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-rose-200">
+                    <div className="flex flex-col items-center gap-3">
+                      <CircleAlert className="h-5 w-5" />
+                      <p>Riwayat order tidak dapat dimuat.</p>
+                      <button type="button" onClick={() => refetch()} className="rounded-lg border border-rose-300/40 px-3 py-1.5 text-xs font-semibold hover:bg-rose-500/10">Coba lagi</button>
+                    </div>
+                  </td>
+                </tr>
+              ) : isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-white/40 text-sm">
                     Memuat data...
@@ -189,6 +218,16 @@ export default function OrderHistoryList({ scope = "all" }: { scope?: "all" | "m
           </table>
         </div>
       </div>
+
+      {data && totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 text-sm text-white/65">
+          <span>Halaman {page} dari {totalPages}</span>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPage((current) => current - 1)} disabled={page <= 1 || isFetching} className="inline-flex items-center gap-1 rounded-lg border border-gold/15 bg-carbon px-3 py-2 text-xs font-semibold text-cream hover:bg-cocoa disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft className="h-4 w-4" /> Sebelumnya</button>
+            <button type="button" onClick={() => setPage((current) => current + 1)} disabled={page >= totalPages || isFetching} className="inline-flex items-center gap-1 rounded-lg border border-gold/15 bg-carbon px-3 py-2 text-xs font-semibold text-cream hover:bg-cocoa disabled:cursor-not-allowed disabled:opacity-40">Berikutnya <ChevronRight className="h-4 w-4" /></button>
+          </div>
+        </div>
+      )}
 
       {detailId && (
         <OrderDetailPopup

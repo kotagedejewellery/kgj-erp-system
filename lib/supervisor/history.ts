@@ -5,6 +5,23 @@ export const PERSONAL_HISTORY_ACTIONS = [
   "INTAKE_VALIDATION",
 ] as const;
 
+export function getHistoryPagination(searchParams: URLSearchParams) {
+  const requestedLimit = Number.parseInt(searchParams.get("limit") ?? "25", 10);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(requestedLimit, 1), 100)
+    : 25;
+  const requestedOffset = Number.parseInt(searchParams.get("offset") ?? "", 10);
+
+  if (Number.isFinite(requestedOffset)) {
+    const offset = Math.max(requestedOffset, 0);
+    return { limit, offset, page: Math.floor(offset / limit) + 1 };
+  }
+
+  const requestedPage = Number.parseInt(searchParams.get("page") ?? "1", 10);
+  const page = Number.isFinite(requestedPage) ? Math.max(requestedPage, 1) : 1;
+  return { limit, offset: (page - 1) * limit, page };
+}
+
 export type PersonalApprovalAction = "approve" | "reject" | "return";
 
 export function getPersonalApprovalAction(

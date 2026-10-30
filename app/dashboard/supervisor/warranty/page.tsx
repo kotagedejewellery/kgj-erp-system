@@ -152,8 +152,8 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           <div className="min-w-0 space-y-5">
             <div>
-              <h1 className="text-xl font-bold text-ivory sm:text-2xl">Garansi</h1>
-              <p className="mt-1 text-sm text-white/55">Cari Contract aktif berdasarkan pelanggan, telepon, nomor order, atau referensi Contract.</p>
+              <h1 className="text-xl font-bold text-ivory sm:text-2xl">Cari Contract Garansi</h1>
+              <p className="mt-1 text-sm text-white/65">Cari Contract aktif berdasarkan pelanggan, telepon, nomor order, atau referensi Contract.</p>
             </div>
 
             {role === "supervisor" && summary.data && (
@@ -168,7 +168,7 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
               </section>
             )}
 
-            <form onSubmit={submit} className="flex gap-2">
+            <form onSubmit={submit} className="flex max-w-5xl gap-2">
               <label className="sr-only" htmlFor="warranty-search">Cari Contract</label>
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
@@ -186,8 +186,16 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
             </form>
 
             {!term && (
-              <div className="rounded-lg border border-dashed border-white/15 bg-[#1C1917] px-4 py-8 text-center text-sm text-white/50">
-                Masukkan kata pencarian untuk melihat Contract garansi kanonik dari Yii2.
+              <div className="max-w-5xl rounded-lg border border-dashed border-white/15 bg-[#1C1917] px-4 py-8 text-center sm:px-6">
+                <h2 className="text-sm font-semibold text-[#e8e2d4]">Cari Contract aktif</h2>
+                <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-white/65">
+                  Contract dapat dicari setelah order selesai dan aktivasi berhasil diproses oleh Warranty Core.
+                </p>
+                {role === "after_sales" && (
+                  <Link href="/dashboard/after-sales/aktivasi" className="mt-4 inline-flex text-sm font-semibold text-[#c9a227] hover:text-[#dfbb40]">
+                    Buka Aktivasi Garansi
+                  </Link>
+                )}
               </div>
             )}
 

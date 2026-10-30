@@ -119,7 +119,7 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   after_sales: [
     { name: "Aktivasi Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.AKTIVASI },
-    { name: "Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.GARANSI },
+    { name: "Cari Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.GARANSI },
   ],
 };
 
