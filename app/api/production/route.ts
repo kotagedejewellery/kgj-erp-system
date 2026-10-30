@@ -21,7 +21,7 @@ const ROLE_DEFAULT_STAGE: Record<string, string> = {
   micro_setting: "pemasangan_permata",
 };
 
-export async function GET(request?: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const admin = createAdminClient();
@@ -53,9 +53,9 @@ export async function GET(request?: NextRequest) {
     }
 
     // Parse date params from query
-    const url = request?.url ? new URL(request.url) : null;
-    const fromParam = url?.searchParams.get("from");
-    const toParam = url?.searchParams.get("to");
+    const url = new URL(request.url);
+    const fromParam = url.searchParams.get("from");
+    const toParam = url.searchParams.get("to");
 
     // Helper tanggal
     const now = new Date();

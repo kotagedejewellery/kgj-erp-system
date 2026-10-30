@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CircleAlert, Search, ShieldCheck, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ApiError, fetcher } from "@/lib/api";
 import Header from "@/components/layout/MobileHeader";
@@ -82,7 +82,7 @@ function formatDate(value: string) {
   });
 }
 
-export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" | "after_sales" }) {
+function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" | "after_sales" }) {
   const router = useRouter();
   const loginPath = role === "after_sales" ? "/login" : "/workshop/login";
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -339,5 +339,8 @@ export function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" 
 }
 
 export default function WarrantyWorklistPage() {
-  return <WarrantyWorklist />;
+  const pathname = usePathname();
+  const role = pathname.startsWith("/dashboard/after-sales") ? "after_sales" : "supervisor";
+
+  return <WarrantyWorklist role={role} />;
 }

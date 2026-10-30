@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRoleProps } from "@/lib/auth/session";
 
-export async function GET(request?: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const admin = createAdminClient();
@@ -33,9 +33,9 @@ export async function GET(request?: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const url = request?.url ? new URL(request.url) : null;
-    const fromParam = url?.searchParams.get("from");
-    const toParam = url?.searchParams.get("to");
+    const url = new URL(request.url);
+    const fromParam = url.searchParams.get("from");
+    const toParam = url.searchParams.get("to");
 
     const now = new Date();
     const threeDaysAgo = new Date(now);

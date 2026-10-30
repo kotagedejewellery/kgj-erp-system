@@ -59,7 +59,7 @@ async function verifySupervisor(userId: string) {
   return null;
 }
 
-export async function GET(request?: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const {
@@ -97,10 +97,10 @@ export async function GET(request?: NextRequest) {
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
 
-    const url = request?.url ? new URL(request.url) : null;
-    const fromParam = url?.searchParams.get("from");
-    const toParam = url?.searchParams.get("to");
-    const brand = url?.searchParams.get("brand") ?? "all";
+    const url = new URL(request.url);
+    const fromParam = url.searchParams.get("from");
+    const toParam = url.searchParams.get("to");
+    const brand = url.searchParams.get("brand") ?? "all";
     const brandId = brand === "all" ? null : getBrandIdFromFilterCode(brand);
     if (brand !== "all" && brandId === null) {
       return NextResponse.json({ error: "Brand tidak valid" }, { status: 400 });
