@@ -6,7 +6,6 @@
 // creates duplicate stage_history rows or moves the tracking pointer.
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStageIndex } from "@/lib/stages";
 import {
   mapStatusToStage,
   YII2_STATUS_TO_STAGE,
@@ -61,13 +60,8 @@ export function shouldAdvanceTracking(
   return idStatus in YII2_STATUS_TO_STAGE;
 }
 
-export function shouldApplyIncomingStage(
-  currentStage: string | null | undefined,
-  targetStage: string,
-  idStatus: number | null | undefined,
-): boolean {
-  if (idStatus !== YII2_STATUS_PELUNASAN) return true;
-  return getStageIndex(currentStage ?? "") <= getStageIndex(targetStage);
+export function shouldApplyIncomingStage(idStatus: number | null | undefined): boolean {
+  return idStatus !== YII2_STATUS_PELUNASAN;
 }
 
 // Only force "selesai" when Yii2 confirms the order is truly completed
@@ -79,6 +73,22 @@ export function resolveTargetStage(order: Yii2OrderPayload): string | null {
   if (order.tgl_selesai && order.id_status === 15) return "selesai";
   if (!shouldAdvanceTracking(order.id_status)) return null;
   return mapStatusToStage(order.id_status);
+}
+
+export function resolveInitialIngestionStage(
+  order: Yii2OrderPayload,
+): { stage: string; status: string } | null {
+  const targetStage = resolveTargetStage(order);
+  return targetStage ? resolveIngestionStage(targetStage) : null;
+}
+
+export function resolveExistingTrackingTarget(
+  order: Yii2OrderPayload,
+  statusChanged: boolean,
+  wasDeleted: boolean,
+): string | null {
+  if (!statusChanged && !wasDeleted) return null;
+  return resolveTargetStage(order);
 }
 
 export interface IngestResult {
@@ -245,21 +255,17 @@ export async function ingestLegacyOrder(
     // push back to Yii2). Acting on an unchanged status would regress it.
     const incomingStatus = order.id_status ?? null;
     const statusChanged = existing.id_status !== incomingStatus;
-    let targetStage = statusChanged ? resolveTargetStage(order) : null;
-
-    // Resurrected order without a tracking pointer (reconcile removed it):
-    // rebuild the pointer even when the status alone would not advance.
-    if (targetStage === null && existing.deleted_at) {
-      targetStage = order.tgl_selesai
-        ? "selesai"
-        : mapStatusToStage(order.id_status);
-    }
+    const targetStage = resolveExistingTrackingTarget(
+      order,
+      statusChanged,
+      Boolean(existing.deleted_at),
+    );
 
     if (targetStage === null) {
       return { action: "updated", stage: null, stageChanged: false };
     }
 
-    if (!shouldApplyIncomingStage(tracking?.current_stage, targetStage, incomingStatus)) {
+    if (!shouldApplyIncomingStage(incomingStatus)) {
       return { action: "updated", stage: null, stageChanged: false };
     }
 
@@ -290,11 +296,12 @@ export async function ingestLegacyOrder(
     return { action: "inserted", stage: null, stageChanged: false, intakePending: true };
   }
 
-  const rawStage = order.tgl_selesai && order.id_status === 15
-    ? "selesai"
-    : mapStatusToStage(order.id_status);
+  const initialStage = resolveInitialIngestionStage(order);
+  if (!initialStage) {
+    return { action: "inserted", stage: null, stageChanged: false };
+  }
 
-  const { stage, status: stageStatus } = resolveIngestionStage(rawStage);
+  const { stage, status: stageStatus } = initialStage;
 
   await db.from("tracking_stages").insert({
     order_id: inserted.id,

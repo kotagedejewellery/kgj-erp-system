@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   resolveIngestionStage,
+  resolveInitialIngestionStage,
+  resolveExistingTrackingTarget,
   shouldAdvanceTracking,
   shouldApplyIncomingStage,
   resolveTargetStage,
@@ -53,14 +55,45 @@ describe("resolveIngestionStage", () => {
   });
 });
 
+describe("resolveInitialIngestionStage", () => {
+  it("does not create a production timeline from Yii2 internal status test", () => {
+    expect(resolveInitialIngestionStage({ ...baseOrder, id_status: 34 })).toBeNull();
+  });
+
+  it("creates the normal intake stage from a known production status", () => {
+    expect(resolveInitialIngestionStage({ ...baseOrder, id_status: 9 })).toEqual({
+      stage: "approval_penerimaan_order",
+      status: "waiting_approval",
+    });
+  });
+});
+
+describe("resolveExistingTrackingTarget", () => {
+  it("does not rebuild a tracking stage for a resurrected Pelunasan order", () => {
+    expect(
+      resolveExistingTrackingTarget(
+        { ...baseOrder, id_status: YII2_STATUS_PELUNASAN },
+        false,
+        true,
+      ),
+    ).toBeNull();
+  });
+
+  it("rebuilds a tracking stage for a resurrected order with a valid production status", () => {
+    expect(
+      resolveExistingTrackingTarget({ ...baseOrder, id_status: 10 }, false, true),
+    ).toBe("racik_bahan");
+  });
+});
+
 describe("shouldAdvanceTracking", () => {
   it("skips missing status", () => {
     expect(shouldAdvanceTracking(null)).toBe(false);
     expect(shouldAdvanceTracking(undefined)).toBe(false);
   });
 
-  it("advances Pelunasan (id_status=13) to Customer Care", () => {
-    expect(shouldAdvanceTracking(YII2_STATUS_PELUNASAN)).toBe(true);
+  it("skips Pelunasan (id_status=13) because it is not a production stage", () => {
+    expect(shouldAdvanceTracking(YII2_STATUS_PELUNASAN)).toBe(false);
   });
 
   it("skips unknown statuses so the fallback can never regress an order", () => {
@@ -88,10 +121,10 @@ describe("resolveTargetStage", () => {
     ).toBe("pembentukan_cincin");
   });
 
-  it("maps Pelunasan to Konfirmasi Customer Care", () => {
+  it("does not map Pelunasan to a production stage", () => {
     expect(
       resolveTargetStage({ ...baseOrder, id_status: YII2_STATUS_PELUNASAN }),
-    ).toBe("konfirmasi");
+    ).toBeNull();
   });
 
   it("maps known statuses to stages", () => {
@@ -107,44 +140,16 @@ describe("resolveTargetStage", () => {
 });
 
 describe("shouldApplyIncomingStage", () => {
-  it("moves Pelunasan forward to Konfirmasi Customer Care", () => {
-    expect(
-      shouldApplyIncomingStage(
-        "racik_bahan",
-        "konfirmasi",
-        YII2_STATUS_PELUNASAN,
-      ),
-    ).toBe(true);
+  it("never applies Pelunasan as a production-stage update", () => {
+    expect(shouldApplyIncomingStage(YII2_STATUS_PELUNASAN)).toBe(false);
   });
 
-  it("does not let a delayed Pelunasan webhook regress a later stage", () => {
-    expect(
-      shouldApplyIncomingStage(
-        "packing",
-        "konfirmasi",
-        YII2_STATUS_PELUNASAN,
-      ),
-    ).toBe(false);
-    expect(
-      shouldApplyIncomingStage(
-        "pengiriman",
-        "konfirmasi",
-        YII2_STATUS_PELUNASAN,
-      ),
-    ).toBe(false);
-    expect(
-      shouldApplyIncomingStage(
-        "selesai",
-        "konfirmasi",
-        YII2_STATUS_PELUNASAN,
-      ),
-    ).toBe(false);
+  it("does not let a Pelunasan webhook change a later stage", () => {
+    expect(shouldApplyIncomingStage(YII2_STATUS_PELUNASAN)).toBe(false);
   });
 
   it("preserves the existing behavior for other Yii2 statuses", () => {
-    expect(
-      shouldApplyIncomingStage("packing", "pembentukan_cincin", 12),
-    ).toBe(true);
+    expect(shouldApplyIncomingStage(12)).toBe(true);
   });
 });
 

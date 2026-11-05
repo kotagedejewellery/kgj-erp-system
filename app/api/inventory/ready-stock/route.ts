@@ -1,17 +1,31 @@
 import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
 import { parsePositiveGrams } from "@/lib/inventory/grams";
+import { produkInfo } from "@/lib/legacy/produk-labels";
 
 export async function GET() {
   const auth = await requireInventoryManagement();
   if ("error" in auth) return auth.error;
-  const [units, locations] = await Promise.all([
+  const [units, locations, materials] = await Promise.all([
     auth.admin.from("inventory_stock_units").select("id, unit_code, brand_id, source_product_id, source_material_id, size, material_description, actual_weight_grams, condition, status, created_at").order("created_at", { ascending: false }),
     auth.admin.from("inventory_locations").select("id, code, name, location_type").eq("location_type", "warehouse").eq("is_active", true),
+    auth.admin.from("inventory_materials").select("code, name, source_material_id").eq("is_active", true).not("source_material_id", "is", null).order("code"),
   ]);
-  const failed = [units, locations].find((result) => result.error);
+  const failed = [units, locations, materials].find((result) => result.error);
   if (failed?.error) return NextResponse.json({ error: "Inventory belum diinisialisasi" }, { status: 409 });
-  return NextResponse.json({ units: units.data ?? [], locations: locations.data ?? [] });
+  const materialBySourceId = new Map((materials.data ?? []).map((material) => [material.source_material_id, material.name]));
+  return NextResponse.json({
+    units: (units.data ?? []).map((unit) => {
+      const product = produkInfo(unit.source_product_id);
+      return {
+        ...unit,
+        product_label: product?.sku ?? product?.nama ?? "Produk tidak dikenal",
+        material_label: materialBySourceId.get(unit.source_material_id) ?? unit.material_description,
+      };
+    }),
+    locations: locations.data ?? [],
+    materials: materials.data ?? [],
+  });
 }
 
 export async function POST(request: Request) {
