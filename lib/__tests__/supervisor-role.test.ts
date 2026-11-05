@@ -24,12 +24,14 @@ describe("customer service supervisor role", () => {
   });
 });
 
-describe("retired CS and marketing dashboards", () => {
+describe("retired dashboard roles", () => {
   it("does not give retired roles a dashboard or workshop access", () => {
     expect(getDashboardPath("customer_service")).toBeNull();
     expect(getDashboardPath("marketing")).toBeNull();
+    expect(getDashboardPath("leader_operational")).toBeNull();
     expect(isWorkshopRole("customer_service")).toBe(false);
     expect(canAccessPath("marketing", "/workshop/input")).toBe(false);
+    expect(canAccessPath("leader_operational", "/dashboard/management")).toBe(false);
   });
 });
 
@@ -43,5 +45,14 @@ describe("after sales role", () => {
     expect(canAccessPath("customer_service_supervisor", "/dashboard/supervisor/warranty")).toBe(false);
     expect(canAccessPath("production_supervisor", "/dashboard/supervisor/warranty")).toBe(false);
     expect(isWorkshopRole("after_sales")).toBe(false);
+  });
+});
+
+describe("management inventory role", () => {
+  it("masuk hanya ke workspace inventory", () => {
+    expect(getDashboardPath("management")).toBe("/dashboard/management");
+    expect(canAccessPath("management", "/dashboard/management")).toBe(true);
+    expect(canAccessPath("management", "/dashboard/supervisor/approval")).toBe(false);
+    expect(canAccessPath("management", "/dashboard/after-sales/garansi")).toBe(false);
   });
 });

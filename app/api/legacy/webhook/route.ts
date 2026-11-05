@@ -48,7 +48,17 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (local) {
-        await softDeleteLocalOrders(db, [local.id]);
+        const result = await softDeleteLocalOrders(db, [local.id]);
+        if (result.ignoredAfterInventoryIssueIds.includes(local.id)) {
+          await db.from("sync_logs").insert({
+            sync_type: "webhook",
+            orders_synced: 0,
+            status: "success",
+            error_message: `${kodeOrder}: ignored_after_inventory_issue`,
+            created_at: new Date().toISOString(),
+          });
+          return NextResponse.json({ received: true, status: "ignored_after_inventory_issue" });
+        }
       }
 
       await db.from("sync_logs").insert({

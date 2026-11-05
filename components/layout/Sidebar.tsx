@@ -6,9 +6,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef, startTransition } from "react";
 import {
+  MANAGEMENT_ROUTES,
   SUPERADMIN_ROUTES,
   SUPERVISOR_ROUTES,
-  MANAGEMENT_ROUTES,
 } from "@/lib/routes";
 import {
   LayoutDashboard,
@@ -43,7 +43,6 @@ const menuItems: Record<string, MenuItem[]> = {
       icon: "dashboard",
       href: SUPERADMIN_ROUTES.DASHBOARD,
     },
-
     // Kelola seluruh akun
     {
       name: "Kelola Akun",
@@ -57,30 +56,6 @@ const menuItems: Record<string, MenuItem[]> = {
       icon: "qrcode",
       href: SUPERADMIN_ROUTES.KELOLA_QR_CODES,
     },
-
-    // Monitoring Manajemen
-    {
-      name: "Management",
-      icon: "checklist",
-      submenu: [
-        {
-          name: "Dashboard",
-          icon: "dashboard",
-          href: SUPERADMIN_ROUTES.MANAGEMENT_DASHBOARD,
-        },
-        {
-          name: "Monitoring",
-          icon: "monitor",
-          href: SUPERADMIN_ROUTES.MONITORING_MANAJEMEN,
-        },
-        {
-          name: "History",
-          icon: "order",
-          href: SUPERADMIN_ROUTES.MANAGEMENT_HISTORY,
-        },
-      ],
-    },
-
 
     // Menu besar OPRPRD
     {
@@ -110,6 +85,12 @@ const menuItems: Record<string, MenuItem[]> = {
       ],
     },
   ],
+  management: [
+    { name: "Inventory", icon: "inventory", href: MANAGEMENT_ROUTES.DASHBOARD },
+    { name: "Material & Saldo", icon: "inventory", href: MANAGEMENT_ROUTES.MATERIALS },
+    { name: "Ready-stock", icon: "inventory", href: MANAGEMENT_ROUTES.READY_STOCK },
+    { name: "Retur Stok", icon: "inventory", href: MANAGEMENT_ROUTES.RETURNS },
+  ],
   supervisor: [
     { name: "Dashboard", icon: "dashboard", href: SUPERVISOR_ROUTES.DASHBOARD },
     { name: "Persetujuan", icon: "approval", href: SUPERVISOR_ROUTES.APPROVAL },
@@ -127,11 +108,6 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERVISOR_ROUTES.APPROVAL_HISTORY,
     },
   ],
-  management: [
-    { name: "Dashboard", icon: "dashboard", href: MANAGEMENT_ROUTES.DASHBOARD },
-    { name: "Tugas", icon: "checklist", href: MANAGEMENT_ROUTES.TASKS },
-    { name: "Riwayat", icon: "order", href: MANAGEMENT_ROUTES.HISTORY },
-  ],
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -140,6 +116,7 @@ const iconMap: Record<string, React.ReactNode> = {
   users: <Users className="w-5 h-5" />,
   report: <FileText className="w-5 h-5" />,
   input: <Edit3 className="w-5 h-5" />,
+  inventory: <Package className="w-5 h-5" />,
   analisis: <BarChart3 className="w-5 h-5" />,
   bms: <Package className="w-5 h-5" />,
   oprprd: <CalendarDays className="w-5 h-5" />,
@@ -180,7 +157,7 @@ export default function Sidebar({ role }: { role: string }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (role !== "supervisor" && role !== "management") return;
+    if (role !== "supervisor") return;
     fetch("/api/me")
       .then((r) => r.json())
       .then((j) => {

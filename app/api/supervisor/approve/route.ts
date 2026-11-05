@@ -7,6 +7,7 @@ import { getRoleProps } from "@/lib/auth/session";
 import { sendNotification } from "@/lib/notifications";
 import { STAGE_SEQUENCE, effectiveNext } from "@/lib/stages";
 import { pushStageToYii2 } from "@/lib/legacy/push-status";
+import { isInventoryEnabled } from "@/lib/inventory/is-enabled";
 
 const PRODUCTION_TO_APPROVAL_STAGE: Record<string, string> = {};
 const APPROVAL_STAGES: string[] = [];
@@ -50,7 +51,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
 
     const roleName: string = getRoleProps(profile).name;
-    const roleGroup: string = getRoleProps(profile).role_group;
     const allowedStages: string[] = getRoleProps(profile).allowed_stages;
 
     if (roleName === "customer_service_supervisor") {
@@ -62,7 +62,6 @@ export async function POST(request: Request) {
 
     const isSupervisor =
       roleName === "superadmin" ||
-      roleGroup === "management" ||
       allowedStages.some((s) => s.startsWith("approval_"));
 
     if (!isSupervisor)
@@ -72,7 +71,7 @@ export async function POST(request: Request) {
       );
 
     const body = await request.json();
-    const { order_id, stage, action, remarks, rework_stage } = body;
+    const { order_id, stage, action, remarks, rework_stage, inventory_source, stock_unit_id } = body;
     const stage_result_id: string | null = body.stage_result_id ?? null;
 
     if (!order_id || !stage || !action)
@@ -149,7 +148,7 @@ export async function POST(request: Request) {
       .select("legacy_id")
       .eq("id", order_id)
       .maybeSingle();
-    const legacyId = (legacyRow as { legacy_id?: number } | null)?.legacy_id ?? null;
+    let legacyId = (legacyRow as { legacy_id?: number } | null)?.legacy_id ?? null;
 
     const now = new Date().toISOString();
       const supervisorName: string = (profile as { full_name?: string })?.full_name ?? "Supervisor";
@@ -157,6 +156,45 @@ export async function POST(request: Request) {
     let nextStage: string | null = null;
     if (action === "approve") {
       nextStage = effectiveNext(stage);
+    }
+
+    let inventoryIssued = false;
+    const [{ data: inventoryLocations }, { data: inventorySettings }] = await Promise.all([
+      admin
+      .from("inventory_locations")
+      .select("location_type, is_default, is_active"),
+      admin.from("inventory_settings").select("is_enabled").eq("singleton", true).maybeSingle(),
+    ]);
+    const inventoryEnabled = isInventoryEnabled(inventorySettings?.is_enabled === true, inventoryLocations ?? []);
+
+    if (action === "approve" && stage === "approval_penerimaan_order" && inventoryEnabled) {
+      if (inventory_source !== "custom" && inventory_source !== "ready_stock") {
+        return NextResponse.json({ error: "Pilih sumber stok: bahan custom atau ready-stock." }, { status: 400 });
+      }
+      if (inventory_source === "ready_stock" && typeof stock_unit_id !== "string") {
+        return NextResponse.json({ error: "Pilih unit ready-stock yang tersedia." }, { status: 400 });
+      }
+
+      const issue = inventory_source === "custom"
+        ? await admin.rpc("inventory_issue_custom_for_approval", {
+          p_order_id: order_id,
+          p_actor_id: authUser.id,
+          p_remarks: remarks ?? null,
+        })
+        : await admin.rpc("inventory_allocate_ready_stock_for_approval", {
+          p_order_id: order_id,
+          p_actor_id: authUser.id,
+          p_stock_unit_id: stock_unit_id,
+          p_remarks: remarks ?? null,
+        });
+
+      if (issue.error) {
+        return NextResponse.json({ error: issue.error.message }, { status: 409 });
+      }
+
+      const receipt = Array.isArray(issue.data) ? issue.data[0] as { legacy_id?: number } | undefined : undefined;
+      legacyId = receipt?.legacy_id ?? legacyId;
+      inventoryIssued = true;
     }
 
     // ── 1. Update tracking pointer + log the decision ────────────────────────
@@ -176,7 +214,7 @@ export async function POST(request: Request) {
       });
 
       await pushStageToYii2(order_id, legacyId, "dibatalkan");
-    } else if (action === "approve") {
+    } else if (action === "approve" && !inventoryIssued) {
       await admin
         .from("tracking_stages")
         .update(
@@ -196,6 +234,8 @@ export async function POST(request: Request) {
       });
 
       // Sinkronkan stage terkini ke Yii2.
+      await pushStageToYii2(order_id, legacyId, nextStage ?? "selesai");
+    } else if (action === "approve") {
       await pushStageToYii2(order_id, legacyId, nextStage ?? "selesai");
     } else {
       await admin

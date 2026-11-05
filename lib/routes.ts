@@ -33,8 +33,10 @@ export type AppRole = LoginRole;
 const RETIRED_DASHBOARD_ROLES = ["customer_service", "marketing"] as const;
 
 export function isRetiredDashboardRole(value: unknown): boolean {
-  return typeof value === "string" &&
-    (RETIRED_DASHBOARD_ROLES as readonly string[]).includes(value);
+  return typeof value === "string" && (
+    (RETIRED_DASHBOARD_ROLES as readonly string[]).includes(value) ||
+    value.startsWith("leader_")
+  );
 }
 
 /**
@@ -73,6 +75,7 @@ export const ROUTES = {
 
   // Dashboards per role (entry point)
   DASHBOARD_SUPERADMIN: "/dashboard/superadmin",
+  DASHBOARD_MANAGEMENT: "/dashboard/management",
   DASHBOARD_SUPERVISOR: "/dashboard/supervisor",
   DASHBOARD_AFTER_SALES: "/dashboard/after-sales",
 
@@ -97,10 +100,14 @@ export const SUPERADMIN_ROUTES = {
   OPRPRD_ANALISIS: "/dashboard/superadmin/oprprd/analisis",
   OPRPRD_LAPORAN: "/dashboard/superadmin/oprprd/laporan",
   OPRPRD_HISTORY: "/dashboard/superadmin/oprprd/history",
-  MONITORING_MANAJEMEN: "/dashboard/superadmin/management/monitoring",
-  MANAGEMENT_DASHBOARD: "/dashboard/superadmin/management",
-  MANAGEMENT_HISTORY: "/dashboard/superadmin/management/history",
   WARRANTY_INTEGRATION: "/dashboard/superadmin/warranty/integration",
+} as const;
+
+export const MANAGEMENT_ROUTES = {
+  DASHBOARD: "/dashboard/management",
+  MATERIALS: "/dashboard/management/materials",
+  READY_STOCK: "/dashboard/management/ready-stock",
+  RETURNS: "/dashboard/management/returns",
 } as const;
 
 /**
@@ -124,12 +131,6 @@ export const SUPERVISOR_ROUTES = {
   APPROVAL_HISTORY: "/dashboard/supervisor/history-approval",
   WARRANTY: "/dashboard/supervisor/warranty",
   WARRANTY_EXCEPTIONS: "/dashboard/supervisor/warranty/exceptions",
-} as const;
-
-export const MANAGEMENT_ROUTES = {
-  DASHBOARD: "/dashboard/management",
-  TASKS: "/dashboard/management/tasks",
-  HISTORY: "/dashboard/management/history",
 } as const;
 
 export const AFTER_SALES_ROUTES = {
@@ -215,8 +216,7 @@ export function isAllRole(value: unknown): value is AllRole {
  *
  * Pembagian:
  *   - superadmin                       → /dashboard/superadmin
- *   - customer_service                 → akun dashboard lama (dinonaktifkan)
- *   - marketing                        → akun dashboard lama (dinonaktifkan)
+ *   - customer_service / marketing / leader_* → akun dashboard lama (dinonaktifkan)
  *   - production_staff / qc_staff / admin  → /workshop/login
  *
  * Menerima input unknown (dari DB atau user input) — kalau bukan AllRole
@@ -232,7 +232,7 @@ export function getDashboardPath(role: unknown): string | null {
         return ROUTES.DASHBOARD_SUPERADMIN;
 
       case "management":
-        return "/dashboard/management";
+        return MANAGEMENT_ROUTES.DASHBOARD;
 
       case "supervisor":
         return SUPERVISOR_ROUTES.DASHBOARD;
@@ -273,7 +273,13 @@ export function canAccessPath(role: string, path: string): boolean {
 
   // Superadmin bisa akses semua KECUALI supervisor dashboard
   if (role === "superadmin") {
-    return !path.startsWith(ROUTES.DASHBOARD_SUPERVISOR);
+    return !path.startsWith(ROUTES.DASHBOARD_SUPERVISOR) &&
+      !path.startsWith(ROUTES.DASHBOARD_MANAGEMENT) &&
+      !path.startsWith("/dashboard/inventory");
+  }
+
+  if (role === "management") {
+    return path.startsWith(ROUTES.DASHBOARD_MANAGEMENT) || path.startsWith("/api/");
   }
 
   if (role === "after_sales") {
@@ -285,16 +291,6 @@ export function canAccessPath(role: string, path: string): boolean {
     if (path.startsWith(SUPERVISOR_ROUTES.WARRANTY)) return role === "operational_supervisor";
     return (
       path.startsWith(ROUTES.DASHBOARD_SUPERVISOR) || path.startsWith("/api/")
-    );
-  }
-
-  // Management role — hanya akses dashboard management (termasuk leader roles)
-  if (
-    role === "management" ||
-    role.startsWith("leader_")
-  ) {
-    return (
-      path.startsWith("/dashboard/management") || path.startsWith("/api/")
     );
   }
 

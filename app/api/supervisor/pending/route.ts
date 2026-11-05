@@ -10,6 +10,7 @@ import {
   komponenLabel,
   fontLabel,
 } from "@/lib/legacy/komponen-labels";
+import { isInventoryEnabled } from "@/lib/inventory/is-enabled";
 
 const APPROVAL_STAGES_ARRAY = STAGE_SEQUENCE.filter(s => s.startsWith("approval_"));
 
@@ -57,7 +58,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
 
     const roleName: string = getRoleProps(profile).name;
-    const roleGroup: string = getRoleProps(profile).role_group;
     const allowedStages: string[] = getRoleProps(profile).allowed_stages;
 
     if (roleName === "customer_service_supervisor") {
@@ -69,7 +69,6 @@ export async function GET(request: Request) {
 
     const isSupervisor =
       roleName === "superadmin" ||
-      roleGroup === "management" ||
       allowedStages.some((s) => s.startsWith("approval_"));
 
     if (!isSupervisor)
@@ -77,6 +76,14 @@ export async function GET(request: Request) {
         { error: "Forbidden: hanya supervisor yang dapat melihat daftar approval" },
         { status: 403 },
       );
+
+    const [{ data: inventoryLocations }, { data: inventorySettings }] = await Promise.all([
+      admin
+      .from("inventory_locations")
+      .select("location_type, is_default, is_active"),
+      admin.from("inventory_settings").select("is_enabled").eq("singleton", true).maybeSingle(),
+    ]);
+    const inventoryEnabled = isInventoryEnabled(inventorySettings?.is_enabled === true, inventoryLocations ?? []);
 
     let visibleApprovalStages: string[];
     if (roleName === "superadmin") {
@@ -103,7 +110,7 @@ export async function GET(request: Request) {
       .from("tracking_stages")
       .select(
         `order_id, current_stage, stage_status, updated_at,
-         legacy_orders!tracking_stages_order_id_fkey${brandId ? "!inner" : ""} ( id, kode_order, nama, no_hp, email, tgl_order, tgl_selesai, catatan, komponen, berat_cincin_pria, berat_cincin_wanita, reference_image_pria_url, reference_image_wanita_url )`,
+         legacy_orders!tracking_stages_order_id_fkey${brandId ? "!inner" : ""} ( id, kode_order, nama, no_hp, email, tgl_order, tgl_selesai, catatan, id_brand, id_produk, komponen, berat_cincin_pria, berat_cincin_wanita, reference_image_pria_url, reference_image_wanita_url )`,
         { count: "exact" },
       )
       .in("current_stage", visibleApprovalStages)
@@ -120,7 +127,7 @@ export async function GET(request: Request) {
     type LegacyEmbed = {
       id: string; kode_order: string; nama: string | null; no_hp: string | null;
       email: string | null; tgl_order: string | null; tgl_selesai: string | null; catatan: string | null;
-      komponen: Record<string, unknown>[] | null; berat_cincin_pria: number | null;
+      id_brand: number; id_produk: number | null; komponen: Record<string, unknown>[] | null; berat_cincin_pria: number | null;
       berat_cincin_wanita: number | null; reference_image_pria_url: string | null;
       reference_image_wanita_url: string | null;
     };
@@ -137,6 +144,8 @@ export async function GET(request: Request) {
         tgl_order: lo?.tgl_order ?? null,
         deadline: lo?.tgl_selesai ?? null,
         catatan: lo?.catatan ?? null,
+        id_brand: lo?.id_brand ?? null,
+        id_produk: lo?.id_produk ?? null,
         komponen: lo?.komponen ?? null,
         berat_cincin_pria: lo?.berat_cincin_pria ?? null,
         berat_cincin_wanita: lo?.berat_cincin_wanita ?? null,
@@ -233,6 +242,8 @@ export async function GET(request: Request) {
           cs_order_id: o.id,
           cs_order_number: o.order_number,
           customer_name: o.customer_name,
+          brand_id: o.id_brand,
+          source_product_id: o.id_produk,
           customer_wa: o.customer_wa ?? null,
           customer_email: o.customer_email ?? null,
           ukuran_pria: pria?.ukuran as string ?? null,
@@ -317,6 +328,7 @@ export async function GET(request: Request) {
       success: true,
       data: pending,
       total: total ?? 0,
+      inventory_enabled: inventoryEnabled,
       next_offset: trackingRows && offset + trackingRows.length < (total ?? 0)
         ? offset + trackingRows.length
         : null,

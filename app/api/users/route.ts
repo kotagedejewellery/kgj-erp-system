@@ -10,17 +10,18 @@ import { isRetiredDashboardRole } from "@/lib/routes";
 // CONSTANTS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-const BMS_ROLE_NAMES = ["superadmin", "after_sales"] as const;
-const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
+const BMS_ROLE_NAMES = ["superadmin", "management", "after_sales"] as const;
+const SUPERVISOR_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor"] as const;
 const ALL_ROLE_GROUPS = [
   "management",
+  "inventory",
   "operational",
   "production",
 ] as const;
 
 type RoleGroup = (typeof ALL_ROLE_GROUPS)[number];
 type BmsRoleName = (typeof BMS_ROLE_NAMES)[number];
-type ManagementRoleName = (typeof MANAGEMENT_ROLE_NAMES)[number];
+type SupervisorRoleName = (typeof SUPERVISOR_ROLE_NAMES)[number];
 
 function isBmsRoleName(v: unknown): v is BmsRoleName {
   return (
@@ -28,9 +29,9 @@ function isBmsRoleName(v: unknown): v is BmsRoleName {
   );
 }
 
-function isManagementRoleName(v: unknown): v is ManagementRoleName {
+function isSupervisorRoleName(v: unknown): v is SupervisorRoleName {
   return (
-    typeof v === "string" && (MANAGEMENT_ROLE_NAMES as readonly string[]).includes(v)
+    typeof v === "string" && (SUPERVISOR_ROLE_NAMES as readonly string[]).includes(v)
   );
 }
 
@@ -187,7 +188,7 @@ export async function GET(request: Request) {
     // Filter role_group & role_name di aplikasi
     let filtered = (data ?? []).filter((u) => {
       const name = (u.role as unknown as Record<string, unknown>)?.name;
-      return name !== "customer_service" && name !== "marketing";
+      return !isRetiredDashboardRole(name);
     });
     if (roleGroups && roleGroups.length > 0) {
       filtered = filtered.filter((u) =>
@@ -248,7 +249,7 @@ export async function POST(request: Request) {
 
     if (isRetiredDashboardRole(role)) {
       return NextResponse.json(
-        { error: "Role Customer Service dan Marketing sudah dinonaktifkan." },
+        { error: "Role dashboard tersebut sudah dihentikan." },
         { status: 410 },
       );
     }
@@ -269,14 +270,14 @@ export async function POST(request: Request) {
     }
 
     const isBmsMode = typeof role === "string" && isBmsRoleName(role);
-    const isManagementMode = typeof role === "string" && isManagementRoleName(role);
-    const isOprprdMode = typeof role_id === "string" && !isBmsMode && !isManagementMode;
+    const isSupervisorMode = typeof role === "string" && isSupervisorRoleName(role);
+    const isOprprdMode = typeof role_id === "string" && !isBmsMode && !isSupervisorMode;
 
-    if (!isBmsMode && !isManagementMode && !isOprprdMode) {
+    if (!isBmsMode && !isSupervisorMode && !isOprprdMode) {
       return NextResponse.json(
         {
           error:
-            "Harus menyertakan 'role' (BMS/supervisor/leader) atau 'role_id' (UUID untuk worker)",
+              "Harus menyertakan 'role' (BMS/supervisor) atau 'role_id' (UUID untuk worker)",
         },
         { status: 400 },
       );
@@ -310,7 +311,7 @@ export async function POST(request: Request) {
       finalRoleId = roleRec.id;
       finalRoleName = roleRec.name;
       finalRoleGroup = roleRec.role_group;
-    } else if (isManagementMode) {
+    } else if (isSupervisorMode) {
       // Supervisor (operational_supervisor / production_supervisor) — email + username wajib
       if (!email?.trim()) {
         return NextResponse.json(
@@ -344,30 +345,25 @@ export async function POST(request: Request) {
       finalRoleName = roleRec.name;
       finalRoleGroup = roleRec.role_group;
 
-      // Enforce one active account per supervisor (not for leader roles)
-      const LEADER_PREFIXES = ["leader_"];
-      const isLeader = LEADER_PREFIXES.some((p) => finalRoleName.startsWith(p));
-      if (!isLeader) {
-        const { data: existingSupervisor } = await adminCheck
-          .from("users")
-          .select("id, full_name, username")
-          .eq("role_id", finalRoleId)
-          .eq("status", "active")
-          .is("deleted_at", null)
-          .maybeSingle();
+      const { data: existingSupervisor } = await adminCheck
+        .from("users")
+        .select("id, full_name, username")
+        .eq("role_id", finalRoleId)
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .maybeSingle();
 
-        if (existingSupervisor) {
-          const label =
-            finalRoleName === "operational_supervisor"
-              ? "Supervisor Operasional"
-              : "Supervisor Produksi";
-          return NextResponse.json(
-            {
-              error: `Akun ${label} sudah ada (${existingSupervisor.full_name} / @${existingSupervisor.username}). Setiap jenis supervisor hanya boleh satu akun aktif.`,
-            },
-            { status: 409 },
-          );
-        }
+      if (existingSupervisor) {
+        const label =
+          finalRoleName === "operational_supervisor"
+            ? "Supervisor Operasional"
+            : "Supervisor Produksi";
+        return NextResponse.json(
+          {
+            error: `Akun ${label} sudah ada (${existingSupervisor.full_name} / @${existingSupervisor.username}). Setiap jenis supervisor hanya boleh satu akun aktif.`,
+          },
+          { status: 409 },
+        );
       }
     } else {
       // OPRPRD worker mode — role_id UUID
@@ -393,7 +389,8 @@ export async function POST(request: Request) {
 
       if (
         (BMS_ROLE_NAMES as readonly string[]).includes(roleRec.name) ||
-        (MANAGEMENT_ROLE_NAMES as readonly string[]).includes(roleRec.name)
+        (SUPERVISOR_ROLE_NAMES as readonly string[]).includes(roleRec.name) ||
+        isRetiredDashboardRole(roleRec.name)
       ) {
         return NextResponse.json(
           {

@@ -30,9 +30,8 @@ export function getSupervisorPageAccess(
   const hasApprovalStage = allowedStages.some((stage) => stage.startsWith("approval_"));
   const canAccessPending =
     !isCustomerServiceSupervisor &&
-    (role.role_group === "management" || hasApprovalStage);
-  const canAccessSupervisor =
-    canValidateIntake || role.role_group === "management" || hasApprovalStage;
+    (role.name === "superadmin" || hasApprovalStage);
+  const canAccessSupervisor = canValidateIntake || role.name === "superadmin" || hasApprovalStage;
   if (!canAccessSupervisor) return null;
   const supervisorGroup: SupervisorGroup = role.name === "production_supervisor"
     ? "production"

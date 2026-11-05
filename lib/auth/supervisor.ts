@@ -37,7 +37,6 @@ export async function verifySupervisorScope(): Promise<{
 
   const isSupervisor =
     roleName === "superadmin" ||
-    roleGroup === "management" ||
     roleName === "operational_supervisor" ||
     roleName === "production_supervisor" ||
     roleName === "supervisor";

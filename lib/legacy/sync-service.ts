@@ -230,6 +230,19 @@ export interface ReconcileResult {
   reason: string | null;
 }
 
+export function getDeletableOrderIds(
+  orderIds: string[],
+  pendingIntakeOrderIds: Set<string>,
+  inventoryIssuedOrderIds: Set<string>,
+): string[] {
+  return orderIds.filter((id) => !pendingIntakeOrderIds.has(id) && !inventoryIssuedOrderIds.has(id));
+}
+
+export type SoftDeleteResult = {
+  deletedOrderIds: string[];
+  ignoredAfterInventoryIssueIds: string[];
+};
+
 const RECONCILE_MAX_DELETE_RATIO = 0.1;
 const RECONCILE_MAX_DELETE_FLOOR = 50;
 
@@ -239,10 +252,10 @@ const RECONCILE_MAX_DELETE_FLOOR = 50;
 export async function softDeleteLocalOrders(
   db: Db,
   orderIds: string[],
-): Promise<void> {
-  if (orderIds.length === 0) return;
+): Promise<SoftDeleteResult> {
+  if (orderIds.length === 0) return { deletedOrderIds: [], ignoredAfterInventoryIssueIds: [] };
 
-  const [{ data: intakes, error: intakeError }, { data: trackingRows, error: trackingError }] = await Promise.all([
+  const [{ data: intakes, error: intakeError }, { data: trackingRows, error: trackingError }, { data: issuedRows, error: issuedError }] = await Promise.all([
     db
       .from("legacy_order_intakes")
       .select("id, legacy_order_id")
@@ -252,9 +265,14 @@ export async function softDeleteLocalOrders(
       .from("tracking_stages")
       .select("order_id")
       .in("order_id", orderIds),
+    db
+      .from("inventory_order_issues")
+      .select("order_id")
+      .in("order_id", orderIds),
   ]);
   if (intakeError) throw new Error(`legacy_order_intakes query gagal: ${intakeError.message}`);
   if (trackingError) throw new Error(`tracking_stages query gagal: ${trackingError.message}`);
+  if (issuedError) throw new Error(`inventory_order_issues query gagal: ${issuedError.message}`);
 
   const trackedIds = new Set((trackingRows ?? []).map((row) => row.order_id));
   const intakeIds = (intakes ?? [])
@@ -272,8 +290,12 @@ export async function softDeleteLocalOrders(
       .filter((row) => !trackedIds.has(row.legacy_order_id))
       .map((row) => row.legacy_order_id),
   );
-  const deletableOrderIds = orderIds.filter((id) => !pendingOrderIds.has(id));
-  if (deletableOrderIds.length === 0) return;
+  const issuedOrderIds = new Set((issuedRows ?? []).map((row) => row.order_id));
+  const deletableOrderIds = getDeletableOrderIds(orderIds, pendingOrderIds, issuedOrderIds);
+  const ignoredAfterInventoryIssueIds = orderIds.filter((id) => issuedOrderIds.has(id));
+  if (deletableOrderIds.length === 0) {
+    return { deletedOrderIds: [], ignoredAfterInventoryIssueIds };
+  }
 
   await db
     .from("legacy_orders")
@@ -281,6 +303,7 @@ export async function softDeleteLocalOrders(
     .in("id", deletableOrderIds);
 
   await db.from("tracking_stages").delete().in("order_id", deletableOrderIds);
+  return { deletedOrderIds: deletableOrderIds, ignoredAfterInventoryIssueIds };
 }
 
 export async function reconcileDeletedOrders(): Promise<ReconcileResult> {

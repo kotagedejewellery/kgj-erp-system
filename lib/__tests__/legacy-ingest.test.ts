@@ -98,7 +98,7 @@ describe("resolveTargetStage", () => {
     expect(resolveTargetStage({ ...baseOrder, id_status: 12 })).toBe(
       "pembentukan_cincin",
     );
-    expect(resolveTargetStage({ ...baseOrder, id_status: 46 })).toBe("packing");
+    expect(resolveTargetStage({ ...baseOrder, id_status: 48 })).toBe("packing");
   });
 
   it("returns null for unknown statuses", () => {

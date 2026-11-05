@@ -19,17 +19,14 @@ import {
   Plus,
   Power,
   Trash2,
-  User,
   Users,
   Wrench,
-  Shield,
 } from "lucide-react";
 import {
   SEGMENT_OPTIONS,
   EMPTY_BMS_FORM,
   EMPTY_OPRPRD_FORM,
   EMPTY_SUPERVISOR_FORM,
-  EMPTY_MANAGEMENT_FORM,
   parseApiError,
   resolveUserType,
   getRoleBadge,
@@ -46,7 +43,6 @@ import { UserTypePicker } from "./_components/UserTypePicker";
 import { BmsUserForm } from "./_components/BmsUserForm";
 import { SupervisorUserForm } from "./_components/SupervisorUserForm";
 import { OprprdUserForm } from "./_components/OprprdUserForm";
-import { ManagementUserForm } from "./_components/ManagementUserForm";
 import {
   BmsUserSchema,
   BmsEditUserSchema,
@@ -54,12 +50,10 @@ import {
   OprprdEditUserSchema,
   SupervisorUserSchema,
   SupervisorEditUserSchema,
-  ManagementUserSchema,
-  ManagementEditUserSchema,
 } from "@/lib/schemas/kelola-akun";
 
 export default function KelolaAkunPage() {
-  const [activeTab, setActiveTab] = useState<"all" | "bms" | "oprprd" | "management">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "bms" | "oprprd">("all");
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
   const [alert, setAlert] = useState<AlertState>(null);
 
@@ -77,7 +71,6 @@ export default function KelolaAkunPage() {
   const [bmsForm, setBmsForm] = useState(EMPTY_BMS_FORM);
   const [oprprdForm, setOprprdForm] = useState(EMPTY_OPRPRD_FORM);
   const [supervisorForm, setSupervisorForm] = useState(EMPTY_SUPERVISOR_FORM);
-  const [managementForm, setManagementForm] = useState(EMPTY_MANAGEMENT_FORM);
 
   const [userToDelete, setUserToDelete] = useState<UnifiedUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
@@ -131,7 +124,7 @@ export default function KelolaAkunPage() {
 
   useEffect(() => {
     if (rolesData?.data) {
-      const BMS_NAMES = new Set(["superadmin", "after_sales"]);
+      const BMS_NAMES = new Set(["superadmin", "management", "after_sales"]);
       setRoles(
         ((rolesData.data ?? []) as unknown as RoleOPRPRD[]).filter(
           (r: RoleOPRPRD) => !BMS_NAMES.has(r.name),
@@ -163,7 +156,6 @@ export default function KelolaAkunPage() {
     if (activeTab === "all") return filteredUsers;
     if (activeTab === "bms") return allUsers.filter((u) => u.userType === "bms");
     if (activeTab === "oprprd") return allUsers.filter((u) => u.userType === "oprprd");
-    if (activeTab === "management") return allUsers.filter((u) => u.userType === "supervisor" || u.userType === "management");
     return [];
   })();
 
@@ -175,13 +167,11 @@ export default function KelolaAkunPage() {
     setNewUserType(
       activeTab === "bms" ? "bms" :
       activeTab === "oprprd" ? "oprprd" :
-      activeTab === "management" ? "management" :
       null
     );
     setBmsForm(EMPTY_BMS_FORM);
     setOprprdForm(EMPTY_OPRPRD_FORM);
     setSupervisorForm(EMPTY_SUPERVISOR_FORM);
-    setManagementForm(EMPTY_MANAGEMENT_FORM);
     setIsModalOpen(true);
   };
 
@@ -204,14 +194,6 @@ export default function KelolaAkunPage() {
         email: user.email?.endsWith("@noreply.kodagede.id") ? "" : (user.email ?? ""),
         password: "",
         role: (user.roles?.name as "operational_supervisor" | "production_supervisor" | "customer_service_supervisor") ?? "operational_supervisor",
-      });
-    } else if (user.userType === "management") {
-      setManagementForm({
-        username: user.username ?? "",
-        full_name: user.full_name,
-        email: user.email?.endsWith("@noreply.kodagede.id") ? "" : (user.email ?? ""),
-        password: "",
-        role: user.roles?.name ?? "leader_operational",
       });
     } else {
       setOprprdForm({
@@ -387,50 +369,6 @@ export default function KelolaAkunPage() {
 
   // ─── Save Management ───────────────────────────────────────────
 
-  const handleSaveManagementUser = async () => {
-    const schema = isEditMode ? ManagementEditUserSchema : ManagementUserSchema;
-    const validation = schema.safeParse({
-      username: managementForm.username,
-      full_name: managementForm.full_name,
-      email: managementForm.email,
-      password: managementForm.password,
-      role: managementForm.role,
-    });
-    if (!validation.success) {
-      showAlert("error", validation.error.issues[0]?.message ?? "Validasi gagal");
-      return;
-    }
-    if (!managementForm.full_name.trim()) { showAlert("error", "Nama lengkap wajib diisi."); return; }
-    if (!isEditMode && !managementForm.username.trim()) { showAlert("error", "Username wajib diisi."); return; }
-    if (!managementForm.email.trim()) { showAlert("error", "Email wajib diisi."); return; }
-    if (!isEditMode && !managementForm.password) { showAlert("error", "Password wajib diisi untuk akun baru."); return; }
-    if (managementForm.password && managementForm.password.length < 6) { showAlert("error", "Password terlalu pendek."); return; }
-    if (!managementForm.role) { showAlert("error", "Leader role wajib dipilih."); return; }
-
-    setIsSaving(true);
-    try {
-      const payload: Record<string, string> = {
-        full_name: managementForm.full_name.trim(),
-        email: managementForm.email.trim().toLowerCase(),
-        role: managementForm.role,
-      };
-      if (managementForm.username.trim()) payload.username = managementForm.username.trim();
-      if (managementForm.password) payload.password = managementForm.password;
-
-      const res = await fetch(
-        isEditMode ? `/api/users/${selectedUser!.id}` : "/api/users",
-        { method: isEditMode ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
-      );
-      const json = await res.json();
-      if (!res.ok) { showAlert("error", parseApiError(json.error, res.status)); return; }
-      showAlert("success", isEditMode ? "Akun management berhasil diperbarui!" : "Akun management baru berhasil dibuat!");
-      setIsModalOpen(false);
-      setTimeout(() => refetchUsers(), 500);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // ─── Toggle / Delete user ─────────────────────────────────────
 
   const handleToggleUserStatus = async (user: UnifiedUser) => {
@@ -471,14 +409,11 @@ export default function KelolaAkunPage() {
       if (selectedUser?.userType === "bms") return prefix + "Superadmin";
       if (selectedUser?.userType === "supervisor")
         return prefix + (selectedUser.roles?.name === "production_supervisor" ? "Supervisor Produksi" : "Supervisor Operasional");
-      if (selectedUser?.userType === "management")
-        return prefix + "Management";
       return prefix + "Operasional & Produksi";
     }
     if (newUserType === null) return "Pilih Tipe Akun";
     if (newUserType === "bms") return "Buat Akun Superadmin";
     if (newUserType === "supervisor") return "Buat Akun Supervisor";
-    if (newUserType === "management") return "Buat Akun Management";
     return "Buat Akun Operasional / Produksi";
   })();
 
@@ -532,7 +467,6 @@ export default function KelolaAkunPage() {
                   { key: "all" as const, label: "Semua User", icon: Users },
                   { key: "bms" as const, label: "Superadmin", icon: Building2 },
                   { key: "oprprd" as const, label: "OPRPRD", icon: Wrench },
-                  { key: "management" as const, label: "Manajemen", icon: Shield },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -705,19 +639,6 @@ export default function KelolaAkunPage() {
                 />
               )}
 
-              {/* Management Form */}
-              {(isEditMode ? selectedUser?.userType === "management" : newUserType === "management") && (
-                <ManagementUserForm
-                  isEditMode={isEditMode}
-                  isSaving={isSaving}
-                  form={managementForm}
-                  setForm={setManagementForm}
-                  onSave={handleSaveManagementUser}
-                  onClose={handleCloseModal}
-                  onBack={() => setNewUserType(null)}
-                  showAlert={showAlert}
-                />
-              )}
             </Modal>
           </main>
         </div>

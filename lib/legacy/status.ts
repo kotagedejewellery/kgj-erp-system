@@ -9,30 +9,30 @@
 
 export const YII2_STATUS_TO_STAGE: Record<number, string> = {
   9:  "penerimaan_order",
-  33: "approval_penerimaan_order",
+  35: "approval_penerimaan_order",
   10: "racik_bahan",
-  34: "approval_racik_bahan",
-  35: "lebur_bahan",
+  36: "approval_racik_bahan",
+  37: "lebur_bahan",
   12: "pembentukan_cincin",
-  36: "pemasangan_permata",
-  37: "pemolesan",
-  38: "cek_kadar",
-  39: "qc_1",
-  40: "approval_qc_1",
-  41: "laser",
+  38: "pemasangan_permata",
+  39: "pemolesan",
+  40: "cek_kadar",
+  41: "qc_1",
+  42: "approval_qc_1",
+  43: "laser",
   24: "finishing",
-  42: "approval_produksi",
-  43: "qc_2",
-  44: "approval_qc_2",
-  45: "konfirmasi",
+  44: "approval_produksi",
+  45: "qc_2",
+  46: "approval_qc_2",
+  47: "konfirmasi",
   13: "konfirmasi",
-  46: "packing",
+  48: "packing",
   14: "pengiriman",
   15: "selesai",
 };
 
 // Yii2 status for Pelunasan. It shares the existing Customer Care stage with
-// id_status=45 while outbound ERP sync remains canonical at 45.
+// id_status=47 while outbound ERP sync remains canonical at 47.
 export const YII2_STATUS_PELUNASAN = 13;
 
 export function mapStatusToStage(idStatus: number | undefined): string {

@@ -7,6 +7,7 @@ export interface RoleOPRPRD {
   name: string;
   role_group:
     | "management"
+    | "inventory"
     | "operational"
     | "production";
   description: string | null;
@@ -25,7 +26,7 @@ export interface UnifiedUser {
   email: string | null;
   username: string | null;
   phone: string | null;
-  role: "superadmin" | "after_sales" | null;
+  role: "superadmin" | "management" | "after_sales" | null;
   roles: RoleOPRPRD | null;
   role_id: string | null;
   status: "active" | "inactive" | null;
@@ -33,7 +34,7 @@ export interface UnifiedUser {
   last_login: string | null;
   last_login_at: string | null;
   created_at: string;
-  userType: "bms" | "supervisor" | "oprprd" | "management";
+  userType: "bms" | "supervisor" | "oprprd";
 }
 
 export type AlertState = {
@@ -43,14 +44,15 @@ export type AlertState = {
 
 export type UserSegment = "all" | "bms" | "management" | "operational" | "production";
 
-export type NewUserType = "bms" | "supervisor" | "oprprd" | "management" | null;
+export type NewUserType = "bms" | "supervisor" | "oprprd" | null;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const BMS_ROLES = ["superadmin", "after_sales"] as const;
+export const BMS_ROLES = ["superadmin", "management", "after_sales"] as const;
 
 export const ROLE_GROUP_LABELS: Record<string, { label: string; bg: string }> = {
   management: { label: "Manajemen", bg: "bg-purple-100 text-purple-800" },
+  inventory: { label: "Inventory", bg: "bg-teal-100 text-teal-800" },
   operational: { label: "Operasional", bg: "bg-blue-100 text-blue-800" },
   production: { label: "Produksi", bg: "bg-amber-500/10 text-amber-800" },
 };
@@ -70,7 +72,7 @@ export const EMPTY_BMS_FORM = {
   full_name: "",
   email: "",
   password: "",
-  role: "superadmin" as "superadmin" | "after_sales",
+  role: "superadmin" as "superadmin" | "management" | "after_sales",
 };
 
 export const EMPTY_OPRPRD_FORM = {
@@ -88,14 +90,6 @@ export const EMPTY_SUPERVISOR_FORM = {
   email: "",
   password: "",
   role: "operational_supervisor" as "operational_supervisor" | "production_supervisor" | "customer_service_supervisor",
-};
-
-export const EMPTY_MANAGEMENT_FORM = {
-  username: "",
-  full_name: "",
-  email: "",
-  password: "",
-  role: "" as string,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -149,13 +143,12 @@ export const parseApiError = (raw: string, httpStatus?: number): string => {
   return raw;
 };
 
-export const resolveUserType = (u: { role?: string; roles?: { name?: string; role_group?: string } | null; username?: string; email?: string }): "bms" | "supervisor" | "oprprd" | "management" => {
+export const resolveUserType = (u: { role?: string; roles?: { name?: string; role_group?: string } | null; username?: string; email?: string }): "bms" | "supervisor" | "oprprd" => {
   if (u.role && (BMS_ROLES as readonly string[]).includes(u.role))
     return "bms";
   const roleName = u.roles?.name;
   if (roleName === "operational_supervisor" || roleName === "production_supervisor" || roleName === "customer_service_supervisor")
     return "supervisor";
-  if (u.roles?.role_group === "management") return "management";
   if (u.roles?.role_group) return "oprprd";
   if (u.username && (!u.email || u.email?.endsWith("@internal.local")))
     return "oprprd";
@@ -180,6 +173,7 @@ export const getRoleBadge = (user: UnifiedUser) => {
   if (user.userType === "bms") {
     const map: Record<string, { bg: string; label: string }> = {
       superadmin: { bg: "bg-purple-100 text-purple-800", label: "Super Admin" },
+      management: { bg: "bg-indigo-500/10 text-indigo-700", label: "Management" },
       after_sales: { bg: "bg-teal-500/10 text-teal-700", label: "After Sales" },
     };
     const cfg = map[user.role ?? ""] ?? {
@@ -229,30 +223,6 @@ export const getRoleBadge = (user: UnifiedUser) => {
           Spv. Customer Service
         </span>
         <span className="text-[10px] text-white/40">Manajemen</span>
-      </div>
-    );
-  }
-  // Management (Leader) roles
-  const MGMT_LABELS: Record<string, string> = {
-    leader_hc: "Leader HC",
-    leader_operational: "Leader Operasional",
-    leader_production: "Leader Produksi",
-    leader_marketing: "Leader Marketing",
-    leader_sales: "Leader Sales",
-    leader_fat: "Leader FAT",
-    leader_rnd: "Leader RND",
-    leader_safar: "Leader Safar",
-    leader_ga: "Leader GA",
-    leader_sekdir: "Leader Sekdir",
-    leader_rji: "Leader RJI",
-  };
-  if (role.role_group === "management" && MGMT_LABELS[role.name]) {
-    return (
-      <div className="flex flex-col gap-0.5">
-        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-violet-500/10 text-violet-800">
-          {MGMT_LABELS[role.name]}
-        </span>
-        <span className="text-[10px] text-white/40">Management</span>
       </div>
     );
   }

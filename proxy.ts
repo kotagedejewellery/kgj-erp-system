@@ -172,7 +172,6 @@ function resolveDashboardPath(roleInfo: { name: string; roleGroup: string } | nu
   // superadmin is in the management roleGroup but has its own dashboard
   if (roleInfo.name === "superadmin") return getDashboardPath("superadmin");
   if (isSupervisorRoleName(roleInfo.name)) return getDashboardPath("supervisor");
-  if (roleInfo.roleGroup === "management") return "/dashboard/management";
   return getDashboardPath(roleInfo.name);
 }
 

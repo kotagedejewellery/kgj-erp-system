@@ -35,6 +35,11 @@ export function buildStatusSyncJob(
   return { orderId, legacyId, stage, idStatus };
 }
 
+export function remapStatusSyncJob(job: StatusSyncJob): StatusSyncJob | null {
+  const idStatus = stageToYii2Status(job.stage);
+  return idStatus === null ? null : { ...job, idStatus };
+}
+
 export function getStatusSyncRetryDelayMinutes(attempt: number): number {
   return Math.min(5 * 2 ** Math.max(attempt - 1, 0), 360);
 }
@@ -229,16 +234,37 @@ export async function retryPendingStatusSyncs(limit = 25): Promise<{
       continue;
     }
 
+    const job = remapStatusSyncJob({
+      orderId: row.order_id,
+      legacyId: row.legacy_id,
+      stage: row.stage,
+      idStatus: row.id_status,
+    });
+    if (!job) {
+      await db
+        .from("legacy_status_sync_queue")
+        .update({
+          status: "exhausted",
+          last_error: `mapping status tidak tersedia untuk stage ${row.stage}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", row.order_id);
+      result.exhausted++;
+      continue;
+    }
+
+    if (job.idStatus !== row.id_status) {
+      const { error: remapError } = await db
+        .from("legacy_status_sync_queue")
+        .update({ id_status: job.idStatus, updated_at: new Date().toISOString() })
+        .eq("order_id", row.order_id)
+        .eq("stage", row.stage)
+        .eq("id_status", row.id_status);
+      if (remapError) throw new Error(`perbarui mapping antrean status gagal: ${remapError.message}`);
+    }
+
     result.retried++;
-    const delivery = await postStatusSyncJob(
-      {
-        orderId: row.order_id,
-        legacyId: row.legacy_id,
-        stage: row.stage,
-        idStatus: row.id_status,
-      },
-      row.attempt_count,
-    );
+    const delivery = await postStatusSyncJob(job, row.attempt_count);
     if (delivery.status === "synced") result.synced++;
     else result.failed++;
   }

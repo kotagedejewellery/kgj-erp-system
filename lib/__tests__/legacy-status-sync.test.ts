@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildStatusSyncJob,
   getStatusSyncRetryDelayMinutes,
+  remapStatusSyncJob,
 } from "@/lib/legacy/push-status";
 
 describe("buildStatusSyncJob", () => {
@@ -17,6 +18,15 @@ describe("buildStatusSyncJob", () => {
   it("does not create a job when the Yii2 ID or stage mapping is unavailable", () => {
     expect(buildStatusSyncJob("erp-order-1", null, "racik_bahan")).toBeNull();
     expect(buildStatusSyncJob("erp-order-1", 5214, "unknown_stage")).toBeNull();
+  });
+
+  it("replaces a stale queued status with the current mapping", () => {
+    expect(remapStatusSyncJob({
+      orderId: "erp-order-1",
+      legacyId: 5214,
+      stage: "approval_racik_bahan",
+      idStatus: 34,
+    })).toMatchObject({ idStatus: 36 });
   });
 });
 

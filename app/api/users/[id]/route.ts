@@ -4,9 +4,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperadmin, mapUserResponse } from "../route";
+import { isRetiredDashboardRole } from "@/lib/routes";
 
-const BMS_ROLE_NAMES = ["superadmin", "after_sales"] as const;
-const MANAGEMENT_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor", "leader_hc", "leader_operational", "leader_production", "leader_marketing", "leader_sales", "leader_fat", "leader_rnd", "leader_safar", "leader_ga", "leader_sekdir", "leader_rji"] as const;
+const BMS_ROLE_NAMES = ["superadmin", "management", "after_sales"] as const;
+const SUPERVISOR_ROLE_NAMES = ["operational_supervisor", "production_supervisor", "customer_service_supervisor"] as const;
 type BmsRoleName = (typeof BMS_ROLE_NAMES)[number];
 
 function isBmsRoleName(v: unknown): v is BmsRoleName {
@@ -15,9 +16,9 @@ function isBmsRoleName(v: unknown): v is BmsRoleName {
   );
 }
 
-function isManagementRoleName(v: unknown): boolean {
+function isSupervisorRoleName(v: unknown): boolean {
   return (
-    typeof v === "string" && (MANAGEMENT_ROLE_NAMES as readonly string[]).includes(v)
+    typeof v === "string" && (SUPERVISOR_ROLE_NAMES as readonly string[]).includes(v)
   );
 }
 
@@ -58,7 +59,12 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data: mapUserResponse(data) });
+    const mapped = mapUserResponse(data);
+    if (isRetiredDashboardRole(mapped.role)) {
+      return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: mapped });
   } catch (error) {
     console.error("[GET /api/users/:id] unexpected:", error);
     return NextResponse.json(
@@ -133,13 +139,13 @@ export async function PUT(
       updatePayload.phone = phone?.trim() || null;
     }
 
-    // role — bisa BMS string atau management role name
+    // role — bisa BMS string atau supervisor role name
     if (role !== undefined) {
-      if (!isBmsRoleName(role) && !isManagementRoleName(role)) {
+      if (!isBmsRoleName(role) && !isSupervisorRoleName(role)) {
         return NextResponse.json(
           {
             error:
-              "Role harus: superadmin, after_sales, operational_supervisor, production_supervisor, atau customer_service_supervisor",
+              "Role harus: superadmin, management, after_sales, operational_supervisor, production_supervisor, atau customer_service_supervisor",
           },
           { status: 400 },
         );
@@ -155,6 +161,13 @@ export async function PUT(
         return NextResponse.json(
           { error: `Role '${role}' tidak ditemukan` },
           { status: 500 },
+        );
+      }
+
+      if (isRetiredDashboardRole(roleRec.name)) {
+        return NextResponse.json(
+          { error: "Role dashboard tersebut sudah dihentikan" },
+          { status: 410 },
         );
       }
 
@@ -174,6 +187,13 @@ export async function PUT(
         return NextResponse.json(
           { error: "Role tidak valid" },
           { status: 400 },
+        );
+      }
+
+      if (isRetiredDashboardRole(roleRec.name)) {
+        return NextResponse.json(
+          { error: "Role dashboard tersebut sudah dihentikan" },
+          { status: 410 },
         );
       }
 
@@ -327,6 +347,21 @@ export async function PATCH(
         { error: "Tidak bisa menonaktifkan akun Anda sendiri" },
         { status: 400 },
       );
+    }
+
+    if (newStatus === "active") {
+      const { data: target } = await supabase
+        .from("users")
+        .select("role:roles!users_role_id_fkey (name)")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (isRetiredDashboardRole((target?.role as { name?: unknown } | null)?.name)) {
+        return NextResponse.json(
+          { error: "Role dashboard tersebut sudah dihentikan" },
+          { status: 410 },
+        );
+      }
     }
 
     const { error } = await supabase

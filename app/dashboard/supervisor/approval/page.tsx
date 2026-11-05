@@ -61,6 +61,8 @@ interface PendingItem {
   order_number: string;
   product_name: string;
   customer_name: string;
+  brand_id: number | null;
+  source_product_id: number | null;
   stage: string;
   stage_label: string;
   stage_group: "production" | "operational";
@@ -72,6 +74,16 @@ interface PendingItem {
   submitted_at: string | null;
   data: Record<string, unknown> | null;
   work_order: WorkOrder | null;
+}
+
+type InventorySource = "" | "custom" | "ready_stock";
+
+interface StockUnit {
+  id: string;
+  unit_code: string;
+  size: string | null;
+  material_description: string | null;
+  actual_weight_grams: number | null;
 }
 
 interface IntakeItem {
@@ -99,6 +111,7 @@ interface IntakeItem {
 interface PendingPage<T> {
   data: T[];
   total: number;
+  inventory_enabled?: boolean;
   next_offset: number | null;
 }
 
@@ -942,15 +955,18 @@ function WorkOrderCard({ wo }: { wo: WorkOrder }) {
 
 function PendingCard({
   item,
+  inventoryEnabled,
   onApprove,
   onReject,
   onCancel,
 }: {
   item: PendingItem;
+  inventoryEnabled: boolean;
   onApprove: (
     stageResultId: string | null,
     orderId: string,
     stage: string,
+    inventory?: { source: Exclude<InventorySource, "">; stockUnitId?: string },
   ) => Promise<void>;
   onReject: (
     stageResultId: string | null,
@@ -967,6 +983,10 @@ function PendingCard({
   const [reworkStage, setReworkStage] = useState("");
   const [dataExpanded, setDataExpanded] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [inventorySource, setInventorySource] = useState<InventorySource>("");
+  const [stockUnitId, setStockUnitId] = useState("");
+  const [stockUnits, setStockUnits] = useState<StockUnit[]>([]);
+  const [stockUnitsError, setStockUnitsError] = useState<string | null>(null);
 
   const isQCStage = item.stage === "approval_qc_1" || item.stage === "approval_qc_2";
   const isIntakeApproval = item.stage === "approval_penerimaan_order";
@@ -987,10 +1007,40 @@ function PendingCard({
 
   const isProduction = item.stage_group === "production";
 
+  useEffect(() => {
+    if (!inventoryEnabled || inventorySource !== "ready_stock" || !item.brand_id || !item.source_product_id) {
+      setStockUnits([]);
+      setStockUnitsError(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetcher<{ units: StockUnit[] }>(`/api/inventory/stock-units?brand_id=${item.brand_id}&source_product_id=${item.source_product_id}`)
+      .then((result) => {
+        if (!cancelled) setStockUnits(result.units);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setStockUnitsError(error instanceof Error ? error.message : "Gagal mengambil ready-stock");
+      });
+
+    return () => { cancelled = true; };
+  }, [inventoryEnabled, inventorySource, item.brand_id, item.source_product_id]);
+
   const handleApprove = async () => {
+    const inventory = isIntakeApproval && inventoryEnabled
+      ? { source: inventorySource as Exclude<InventorySource, "">, ...(stockUnitId ? { stockUnitId } : {}) }
+      : undefined;
+    if (isIntakeApproval && inventoryEnabled && !inventorySource) {
+      alert("Pilih sumber stok terlebih dahulu.");
+      return;
+    }
+    if (inventoryEnabled && inventorySource === "ready_stock" && (!item.source_product_id || !stockUnitId)) {
+      alert("Pilih unit ready-stock yang sesuai terlebih dahulu.");
+      return;
+    }
     setState({ type: "loading" });
     try {
-      await onApprove(item.stage_result_id, item.order_id, item.stage);
+      await onApprove(item.stage_result_id, item.order_id, item.stage, inventory);
       setState({
         type: "done",
         result: "approved",
@@ -1151,7 +1201,7 @@ function PendingCard({
             >
               Tolak
             </button>
-            {isIntakeApproval && (
+            {isIntakeApproval && inventoryEnabled && (
             <button
               onClick={() => setState({ type: "confirming_cancel" })}
               className="flex-1 rounded-lg border border-amber-400/20 bg-cocoa py-3 sm:py-2.5 text-sm font-medium text-amber-300 transition-all hover:bg-amber-500/10 active:scale-[0.98] min-h-[44px]"
@@ -1167,6 +1217,44 @@ function PendingCard({
             <p className="text-sm text-amber-800">
               Setujui tahap ini? Order akan maju ke tahap berikutnya dan tidak dapat dikembalikan.
             </p>
+            {isIntakeApproval && (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-amber-200">Sumber stok</label>
+                <select
+                  value={inventorySource}
+                  onChange={(event) => {
+                    setInventorySource(event.target.value as InventorySource);
+                    setStockUnitId("");
+                  }}
+                  className="w-full rounded-lg border border-amber-400/20 bg-cocoa px-3 py-2 text-sm text-cream focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                >
+                  <option value="">Pilih sumber stok</option>
+                  <option value="custom">Bahan custom → WIP</option>
+                  <option value="ready_stock" disabled={!item.source_product_id}>Cincin jadi ready-stock</option>
+                </select>
+                {inventorySource === "ready_stock" && !item.source_product_id && (
+                  <p className="text-xs text-rose-300">Order ini tidak memiliki referensi produk katalog untuk mencocokkan unit ready-stock.</p>
+                )}
+                {inventorySource === "ready_stock" && item.source_product_id && (
+                  <>
+                    <select
+                      value={stockUnitId}
+                      onChange={(event) => setStockUnitId(event.target.value)}
+                      className="w-full rounded-lg border border-amber-400/20 bg-cocoa px-3 py-2 text-sm text-cream focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                    >
+                      <option value="">Pilih unit cincin tersedia</option>
+                      {stockUnits.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                          {unit.unit_code} — {unit.size ?? "ukuran tidak ada"} — {unit.actual_weight_grams ?? "-"} g
+                        </option>
+                      ))}
+                    </select>
+                    {stockUnitsError && <p className="text-xs text-rose-300">{stockUnitsError}</p>}
+                    {!stockUnitsError && stockUnits.length === 0 && <p className="text-xs text-white/55">Tidak ada unit ready-stock tersedia untuk produk ini.</p>}
+                  </>
+                )}
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleApprove}
@@ -1332,6 +1420,7 @@ export default function SupervisorApprovalPage() {
     refetchInterval,
   });
   const items = pendingPages?.pages.flatMap((page) => page.data) ?? [];
+  const inventoryEnabled = pendingPages?.pages[0]?.inventory_enabled === true;
 
   const {
     data: intakePages,
@@ -1419,7 +1508,12 @@ export default function SupervisorApprovalPage() {
   }, [canAccessPending, refetch, refetchIntake]);
 
   const handleApprove = useCallback(
-    async (stageResultId: string | null, orderId: string, stage: string) => {
+    async (
+      stageResultId: string | null,
+      orderId: string,
+      stage: string,
+      inventory?: { source: Exclude<InventorySource, "">; stockUnitId?: string },
+    ) => {
       const res = await fetch("/api/supervisor/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1428,6 +1522,10 @@ export default function SupervisorApprovalPage() {
           order_id: orderId,
           stage,
           action: "approve",
+          ...(inventory ? {
+            inventory_source: inventory.source,
+            ...(inventory.stockUnitId ? { stock_unit_id: inventory.stockUnitId } : {}),
+          } : {}),
         }),
       });
       const json = await res.json();
@@ -1763,6 +1861,7 @@ export default function SupervisorApprovalPage() {
                       <PendingCard
                         key={`${item.order_id}_${item.stage}`}
                         item={item}
+                        inventoryEnabled={inventoryEnabled}
                         onApprove={handleApprove}
                         onReject={handleReject}
                         onCancel={handleCancel}

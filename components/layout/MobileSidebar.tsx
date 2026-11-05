@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import {
   AFTER_SALES_ROUTES,
+  MANAGEMENT_ROUTES,
   SUPERADMIN_ROUTES,
   SUPERVISOR_ROUTES,
 } from "@/lib/routes";
@@ -98,6 +99,12 @@ const menuItems: Record<string, MenuItem[]> = {
       ],
     },
   ],
+  management: [
+    { name: "Inventory", icon: "inventory", href: MANAGEMENT_ROUTES.DASHBOARD },
+    { name: "Material & Saldo", icon: "inventory", href: MANAGEMENT_ROUTES.MATERIALS },
+    { name: "Ready-stock", icon: "inventory", href: MANAGEMENT_ROUTES.READY_STOCK },
+    { name: "Retur Stok", icon: "inventory", href: MANAGEMENT_ROUTES.RETURNS },
+  ],
   supervisor: [
     {
       name: "Dashboard",
@@ -129,6 +136,7 @@ const iconMap: Record<string, React.ReactNode> = {
   users: <Users className="w-5 h-5" />,
   report: <FileText className="w-5 h-5" />,
   input: <Edit3 className="w-5 h-5" />,
+  inventory: <Package className="w-5 h-5" />,
 
   analisis: <BarChart3 className="w-5 h-5" />,
   bms: <Package className="w-5 h-5" />,

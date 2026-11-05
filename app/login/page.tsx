@@ -10,7 +10,6 @@ import Loading from "@/components/ui/Loading";
 import { getDashboardPath, queryParamToAppRole } from "@/lib/routes";
 import { setClientUser, type LoginRole } from "@/lib/auth/session";
 import {
-  Shield,
   ArrowLeft,
   AlertCircle,
   Mail,
@@ -47,11 +46,11 @@ const ROLE_CONFIGS: RoleConfig[] = [
     value: "management",
     label: "Management",
     colors: {
-      border: "#c084fc",
-      bg: "rgba(192,132,252,0.1)",
-      text: "#9333ea",
+      border: "#818cf8",
+      bg: "rgba(129,140,248,0.1)",
+      text: "#6366f1",
     },
-    icon: <Shield className="w-full h-full" />,
+    icon: <BriefcaseBusiness className="w-full h-full" />,
   },
   {
     value: "after_sales",

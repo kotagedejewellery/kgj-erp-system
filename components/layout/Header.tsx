@@ -239,8 +239,6 @@ export default function Header({
         return "from-[#e8c547] to-[#c9a227]";
       case "supervisor":
         return "from-[#e8c547] to-[#c9a227]";
-      case "management":
-        return "from-violet-600 to-purple-600";
       default:
         return "from-gray-600 to-gray-600";
     }
@@ -250,7 +248,6 @@ export default function Header({
     switch (role) {
       case "superadmin": return "Super Admin";
       case "supervisor": return "Supervisor";
-      case "management": return "Management";
       default: return role;
     }
   };

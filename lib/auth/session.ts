@@ -33,6 +33,7 @@ export function isSupervisorRoleName(
 /** role_group dari tabel roles di database. */
 export type RoleGroup =
   | "management"
+  | "inventory"
   | "operational"
   | "production";
 
@@ -99,11 +100,13 @@ const STORAGE_KEYS = {
 /** Role yang masuk kategori management (akses tinggi). */
 export const MANAGEMENT_ROLES = [
   "superadmin",
+  "management",
 ] as const satisfies readonly LoginRole[];
 
 /** Role yang masuk kategori operasional (input data harian). */
 const VALID_ROLE_GROUPS: readonly string[] = [
   "management",
+  "inventory",
   "operational",
   "production",
 ];

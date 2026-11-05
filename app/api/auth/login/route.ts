@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (RETIRED_LOGIN_ROLE_NAMES.has(userRoleName)) {
+    if (RETIRED_LOGIN_ROLE_NAMES.has(userRoleName) || userRoleName.startsWith("leader_")) {
       await supabase.auth.signOut();
       return NextResponse.json(
         { error: "Akses dashboard untuk role ini sudah dihentikan." },
@@ -119,18 +119,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Role "management": allow any user whose DB role_group is "management"
-    // (operational_supervisor, production_supervisor, superadmin)
-    if (role === "management") {
-      const userRoleGroup = roleProps.role_group;
-      if (userRoleGroup !== "management") {
-        await supabase.auth.signOut();
-        return NextResponse.json(
-          { error: "Akun Anda tidak termasuk dalam grup Management." },
-          { status: 403 },
-        );
-      }
-    } else if (role === "supervisor") {
+    if (role === "supervisor") {
       // Role "supervisor": only operational_supervisor or production_supervisor
       if (
         userRoleName !== "operational_supervisor" &&
@@ -188,7 +177,7 @@ export async function POST(request: Request) {
           email: userData.email,
           fullName: userData.full_name,
           username: userData.username ?? null,
-          role: role === "management" ? "management" : role === "supervisor" ? "supervisor" : userRoleName,
+          role: role === "supervisor" ? "supervisor" : userRoleName,
           roleDetail: {
             id: roleProps.id,
             name: roleProps.name,
