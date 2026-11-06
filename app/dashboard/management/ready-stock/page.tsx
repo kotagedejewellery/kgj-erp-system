@@ -89,10 +89,10 @@ export default function ReadyStockPage() {
   const refreshCatalog = async () => {
     setIsRefreshingCatalog(true);
     try {
-      const result = await mutator<{ categories: number; products: number }>("/api/inventory/catalog/refresh");
+      await mutator("/api/inventory/catalog/refresh");
       setProductSearch("");
       setSelectedProduct(null);
-      setMessage(`Katalog diperbarui: ${result.products} model dan ${result.categories} kategori tersedia.`);
+      setMessage("Katalog diperbarui. Cari kode atau nama model untuk memilih model yang aktif.");
       refetch();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Katalog tidak dapat diperbarui");
@@ -178,19 +178,21 @@ export default function ReadyStockPage() {
                   </select>
                 </label>
                 <label className="text-sm text-cream">
-                  Cari model cincin
+                  1. Cari model
                   <input
                     value={productSearch}
                     onChange={(event) => {
                       setProductSearch(event.target.value);
                       setSelectedProduct(null);
                     }}
-                    placeholder="Ketik minimal 2 huruf kode atau nama model"
+                    aria-describedby="model-search-help"
+                    placeholder="Contoh: S-02 atau Palladium"
                     className={inputClass}
                   />
+                  <span id="model-search-help" className="mt-1 block text-xs text-white/45">Ketik minimal 2 karakter kode atau nama model.</span>
                 </label>
                 <label className="text-sm text-cream">
-                  Model cincin
+                  2. Pilih model
                   <select
                     required
                     value={selectedProduct?.id ?? ""}
@@ -198,9 +200,20 @@ export default function ReadyStockPage() {
                     disabled={productSearch.trim().length < 2 || isProductSearching}
                     className={inputClass}
                   >
-                    <option value="">{isProductSearching ? "Mencari model..." : "Pilih model cincin"}</option>
+                    <option value="">{
+                      productSearch.trim().length < 2
+                        ? "Ketik minimal 2 karakter pada kolom cari"
+                        : isProductSearching
+                          ? "Mencari model..."
+                          : catalogData?.products.length
+                            ? "Pilih model cincin"
+                            : "Model aktif tidak ditemukan"
+                    }</option>
                     {catalogData?.products.map((product) => <option key={product.id} value={product.id}>{product.label}</option>)}
                   </select>
+                  {productSearch.trim().length >= 2 && !isProductSearching && catalogData?.products.length === 0 && (
+                    <span role="status" className="mt-1 block text-xs text-white/45">Model aktif tidak ditemukan. Coba kode atau nama lain.</span>
+                  )}
                   {selectedProduct?.cover_image_url && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={selectedProduct.cover_image_url} alt={`Foto ${selectedProduct.label}`} className="mt-2 h-24 w-24 rounded object-cover" />
