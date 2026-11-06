@@ -38,7 +38,7 @@ docker compose --env-file .env.production -f compose.production.yml \
 
 Push ke `main` menjalankan workflow CI terlebih dahulu. Hanya commit yang CI-nya sukses yang dideploy oleh `.github/workflows/deploy.yml`. Repository harus memiliki secret `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, dan `VPS_SSH_KNOWN_HOSTS`; gunakan `VPS_USER=Kotagede-Jewellery`.
 
-Workflow tidak menjalankan migration ataupun perintah Docker global. Migration Supabase Cloud adalah proses manual, forward-only, dan memerlukan review/approval tersendiri.
+Workflow tidak menjalankan migration ataupun perintah Docker global. Ia menghentikan deploy bila working tree VPS kotor, memverifikasi commit yang diuji, dan menunggu health check aplikasi sebelum memeriksa endpoint publik. Migration Supabase Cloud adalah proses manual, forward-only, dan memerlukan review/approval tersendiri.
 
 Setelah container aktif, cek `https://erp.kotagedejewellery.tech/login`, login, dan endpoint integrasi yang memakai `CRON_SECRET` sebelum mengalihkan trafik produksi.
 
