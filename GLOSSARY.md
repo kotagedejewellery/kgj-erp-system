@@ -23,3 +23,14 @@ atau scrap yang mengubah saldo inventory.
 
 Role dashboard khusus untuk mengelola inventory. Role ini tidak memiliki hak
 approval produksi dan tidak mewarisi dashboard Leader lama.
+
+## Catalog master
+
+Data produk, kategori, SKU, status publikasi, dan gambar katalog yang dimiliki
+Yii2. Data ini tidak menyatakan ketersediaan fisik barang.
+
+## Catalog reference
+
+Salinan read-only catalog master di Main-ERP untuk menampilkan dan memilih
+model produk pada Inventory. Referensi katalog bukan unit stok dan tidak dapat
+mengubah data katalog di Yii2.

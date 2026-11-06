@@ -60,8 +60,11 @@ export function shouldAdvanceTracking(
   return idStatus in YII2_STATUS_TO_STAGE;
 }
 
-export function shouldApplyIncomingStage(idStatus: number | null | undefined): boolean {
-  return idStatus !== YII2_STATUS_PELUNASAN;
+export function shouldApplyIncomingStage(
+  idStatus: number | null | undefined,
+  hasInventoryIssue = false,
+): boolean {
+  return idStatus !== YII2_STATUS_PELUNASAN && !hasInventoryIssue;
 }
 
 // Only force "selesai" when Yii2 confirms the order is truly completed
@@ -265,7 +268,16 @@ export async function ingestLegacyOrder(
       return { action: "updated", stage: null, stageChanged: false };
     }
 
-    if (!shouldApplyIncomingStage(incomingStatus)) {
+    const { data: inventoryIssue, error: inventoryIssueError } = await db
+      .from("inventory_order_issues")
+      .select("order_id")
+      .eq("order_id", existing.id)
+      .maybeSingle();
+    if (inventoryIssueError) {
+      throw new Error(`inventory_order_issues query gagal: ${inventoryIssueError.message}`);
+    }
+
+    if (!shouldApplyIncomingStage(incomingStatus, Boolean(inventoryIssue))) {
       return { action: "updated", stage: null, stageChanged: false };
     }
 

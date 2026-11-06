@@ -144,12 +144,16 @@ describe("shouldApplyIncomingStage", () => {
     expect(shouldApplyIncomingStage(YII2_STATUS_PELUNASAN)).toBe(false);
   });
 
+  it("keeps the production stage owned by Main-ERP after inventory issue", () => {
+    expect(shouldApplyIncomingStage(12, true)).toBe(false);
+  });
+
   it("does not let a Pelunasan webhook change a later stage", () => {
     expect(shouldApplyIncomingStage(YII2_STATUS_PELUNASAN)).toBe(false);
   });
 
   it("preserves the existing behavior for other Yii2 statuses", () => {
-    expect(shouldApplyIncomingStage(12)).toBe(true);
+    expect(shouldApplyIncomingStage(12, false)).toBe(true);
   });
 });
 

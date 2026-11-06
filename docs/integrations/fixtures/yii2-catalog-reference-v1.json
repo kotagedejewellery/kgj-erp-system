@@ -1,0 +1,37 @@
+{
+  "contract_version": 1,
+  "source_system": "yii2",
+  "snapshot_at": "2026-11-05T10:00:00+07:00",
+  "categories": [
+    {
+      "source_category_id": 7,
+      "name": "Cincin Palladium",
+      "image_url": null
+    },
+    {
+      "source_category_id": 12,
+      "name": "Cincin Emas Putih",
+      "image_url": "https://catalog.example.test/categories/emas-putih.jpg"
+    }
+  ],
+  "products": [
+    {
+      "source_product_id": 123,
+      "sku": "S-02",
+      "name": "Cincin Palladium S-02",
+      "is_published": true,
+      "legacy_primary_category_id": 7,
+      "category_ids": [7, 12],
+      "cover_image_url": "https://catalog.example.test/products/s-02.jpg"
+    },
+    {
+      "source_product_id": 124,
+      "sku": "S-03",
+      "name": "Cincin S-03",
+      "is_published": false,
+      "legacy_primary_category_id": 7,
+      "category_ids": [7],
+      "cover_image_url": null
+    }
+  ]
+}
