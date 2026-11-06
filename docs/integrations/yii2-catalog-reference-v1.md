@@ -1,7 +1,7 @@
 # Kontrak Referensi Katalog Yii2 → Main-ERP v1
 
-Status: **proposed**. Kontrak ini belum mengaktifkan endpoint, sync runtime,
-migration, atau perubahan pada flow order.
+Status: **implemented, pending connection UAT**. Kontrak ini hanya mengaktifkan
+referensi katalog read-only; tidak mengubah flow order.
 
 ## Tujuan dan batasan
 
@@ -24,6 +24,18 @@ GET /api/inventory-catalog
 Endpoint hanya dapat dipanggil backend Main-ERP dengan credential katalog
 khusus. MVP memakai full snapshot melalui tombol manual **Perbarui Katalog**
 di Main-ERP; tidak ada `updated_since`, scheduler, atau webhook katalog.
+
+Main-ERP menyimpan konfigurasi server-only berikut (nilai secret tidak boleh
+masuk git atau tampil pada UI):
+
+```text
+YII_CATALOG_BASE_URL=https://<domain-yii2>
+YII_CATALOG_SYNC_KEY=<secret-katalog-yang-sama>
+```
+
+Tombol hanya membaca snapshot lalu memperbarui tabel referensi katalog. Bila
+Yii2 tidak dapat dihubungi atau payload tidak valid, referensi lama tetap
+digunakan dan tidak ada stok, order, atau mutasi yang berubah.
 
 ## Payload v1
 

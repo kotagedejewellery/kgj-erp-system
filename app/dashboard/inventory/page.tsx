@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Boxes, Factory, Gem, RefreshCw, Warehouse } from "lucide-react";
+import { Boxes, CheckCircle2, CircleAlert, Factory, Gem, RefreshCw, Warehouse } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { getClientUser, type ClientUser } from "@/lib/auth/session";
@@ -27,6 +27,14 @@ type InventoryResponse = {
   summary: InventorySummary;
   mutations: Mutation[];
   is_enabled: boolean;
+  activation: {
+    has_default_warehouse: boolean;
+    has_default_wip: boolean;
+    has_mapped_material_with_stock: boolean;
+    catalog_model_count: number;
+    ready_stock_unit_count: number;
+    can_activate: boolean;
+  };
 };
 
 function formatGrams(value: number) {
@@ -80,7 +88,7 @@ export default function InventoryDashboardPage() {
     queryFn: () => fetcher("/api/inventory/summary"),
   });
   const activateInventory = async () => {
-    if (!data || data.is_enabled || !confirm("Aktifkan inventory untuk approval baru?")) return;
+    if (!data || data.is_enabled || !data.activation.can_activate || !confirm("Aktifkan inventory untuk approval baru? Order pada Approval Penerimaan Order akan memerlukan sumber stok.")) return;
     const response = await fetch("/api/inventory/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_enabled: true }) });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -105,7 +113,7 @@ export default function InventoryDashboardPage() {
               {data?.is_enabled ? (
                 <span className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100">Inventory aktif</span>
               ) : (
-                <button type="button" onClick={activateInventory} disabled={!data} className="rounded-md border border-gold/20 bg-cocoa px-3 py-2 text-xs font-medium text-cream disabled:opacity-50">Aktifkan inventory</button>
+                <button type="button" onClick={activateInventory} disabled={!data?.activation.can_activate} className="rounded-md border border-gold/20 bg-cocoa px-3 py-2 text-xs font-medium text-cream disabled:opacity-50">Aktifkan inventory</button>
               )}
               <button type="button" onClick={() => refetch()} disabled={isRefetching} className="inline-flex items-center gap-2 rounded-md border border-gold/20 bg-cocoa px-3 py-2 text-xs font-medium text-cream transition hover:border-gold/45 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`} />Perbarui</button>
             </div>
@@ -122,6 +130,7 @@ export default function InventoryDashboardPage() {
             </div>
           ) : data ? (
             <div className="space-y-6">
+              {!data.is_enabled && <section className="rounded-lg border border-gold/15 bg-cocoa p-4"><h2 className="font-semibold text-cream">Sebelum aktivasi</h2><p className="mt-1 text-sm text-white/50">Aktivasi berlaku untuk approval baru. Ready-stock tetap opsional bila pilot dimulai dari order custom.</p><div className="mt-4 grid gap-2 text-sm sm:grid-cols-2"><ReadinessItem ready={data.activation.has_default_warehouse} label="Gudang Utama aktif" /><ReadinessItem ready={data.activation.has_default_wip} label="Lokasi WIP aktif" /><ReadinessItem ready={data.activation.has_mapped_material_with_stock} label="Bahan pesanan sudah terhubung dan memiliki stok" /><ReadinessItem ready={data.activation.catalog_model_count > 0} optional label={`Katalog model diperbarui (${data.activation.catalog_model_count})`} /><ReadinessItem ready={data.activation.ready_stock_unit_count > 0} optional label={`Unit ready-stock tercatat (${data.activation.ready_stock_unit_count})`} /></div></section>}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard label="Total gram gudang" value={formatGrams(data.summary.warehouse_grams)} icon={Warehouse} />
                 <MetricCard label="Material di WIP" value={formatGrams(data.summary.wip_grams)} icon={Factory} />
@@ -158,4 +167,9 @@ export default function InventoryDashboardPage() {
       </div>
     </div>
   );
+}
+
+function ReadinessItem({ ready, label, optional = false }: { ready: boolean; label: string; optional?: boolean }) {
+  const Icon = ready ? CheckCircle2 : CircleAlert;
+  return <p className={ready ? "flex items-center gap-2 text-emerald-100" : "flex items-center gap-2 text-amber-100"}><Icon className="h-4 w-4 shrink-0" />{label}{optional && <span className="text-xs text-white/45">(opsional)</span>}</p>;
 }

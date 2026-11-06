@@ -1,0 +1,21 @@
+export type MutationHistoryRecord = {
+  id: string;
+  mutation_type: string;
+  material_label: string | null;
+  stock_unit_label: string | null;
+  order_code: string | null;
+  actor_name: string | null;
+};
+
+export function filterMutationHistory<T extends MutationHistoryRecord>(
+  records: readonly T[],
+  filters: { type: string; query: string },
+): T[] {
+  const query = filters.query.trim().toLowerCase();
+  return records.filter((record) => {
+    if (filters.type && record.mutation_type !== filters.type) return false;
+    if (!query) return true;
+    return [record.material_label, record.stock_unit_label, record.order_code, record.actor_name]
+      .some((value) => value?.toLowerCase().includes(query));
+  });
+}

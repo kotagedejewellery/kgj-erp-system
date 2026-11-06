@@ -32,6 +32,7 @@ Schema Main-ERP saat ini memakai model integrasi Yii2: `legacy_orders` sebagai d
 - Migration `045` menambahkan role dashboard `management` khusus Inventory dengan `role_group` terpisah `inventory`. Migration ini berhenti bila masih ada akun Management lama yang aktif agar tidak ada akun legacy yang memperoleh akses baru secara tidak sengaja.
 - Migration `046` menambahkan status aktivasi Inventory yang default-nya mati, lokasi Gudang Utama/WIP, dan RPC pencatatan saldo awal atomik. Approval lama tetap berjalan sampai Management mengaktifkan Inventory secara eksplisit.
 - Migration `047` memperketat kecocokan ready-stock terhadap produk, bahan, dan ukuran order serta menambahkan retur stok immutable dari WIP/alokasi kembali ke gudang.
+- Migration `049` menambah referensi katalog Yii2 read-only serta RPC pencatatan stok awal ready-stock yang atomik dengan mutation ledger. Ia tidak mengubah order, stage, approval, rework, maupun webhook legacy.
 
 ## Tabel inti aktif
 

@@ -42,3 +42,38 @@ export function isInventoryReadyForActivation(
     ),
   );
 }
+
+export function buildInventoryActivationChecklist(
+  locations: Location[],
+  materials: Material[],
+  balances: Balance[],
+  catalogModelCount: number,
+  readyStockUnitCount: number,
+) {
+  const hasDefaultLocation = (locationType: string) => locations.some((location) =>
+    location.location_type === locationType && location.is_default && location.is_active,
+  );
+  const hasMappedMaterialWithStock = materials.some((material) =>
+    material.is_active &&
+    material.source_material_id !== null &&
+    balances.some((balance) =>
+      balance.material_id === material.id &&
+      locations.some((location) =>
+        location.id === balance.location_id &&
+        location.location_type === "warehouse" &&
+        location.is_default &&
+        location.is_active &&
+        Number(balance.quantity_grams) > 0,
+      ),
+    ),
+  );
+
+  return {
+    has_default_warehouse: hasDefaultLocation("warehouse"),
+    has_default_wip: hasDefaultLocation("wip"),
+    has_mapped_material_with_stock: hasMappedMaterialWithStock,
+    catalog_model_count: catalogModelCount,
+    ready_stock_unit_count: readyStockUnitCount,
+    can_activate: isInventoryReadyForActivation(locations, materials, balances),
+  };
+}

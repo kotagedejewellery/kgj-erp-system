@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -17,24 +17,43 @@ type Unit = {
   actual_weight_grams: number | string;
   status: string;
   product_label: string;
+  cover_image_url: string | null;
   material_label: string;
+};
+
+type ModelSummary = {
+  source_product_id: number;
+  label: string;
+  cover_image_url: string | null;
+  available_units: number;
+  allocated_units: number;
+  allocation_count: number;
 };
 
 type Data = {
   units: Unit[];
   locations: { id: string; name: string }[];
   materials: { code: string; name: string; source_material_id: number }[];
+  models: ModelSummary[];
 };
 
-type CatalogProduct = { id: number; label: string };
+type CatalogProduct = { id: number; label: string; cover_image_url: string | null };
 
 const brandOptions = Object.entries(BRANDS).map(([id, brand]) => ({ id, ...brand }));
 const inputClass = "w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream";
 
+function statusLabel(status: string) {
+  return ({ available: "Tersedia", allocated: "Dialokasikan", inspection: "Dalam pemeriksaan" } as Record<string, string>)[status] ?? status;
+}
+
 export default function ReadyStockPage() {
   const [message, setMessage] = useState("");
+  const [isRefreshingCatalog, setIsRefreshingCatalog] = useState(false);
   const [productSearch, setProductSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [unitSearch, setUnitSearch] = useState("");
+  const [unitBrand, setUnitBrand] = useState("");
+  const [unitStatus, setUnitStatus] = useState("");
   const { data, error, isLoading, refetch } = useQuery<Data>({
     queryKey: ["ready-stock"],
     queryFn: () => fetcher("/api/inventory/ready-stock"),
@@ -67,6 +86,30 @@ export default function ReadyStockPage() {
     }
   };
 
+  const refreshCatalog = async () => {
+    setIsRefreshingCatalog(true);
+    try {
+      const result = await mutator<{ categories: number; products: number }>("/api/inventory/catalog/refresh");
+      setProductSearch("");
+      setSelectedProduct(null);
+      setMessage(`Katalog diperbarui: ${result.products} model dan ${result.categories} kategori tersedia.`);
+      refetch();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Katalog tidak dapat diperbarui");
+    } finally {
+      setIsRefreshingCatalog(false);
+    }
+  };
+
+  const visibleUnits = useMemo(() => {
+    const query = unitSearch.trim().toLowerCase();
+    return (data?.units ?? []).filter((unit) =>
+      (!query || `${unit.unit_code} ${unit.product_label} ${unit.material_label}`.toLowerCase().includes(query)) &&
+      (!unitBrand || unit.brand_id === Number(unitBrand)) &&
+      (!unitStatus || unit.status === unitStatus),
+    );
+  }, [data?.units, unitBrand, unitSearch, unitStatus]);
+
   return (
     <div className="flex h-screen bg-night">
       <Sidebar role="management" />
@@ -76,7 +119,7 @@ export default function ReadyStockPage() {
           <div>
             <h1 className="text-2xl font-semibold text-ivory">Ready-stock</h1>
             <p className="mt-1 text-sm text-white/50">
-              Daftarkan setiap cincin jadi fisik yang tersedia untuk dialokasikan.
+              Catat setiap cincin jadi fisik. Bahan mentah per gram dicatat di Bahan Baku.
             </p>
           </div>
 
@@ -94,6 +137,36 @@ export default function ReadyStockPage() {
             <div className="h-56 animate-pulse rounded-lg bg-cocoa" />
           ) : (
             <>
+              <section className="flex flex-col gap-4 rounded-lg border border-gold/15 bg-cocoa p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="font-semibold text-cream">Pilih model dari katalog</h2>
+                  <p className="mt-1 text-sm text-white/50">Perbarui katalog agar pencarian model dan foto berasal dari katalog Yii2 terbaru.</p>
+                </div>
+                <button type="button" onClick={refreshCatalog} disabled={isRefreshingCatalog} className="rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold disabled:cursor-not-allowed disabled:opacity-60">
+                  {isRefreshingCatalog ? "Memperbarui katalog..." : "Perbarui katalog"}
+                </button>
+              </section>
+
+              {data?.models.length ? (
+                <section aria-label="Ringkasan model ready-stock" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {data.models.map((model) => (
+                    <article key={model.source_product_id} className="flex min-w-0 gap-3 rounded-lg border border-gold/15 bg-cocoa p-3">
+                      {model.cover_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={model.cover_image_url} alt={`Foto ${model.label}`} className="h-20 w-20 shrink-0 rounded object-cover" />
+                      ) : <div aria-hidden="true" className="flex h-20 w-20 shrink-0 items-center justify-center rounded bg-carbon text-xs text-white/35">Tanpa foto</div>}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-cream" title={model.label}>{model.label}</p>
+                        <p className="mt-2 text-xs text-white/50">Tersedia: <span className="text-cream">{model.available_units}</span> · Dialokasikan: <span className="text-cream">{model.allocated_units}</span></p>
+                        <p className="mt-1 text-xs text-white/50">Total dialokasikan: <span className="text-cream">{model.allocation_count}</span></p>
+                      </div>
+                    </article>
+                  ))}
+                </section>
+              ) : (
+                <p className="text-sm text-white/50">Belum ada cincin jadi yang tercatat. Setelah memilih model dari katalog, masukkan setiap cincin fisik satu per satu.</p>
+              )}
+
               <form onSubmit={submit} className="grid gap-3 rounded-lg border border-gold/15 bg-cocoa p-4 sm:grid-cols-2 lg:grid-cols-3">
                 <h2 className="col-span-full font-semibold text-cream">Tambah unit cincin</h2>
                 <label className="text-sm text-cream">Kode unit fisik<input required name="unit_code" className={inputClass} /></label>
@@ -128,6 +201,10 @@ export default function ReadyStockPage() {
                     <option value="">{isProductSearching ? "Mencari model..." : "Pilih model cincin"}</option>
                     {catalogData?.products.map((product) => <option key={product.id} value={product.id}>{product.label}</option>)}
                   </select>
+                  {selectedProduct?.cover_image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={selectedProduct.cover_image_url} alt={`Foto ${selectedProduct.label}`} className="mt-2 h-24 w-24 rounded object-cover" />
+                  )}
                 </label>
                 <label className="text-sm text-cream">
                   Bahan / kadar
@@ -135,7 +212,7 @@ export default function ReadyStockPage() {
                     <option value="">Pilih bahan</option>
                     {data?.materials.map((material) => <option key={material.source_material_id} value={material.source_material_id}>{material.code} — {material.name}</option>)}
                   </select>
-                  {data?.materials.length === 0 && <span className="mt-1 block text-xs text-white/45">Tambahkan bahan pada Material & Saldo terlebih dahulu.</span>}
+                  {data?.materials.length === 0 && <span className="mt-1 block text-xs text-white/45">Tambahkan bahan pada Bahan Baku terlebih dahulu.</span>}
                 </label>
                 <label className="text-sm text-cream">Ukuran cincin<input required name="size" className={inputClass} /></label>
                 <label className="text-sm text-cream">Keterangan bahan / kadar<input required name="material_description" className={inputClass} /></label>
@@ -151,10 +228,17 @@ export default function ReadyStockPage() {
               </form>
 
               <section className="overflow-hidden rounded-lg border border-gold/15 bg-cocoa">
+                <div className="grid gap-3 border-b border-gold/10 p-4 sm:grid-cols-3">
+                  <label className="text-sm text-cream">Cari unit atau model<input value={unitSearch} onChange={(event) => setUnitSearch(event.target.value)} className="mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream" /></label>
+                  <label className="text-sm text-cream">Brand<select value={unitBrand} onChange={(event) => setUnitBrand(event.target.value)} className="mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream"><option value="">Semua brand</option>{brandOptions.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
+                  <label className="text-sm text-cream">Status<select value={unitStatus} onChange={(event) => setUnitStatus(event.target.value)} className="mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream"><option value="">Semua status</option><option value="available">Tersedia</option><option value="allocated">Dialokasikan</option><option value="inspection">Dalam pemeriksaan</option></select></label>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-white/45"><tr><th className="p-3">Unit</th><th>Brand</th><th>Produk</th><th>Bahan</th><th>Ukuran</th><th>Berat</th><th>Status</th></tr></thead>
-                    <tbody>{data?.units.map((unit) => <tr key={unit.id} className="border-t border-white/5 text-cream"><td className="p-3">{unit.unit_code}</td><td>{getBrandName(unit.brand_id)}</td><td>{unit.product_label}</td><td>{unit.material_label}</td><td>{unit.size ?? "—"}</td><td>{Number(unit.actual_weight_grams).toFixed(3)} g</td><td>{unit.status}</td></tr>)}</tbody>
+                    <thead className="text-left text-white/45"><tr><th className="p-3">Unit</th><th>Brand</th><th>Model</th><th>Bahan</th><th>Ukuran</th><th>Berat</th><th>Status</th></tr></thead>
+                    <tbody>{visibleUnits.length ? visibleUnits.map((unit) => <tr key={unit.id} className="border-t border-white/5 text-cream"><td className="p-3">{unit.unit_code}</td><td>{getBrandName(unit.brand_id)}</td><td><div className="flex items-center gap-2">{unit.cover_image_url && <><span className="sr-only">Foto model</span>{/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={unit.cover_image_url} alt="" className="h-9 w-9 rounded object-cover" />
+                    </>}<span>{unit.product_label}</span></div></td><td>{unit.material_label}</td><td>{unit.size ?? "—"}</td><td>{Number(unit.actual_weight_grams).toFixed(3)} g</td><td>{statusLabel(unit.status)}</td></tr>) : <tr><td colSpan={7} className="p-6 text-center text-sm text-white/50">Tidak ada unit yang sesuai filter.</td></tr>}</tbody>
                   </table>
                 </div>
               </section>

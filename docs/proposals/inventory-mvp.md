@@ -18,12 +18,13 @@ sistem, hash snapshot, lease, maupun konfigurasi pilot khusus pada MVP.
 ## Fitur yang dibangun
 
 1. Dashboard Inventory: total gram gudang, unit cincin jadi tersedia,
-   WIP, dan mutasi terakhir.
+   WIP, mutasi terakhir, dan checklist kesiapan sebelum aktivasi.
 2. Master minimum: Gudang Utama/WIP, material, stok awal, dan `stock_unit` untuk setiap
    cincin jadi ready-stock. Unit ready-stock membawa produk, bahan Yii2, ukuran,
    dan berat aktual agar tidak dapat dialokasikan ke cincin yang berbeda.
 3. Riwayat mutasi immutable: stok awal, gudang-ke-WIP, alokasi cincin jadi,
-   dan retur.
+   dan retur; Management dapat memfilter riwayat berdasarkan periode, jenis,
+   serta referensi order/bahan/unit.
 5. Aksi inventory pada approval yang sudah ada:
    `approval_penerimaan_order → racik_bahan`.
 
@@ -48,7 +49,8 @@ dan audit stok tidak hilang.
 
 ## Akses
 
-- `management`: dashboard inventory, master minimum, stok awal, dan retur stok tercatat.
+- `management`: dashboard inventory, master minimum, stok awal, retur stok,
+  dan riwayat mutasi read-only.
 - `superadmin`: membuat, menonaktifkan, dan mengelola akun Management.
 - `operational_supervisor`: approval dan issue stok pada tahap approval.
 - Role produksi yang ada: melihat WIP yang relevan.
@@ -68,5 +70,5 @@ lengkap ditolak sebelum stage berpindah agar saldo tidak salah.
 ## Ditunda
 
 Penerimaan bahan manual, stok opname/koreksi, scrap, transfer lokasi, batas
-stok minimum, ledger/export lanjutan, serta kontrak lintas sistem kompleks
+stok minimum, export mutasi, serta kontrak lintas sistem kompleks
 merupakan opsi fase berikutnya bila MVP sederhana terbukti tidak cukup.

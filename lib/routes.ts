@@ -108,6 +108,7 @@ export const MANAGEMENT_ROUTES = {
   MATERIALS: "/dashboard/management/materials",
   READY_STOCK: "/dashboard/management/ready-stock",
   RETURNS: "/dashboard/management/returns",
+  MUTATIONS: "/dashboard/management/mutations",
 } as const;
 
 /**
