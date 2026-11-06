@@ -125,6 +125,7 @@ export const SUPERVISOR_ROUTES = {
   DASHBOARD: "/dashboard/supervisor/bottleneck",
   MONITORING: "/dashboard/supervisor/monitoring",
   APPROVAL: "/dashboard/supervisor/approval",
+  INVENTORY: "/dashboard/supervisor/inventory",
   ACCOUNTS: "/dashboard/supervisor/accounts",
   PERSONNEL: "/dashboard/supervisor/personnel",
   QR_CODES: "/dashboard/supervisor/qr-codes",

@@ -25,6 +25,9 @@ sistem, hash snapshot, lease, maupun konfigurasi pilot khusus pada MVP.
 3. Riwayat mutasi immutable: stok awal, gudang-ke-WIP, alokasi cincin jadi,
    dan retur; Management dapat memfilter riwayat berdasarkan periode, jenis,
    serta referensi order/bahan/unit.
+4. Ketersediaan stok read-only: SPV CS, SPV Operational, dan SPV Produksi
+   dapat melihat bahan gudang serta ready-stock saat ini; detail order juga
+   menampilkan kecukupan bahan custom dan jumlah unit ready-stock yang cocok.
 5. Aksi inventory pada approval yang sudah ada:
    `approval_penerimaan_order → racik_bahan`.
 
@@ -53,7 +56,9 @@ dan audit stok tidak hilang.
   dan riwayat mutasi read-only.
 - `superadmin`: membuat, menonaktifkan, dan mengelola akun Management.
 - `operational_supervisor`: approval dan issue stok pada tahap approval.
-- Role produksi yang ada: melihat WIP yang relevan.
+- `customer_service_supervisor`, `operational_supervisor`, dan
+  `production_supervisor`: melihat ketersediaan stok tanpa hak tambah, ubah,
+  retur, atau mutasi.
 
 Role `management` tidak memulihkan akun `leader_*`, task Management, maupun
 hak approval produksi. Ia memakai `role_group` khusus `inventory`, sehingga tidak

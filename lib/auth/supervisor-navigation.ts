@@ -1,6 +1,7 @@
 const SPV_CS_MENU_NAMES = new Set([
   "Dashboard",
   "Persetujuan",
+  "Ketersediaan Stok",
   "Riwayat Order",
   "Riwayat Persetujuan",
 ]);

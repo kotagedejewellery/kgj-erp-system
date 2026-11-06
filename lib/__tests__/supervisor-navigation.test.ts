@@ -4,6 +4,7 @@ import { getSupervisorMenuItems } from "@/lib/auth/supervisor-navigation";
 const supervisorItems = [
   { name: "Dashboard", icon: "dashboard" },
   { name: "Persetujuan", icon: "approval" },
+  { name: "Ketersediaan Stok", icon: "inventory" },
   { name: "Kelola Akun", icon: "users" },
   { name: "Personnel", icon: "personnel" },
   { name: "Slot Management", icon: "slot" },
@@ -17,7 +18,7 @@ describe("supervisor navigation", () => {
   it("menampilkan menu khusus SPV CS tanpa menunggu data jaringan", () => {
     expect(
       getSupervisorMenuItems(supervisorItems, "customer_service_supervisor", true).map((item) => item.name),
-    ).toEqual(["Dashboard", "Persetujuan", "Riwayat Order", "Riwayat Persetujuan"]);
+    ).toEqual(["Dashboard", "Persetujuan", "Ketersediaan Stok", "Riwayat Order", "Riwayat Persetujuan"]);
   });
 
   it("menyembunyikan Slot Management untuk SPV Produksi", () => {
@@ -33,5 +34,12 @@ describe("supervisor navigation", () => {
     expect(
       getSupervisorMenuItems(supervisorItems, "operational_supervisor", false).map((item) => item.name),
     ).toEqual(supervisorItems.map((item) => item.name));
+  });
+
+  it("menampilkan Ketersediaan Stok bagi semua jenis supervisor", () => {
+    for (const role of ["customer_service_supervisor", "operational_supervisor", "production_supervisor"]) {
+      expect(getSupervisorMenuItems(supervisorItems, role, role === "customer_service_supervisor").map((item) => item.name))
+        .toContain("Ketersediaan Stok");
+    }
   });
 });

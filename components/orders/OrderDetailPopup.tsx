@@ -121,6 +121,17 @@ export interface OrderDetail {
   }>;
 }
 
+type OrderAvailability = {
+  checked_at: string;
+  order: {
+    custom: {
+      status: "available" | "insufficient" | "incomplete";
+      requirements: Array<{ materialCode: string; materialName: string; requiredGrams: string; availableGrams: string }>;
+    };
+    readyStock: { status: "available" | "insufficient" | "incomplete"; availableUnits: number };
+  } | null;
+};
+
 const STAGE_COLORS: Record<string, string> = {
   production: "bg-amber-100 text-amber-800 border-amber-200",
   operational: "bg-blue-100 text-blue-800 border-blue-200",
@@ -223,6 +234,10 @@ function RingSpecSection({
   );
 }
 
+function availabilityLabel(status: "available" | "insufficient" | "incomplete") {
+  return status === "available" ? "Tersedia" : status === "insufficient" ? "Belum cukup" : "Data belum lengkap";
+}
+
 export default function OrderDetailPopup({
   orderId,
   orderNumber,
@@ -240,6 +255,10 @@ export default function OrderDetailPopup({
   const { data: detailRes, isLoading, error } = useQuery<{ data: OrderDetail }>({
     queryKey: ["order-detail", orderId],
     queryFn: () => fetcher<{ data: OrderDetail }>(`/api/order-detail?order_id=${orderId}`),
+  });
+  const { data: availabilityRes } = useQuery<OrderAvailability>({
+    queryKey: ["order-inventory-availability", orderId],
+    queryFn: () => fetcher<OrderAvailability>(`/api/inventory/availability?order_id=${orderId}`),
   });
   const detail = detailRes?.data ?? null;
 
@@ -429,6 +448,32 @@ export default function OrderDetailPopup({
                       )}
                     </div>
                   </div>
+
+                  {availabilityRes?.order && (
+                    <section className="rounded-lg border border-gold/15 bg-[#1C1917] p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h4 className="text-sm font-semibold text-[#f0f4ff]">Ketersediaan stok saat ini</h4>
+                          <p className="mt-1 text-xs text-white/45">Informasi ini tidak memesan atau mengurangi stok.</p>
+                        </div>
+                        <span className="text-[10px] text-white/40">{formatDateTime(availabilityRes.checked_at)}</span>
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <div className="rounded bg-[#2a2522] p-2 text-xs">
+                          <p className="text-white/45">Bahan custom</p>
+                          <p className="mt-1 font-semibold text-[#e8e2d4]">{availabilityLabel(availabilityRes.order.custom.status)}</p>
+                          {availabilityRes.order.custom.requirements.map((line) => (
+                            <p key={line.materialCode} className="mt-1 text-white/55">{line.materialCode}: perlu {line.requiredGrams} g · tersedia {line.availableGrams} g</p>
+                          ))}
+                        </div>
+                        <div className="rounded bg-[#2a2522] p-2 text-xs">
+                          <p className="text-white/45">Cincin jadi ready-stock</p>
+                          <p className="mt-1 font-semibold text-[#e8e2d4]">{availabilityLabel(availabilityRes.order.readyStock.status)}</p>
+                          {availabilityRes.order.readyStock.status !== "incomplete" && <p className="mt-1 text-white/55">{availabilityRes.order.readyStock.availableUnits} unit yang cocok tersedia</p>}
+                        </div>
+                      </div>
+                    </section>
+                  )}
 
                   <WarrantyPreparation orderId={orderId} currentStage={o.current_stage} />
 

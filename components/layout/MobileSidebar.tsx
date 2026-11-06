@@ -113,6 +113,7 @@ const menuItems: Record<string, MenuItem[]> = {
       href: SUPERVISOR_ROUTES.DASHBOARD,
     },
     { name: "Persetujuan", icon: "approval", href: SUPERVISOR_ROUTES.APPROVAL },
+    { name: "Ketersediaan Stok", icon: "inventory", href: SUPERVISOR_ROUTES.INVENTORY },
     { name: "Kelola Akun", icon: "users", href: SUPERVISOR_ROUTES.ACCOUNTS },
     { name: "Personnel", icon: "personnel", href: SUPERVISOR_ROUTES.PERSONNEL },
     { name: "QR Code", icon: "qr", href: SUPERVISOR_ROUTES.QR_CODES },

@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   ScanEye,
 } from "lucide-react";
+import { getSupervisorMenuItems } from "@/lib/auth/supervisor-navigation";
 
 import type { MenuItem, CollapseState } from "@/types/layout";
 
@@ -95,6 +96,7 @@ const menuItems: Record<string, MenuItem[]> = {
   supervisor: [
     { name: "Dashboard", icon: "dashboard", href: SUPERVISOR_ROUTES.DASHBOARD },
     { name: "Persetujuan", icon: "approval", href: SUPERVISOR_ROUTES.APPROVAL },
+    { name: "Ketersediaan Stok", icon: "inventory", href: SUPERVISOR_ROUTES.INVENTORY },
     {
       name: "Kelola Akun Tim",
       icon: "users",
@@ -168,18 +170,10 @@ export default function Sidebar({ role }: { role: string }) {
       .catch(() => {});
   }, [role]);
 
-  let items = menuItems[role as keyof typeof menuItems] || [];
-  if (actualRole === "production_supervisor") {
-    items = items.filter((i) => i.name !== "Slot Management");
-  }
-  if (role === "supervisor" && isIntakeValidator) {
-    items = items.filter((item) => [
-      "Dashboard",
-      "Persetujuan",
-      "Riwayat Order",
-      "Riwayat Persetujuan",
-    ].includes(item.name));
-  }
+  const baseItems = menuItems[role as keyof typeof menuItems] || [];
+  const items = role === "supervisor"
+    ? getSupervisorMenuItems(baseItems, actualRole, isIntakeValidator)
+    : baseItems;
 
   const toggleMenuCollapse = (menuName: string) => {
     setCollapsedMenus((prev) => ({
