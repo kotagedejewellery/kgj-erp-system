@@ -15,6 +15,10 @@ const supervisorItems = [
 ];
 
 describe("supervisor navigation", () => {
+  it("does not expose the generic menu while the actual supervisor role is still loading", () => {
+    expect(getSupervisorMenuItems(supervisorItems, null, false)).toEqual([]);
+  });
+
   it("menampilkan menu khusus SPV CS tanpa menunggu data jaringan", () => {
     expect(
       getSupervisorMenuItems(supervisorItems, "customer_service_supervisor", true).map((item) => item.name),

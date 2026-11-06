@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   ScanEye,
 } from "lucide-react";
+import { getClientUser } from "@/lib/auth/session";
 import { getSupervisorMenuItems } from "@/lib/auth/supervisor-navigation";
 
 import type { MenuItem, CollapseState } from "@/types/layout";
@@ -144,8 +145,22 @@ export default function Sidebar({ role }: { role: string }) {
     return false;
   });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [actualRole, setActualRole] = useState<string | null>(null);
-  const [isIntakeValidator, setIsIntakeValidator] = useState(false);
+  const [actualRole, setActualRole] = useState<string | null>(() => {
+    const cachedUser = getClientUser();
+    return role === "supervisor" && cachedUser?.role === "supervisor"
+      ? cachedUser.roleDetail?.name ?? null
+      : null;
+  });
+  const [isIntakeValidator, setIsIntakeValidator] = useState(() => {
+    const cachedUser = getClientUser();
+    return role === "supervisor" && cachedUser?.role === "supervisor"
+      ? cachedUser.roleDetail?.permissions.can_validate_intake === true
+      : false;
+  });
+  const [isSupervisorMenuReady, setIsSupervisorMenuReady] = useState(() => {
+    const cachedUser = getClientUser();
+    return role !== "supervisor" || Boolean(cachedUser?.role === "supervisor" && cachedUser.roleDetail);
+  });
   const [collapsedMenus, setCollapsedMenus] = useState<CollapseState>({
     BMS: false,
     OPRPRD: true,
@@ -161,11 +176,19 @@ export default function Sidebar({ role }: { role: string }) {
 
   useEffect(() => {
     if (role !== "supervisor") return;
+    const cachedUser = getClientUser();
+    if (cachedUser?.role === "supervisor" && cachedUser.roleDetail) {
+      setActualRole(cachedUser.roleDetail.name);
+      setIsIntakeValidator(cachedUser.roleDetail.permissions.can_validate_intake === true);
+      setIsSupervisorMenuReady(true);
+    }
     fetch("/api/me")
       .then((r) => r.json())
       .then((j) => {
-        setActualRole(j.data?.role?.name ?? null);
-        setIsIntakeValidator(j.data?.role?.permissions?.can_validate_intake === true);
+        if (!j?.data?.role) return;
+        setActualRole(j.data.role.name ?? null);
+        setIsIntakeValidator(j.data.role.permissions?.can_validate_intake === true);
+        setIsSupervisorMenuReady(true);
       })
       .catch(() => {});
   }, [role]);
@@ -405,7 +428,15 @@ export default function Sidebar({ role }: { role: string }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto mt-6 px-3">
-          {items.map((item, index) => renderMenuItem(item, index))}
+          {role === "supervisor" && !isSupervisorMenuReady ? (
+            <div className="space-y-2 animate-pulse" aria-label="Memuat menu supervisor">
+              {["one", "two", "three", "four"].map((key) => (
+                <div key={key} className="h-10 rounded-lg bg-white/5" />
+              ))}
+            </div>
+          ) : (
+            items.map((item, index) => renderMenuItem(item, index))
+          )}
         </nav>
 
         {/* Bottom Section */}

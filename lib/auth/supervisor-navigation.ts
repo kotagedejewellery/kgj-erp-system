@@ -12,6 +12,8 @@ export function getSupervisorMenuItems<T extends { name: string }>(
   actualRole: string | null,
   isIntakeValidator: boolean,
 ): T[] {
+  if (!actualRole) return [];
+
   const roleItems = actualRole === "operational_supervisor"
     ? items
     : items.filter((item) => !WARRANTY_MENU_NAMES.has(item.name));
