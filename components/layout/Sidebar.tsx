@@ -31,6 +31,11 @@ import {
   Menu,
   ChevronLeft,
   ScanEye,
+  Boxes,
+  Warehouse,
+  Gem,
+  RotateCcw,
+  ArrowRightLeft,
 } from "lucide-react";
 import { getClientUser } from "@/lib/auth/session";
 import { getSupervisorMenuItems } from "@/lib/auth/supervisor-navigation";
@@ -88,12 +93,12 @@ const menuItems: Record<string, MenuItem[]> = {
     },
   ],
   management: [
-    { name: "Inventory", icon: "inventory", href: MANAGEMENT_ROUTES.DASHBOARD },
-    { name: "Bahan Baku", icon: "inventory", href: MANAGEMENT_ROUTES.MATERIALS },
-    { name: "Lokasi Gudang", icon: "inventory", href: MANAGEMENT_ROUTES.LOCATIONS },
-    { name: "Ready-stock", icon: "inventory", href: MANAGEMENT_ROUTES.READY_STOCK },
-    { name: "Retur Stok", icon: "inventory", href: MANAGEMENT_ROUTES.RETURNS },
-    { name: "Riwayat Mutasi", icon: "checklist", href: MANAGEMENT_ROUTES.MUTATIONS },
+    { name: "Inventory", icon: "dashboard", href: MANAGEMENT_ROUTES.DASHBOARD },
+    { name: "Bahan Baku", icon: "materials", href: MANAGEMENT_ROUTES.MATERIALS },
+    { name: "Lokasi Gudang", icon: "warehouse", href: MANAGEMENT_ROUTES.LOCATIONS },
+    { name: "Ready-stock", icon: "readyStock", href: MANAGEMENT_ROUTES.READY_STOCK },
+    { name: "Retur Stok", icon: "stockReturn", href: MANAGEMENT_ROUTES.RETURNS },
+    { name: "Riwayat Mutasi", icon: "mutation", href: MANAGEMENT_ROUTES.MUTATIONS },
   ],
   supervisor: [
     { name: "Dashboard", icon: "dashboard", href: SUPERVISOR_ROUTES.DASHBOARD },
@@ -122,6 +127,11 @@ const iconMap: Record<string, React.ReactNode> = {
   report: <FileText className="w-5 h-5" />,
   input: <Edit3 className="w-5 h-5" />,
   inventory: <Package className="w-5 h-5" />,
+  materials: <Boxes className="w-5 h-5" />,
+  warehouse: <Warehouse className="w-5 h-5" />,
+  readyStock: <Gem className="w-5 h-5" />,
+  stockReturn: <RotateCcw className="w-5 h-5" />,
+  mutation: <ArrowRightLeft className="w-5 h-5" />,
   analisis: <BarChart3 className="w-5 h-5" />,
   bms: <Package className="w-5 h-5" />,
   oprprd: <CalendarDays className="w-5 h-5" />,
