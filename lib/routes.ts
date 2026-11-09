@@ -106,6 +106,7 @@ export const SUPERADMIN_ROUTES = {
 export const MANAGEMENT_ROUTES = {
   DASHBOARD: "/dashboard/management",
   MATERIALS: "/dashboard/management/materials",
+  LOCATIONS: "/dashboard/management/locations",
   READY_STOCK: "/dashboard/management/ready-stock",
   RETURNS: "/dashboard/management/returns",
   MUTATIONS: "/dashboard/management/mutations",

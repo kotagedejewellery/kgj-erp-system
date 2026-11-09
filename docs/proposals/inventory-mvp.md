@@ -19,12 +19,15 @@ sistem, hash snapshot, lease, maupun konfigurasi pilot khusus pada MVP.
 
 1. Dashboard Inventory: total gram gudang, unit cincin jadi tersedia,
    WIP, mutasi terakhir, dan checklist kesiapan sebelum aktivasi.
-2. Master minimum: Gudang Utama/WIP, material, stok awal, dan `stock_unit` untuk setiap
-   cincin jadi ready-stock. Unit ready-stock membawa produk, bahan Yii2, ukuran,
-   dan berat aktual agar tidak dapat dialokasikan ke cincin yang berbeda.
+2. Master minimum: Gudang Utama/WIP, gudang tambahan, material, stok awal, dan
+   `stock_unit` untuk setiap cincin jadi ready-stock. Unit ready-stock membawa produk,
+   bahan Yii2, ukuran, dan berat aktual agar tidak dapat dialokasikan ke cincin yang berbeda.
 3. Riwayat mutasi immutable: stok awal, gudang-ke-WIP, alokasi cincin jadi,
    dan retur; Management dapat memfilter riwayat berdasarkan periode, jenis,
    serta referensi order/bahan/unit.
+   Master material, gudang, dan unit ready-stock dapat diperbarui tanpa menghapus
+   riwayat. Perpindahan gudang tercatat sebagai mutasi `transfer`; unit yang tidak
+   dipakai lagi hanya dinonaktifkan dan tetap dapat diaudit.
 4. Ketersediaan stok read-only: SPV CS, SPV Operational, dan SPV Produksi
    dapat melihat bahan gudang serta ready-stock saat ini; detail order juga
    menampilkan kecukupan bahan custom dan jumlah unit ready-stock yang cocok.
@@ -74,6 +77,6 @@ lengkap ditolak sebelum stage berpindah agar saldo tidak salah.
 
 ## Ditunda
 
-Penerimaan bahan manual, stok opname/koreksi, scrap, transfer lokasi, batas
-stok minimum, export mutasi, serta kontrak lintas sistem kompleks
+Penerimaan bahan manual, stok opname/koreksi, scrap, batas stok minimum,
+export mutasi, serta kontrak lintas sistem kompleks
 merupakan opsi fase berikutnya bila MVP sederhana terbukti tidak cukup.

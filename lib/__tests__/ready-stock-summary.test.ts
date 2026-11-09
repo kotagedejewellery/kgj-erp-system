@@ -17,18 +17,30 @@ describe("buildReadyStockModelSummaries", () => {
     )).toEqual([
       {
         source_product_id: 123,
-        label: "S-02 — Cincin Perak S-02",
+        brand_id: null,
+        source_material_id: null,
+        material_description: null,
+        size: null,
+        label: "S-02 \u2014 Cincin Perak S-02",
         cover_image_url: "https://yii.example.test/s-02.jpg",
         available_units: 1,
         allocated_units: 1,
+        inspection_units: 0,
+        total_units: 2,
         allocation_count: 3,
       },
       {
         source_product_id: 456,
-        label: "G-03 — Cincin Perak G-03",
+        brand_id: null,
+        source_material_id: null,
+        material_description: null,
+        size: null,
+        label: "G-03 \u2014 Cincin Perak G-03",
         cover_image_url: null,
         available_units: 1,
         allocated_units: 0,
+        inspection_units: 0,
+        total_units: 1,
         allocation_count: 0,
       },
     ]);
@@ -45,11 +57,69 @@ describe("buildReadyStockModelSummaries", () => {
       [],
     )).toEqual([{
       source_product_id: 999,
-      label: "S-09 — Cincin Perak S-09",
+      brand_id: null,
+      source_material_id: null,
+      material_description: null,
+      size: null,
+      label: "S-09 \u2014 Cincin Perak S-09",
       cover_image_url: "https://yii.example.test/s-09.jpg",
       available_units: 1,
       allocated_units: 0,
+      inspection_units: 0,
+      total_units: 1,
       allocation_count: 0,
     }]);
+  });
+
+  it("separates stock counts by the physical model variation", () => {
+    expect(buildReadyStockModelSummaries(
+      [
+        { id: "unit-1", source_product_id: 123, brand_id: 1, source_material_id: 10, size: "16", material_description: "Emas 12K", status: "available" },
+        { id: "unit-2", source_product_id: 123, brand_id: 1, source_material_id: 10, size: "16", material_description: "Emas 12K", status: "available" },
+        { id: "unit-3", source_product_id: 123, brand_id: 1, source_material_id: 10, size: "17", material_description: "Emas 12K", status: "inspection" },
+      ],
+      [{ source_product_id: 123, sku: "S-02", name: "Cincin S-02", cover_image_url: null }],
+      [],
+    )).toEqual([
+      {
+        source_product_id: 123,
+        brand_id: 1,
+        source_material_id: 10,
+        material_description: "Emas 12K",
+        size: "16",
+        label: "S-02 \u2014 Cincin S-02",
+        cover_image_url: null,
+        available_units: 2,
+        allocated_units: 0,
+        inspection_units: 0,
+        total_units: 2,
+        allocation_count: 0,
+      },
+      {
+        source_product_id: 123,
+        brand_id: 1,
+        source_material_id: 10,
+        material_description: "Emas 12K",
+        size: "17",
+        label: "S-02 \u2014 Cincin S-02",
+        cover_image_url: null,
+        available_units: 0,
+        allocated_units: 0,
+        inspection_units: 1,
+        total_units: 1,
+        allocation_count: 0,
+      },
+    ]);
+  });
+
+  it("does not split the same physical variation because of its free-text description", () => {
+    expect(buildReadyStockModelSummaries(
+      [
+        { id: "unit-1", source_product_id: 123, brand_id: 1, source_material_id: 10, size: "16", material_description: "Emas 12K", status: "available" },
+        { id: "unit-2", source_product_id: 123, brand_id: 1, source_material_id: 10, size: "16", material_description: "Emas 12 Karat", status: "available" },
+      ],
+      [{ source_product_id: 123, sku: "S-02", name: "Cincin S-02", cover_image_url: null }],
+      [],
+    )).toMatchObject([{ available_units: 2, total_units: 2, size: "16" }]);
   });
 });

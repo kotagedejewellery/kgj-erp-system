@@ -7,7 +7,7 @@ export async function GET() {
   const auth = await requireInventoryManagement();
   if ("error" in auth) return auth.error;
   const [units, locations, materials, allocations] = await Promise.all([
-    auth.admin.from("inventory_stock_units").select("id, unit_code, brand_id, source_product_id, source_material_id, size, material_description, actual_weight_grams, condition, status, catalog_product_name, catalog_product_sku, catalog_cover_image_url, created_at").order("created_at", { ascending: false }),
+    auth.admin.from("inventory_stock_units").select("id, unit_code, brand_id, source_product_id, source_material_id, location_id, size, material_description, actual_weight_grams, condition, status, catalog_product_name, catalog_product_sku, catalog_cover_image_url, created_at").order("created_at", { ascending: false }),
     auth.admin.from("inventory_locations").select("id, code, name, location_type").eq("location_type", "warehouse").eq("is_active", true),
     auth.admin.from("inventory_materials").select("code, name, source_material_id").eq("is_active", true).not("source_material_id", "is", null).order("code"),
     auth.admin.from("inventory_mutations").select("stock_unit_id").eq("mutation_type", "allocate_finished_good"),

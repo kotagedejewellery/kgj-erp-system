@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
-
-const mutationTypes = new Set([
-  "opening", "receipt", "adjustment", "issue_to_wip",
-  "allocate_finished_good", "return_from_wip", "return_to_stock", "scrap",
-]);
+import { isInventoryMutationType } from "@/lib/inventory/mutation-history";
 
 function dateValue(value: string | null, endOfDay = false): string | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -17,7 +13,7 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams;
   const type = params.get("type") ?? "";
-  if (type && !mutationTypes.has(type)) {
+  if (type && !isInventoryMutationType(type)) {
     return NextResponse.json({ error: "Jenis mutasi tidak valid" }, { status: 400 });
   }
 

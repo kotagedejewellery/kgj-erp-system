@@ -7,6 +7,27 @@ export type MutationHistoryRecord = {
   actor_name: string | null;
 };
 
+export const INVENTORY_MUTATION_LABELS: Record<string, string> = {
+  opening: "Stok awal",
+  receipt: "Penerimaan",
+  adjustment: "Penyesuaian",
+  issue_to_wip: "Keluar ke WIP",
+  allocate_finished_good: "Alokasi cincin jadi",
+  return_from_wip: "Retur dari WIP",
+  return_to_stock: "Retur ke stok",
+  scrap: "Scrap",
+  transfer: "Pindah gudang",
+  retire_finished_good: "Unit ready-stock dinonaktifkan",
+};
+
+export function isInventoryMutationType(value: string): boolean {
+  return value in INVENTORY_MUTATION_LABELS;
+}
+
+export function inventoryMutationLabel(value: string): string {
+  return INVENTORY_MUTATION_LABELS[value] ?? value;
+}
+
 export function filterMutationHistory<T extends MutationHistoryRecord>(
   records: readonly T[],
   filters: { type: string; query: string },

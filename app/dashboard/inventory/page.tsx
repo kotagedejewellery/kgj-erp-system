@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { getClientUser, type ClientUser } from "@/lib/auth/session";
 import { fetcher } from "@/lib/api";
+import { inventoryMutationLabel } from "@/lib/inventory/mutation-history";
 
 type InventorySummary = {
   warehouse_grams: number;
@@ -42,17 +43,7 @@ function formatGrams(value: number) {
 }
 
 function labelMutation(type: string) {
-  const labels: Record<string, string> = {
-    opening: "Saldo awal",
-    receipt: "Penerimaan",
-    adjustment: "Penyesuaian",
-    issue_to_wip: "Keluar ke WIP",
-    allocate_finished_good: "Alokasi cincin jadi",
-    return_from_wip: "Retur dari WIP",
-    return_to_stock: "Retur ke stok",
-    scrap: "Scrap",
-  };
-  return labels[type] ?? type;
+  return inventoryMutationLabel(type);
 }
 
 function MetricCard({

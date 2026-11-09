@@ -102,6 +102,7 @@ const menuItems: Record<string, MenuItem[]> = {
   management: [
     { name: "Inventory", icon: "inventory", href: MANAGEMENT_ROUTES.DASHBOARD },
     { name: "Bahan Baku", icon: "inventory", href: MANAGEMENT_ROUTES.MATERIALS },
+    { name: "Lokasi Gudang", icon: "inventory", href: MANAGEMENT_ROUTES.LOCATIONS },
     { name: "Ready-stock", icon: "inventory", href: MANAGEMENT_ROUTES.READY_STOCK },
     { name: "Retur Stok", icon: "inventory", href: MANAGEMENT_ROUTES.RETURNS },
     { name: "Riwayat Mutasi", icon: "checklist", href: MANAGEMENT_ROUTES.MUTATIONS },
