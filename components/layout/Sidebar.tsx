@@ -366,7 +366,7 @@ export default function Sidebar({ role }: { role: string }) {
         className={`
           fixed top-0 left-0 z-50 h-full bg-[#1C1917] flex flex-col
           transform transition-transform duration-300 ease-in-out
-          md:sticky md:top-0 md:translate-x-0 md:flex-shrink-0
+          md:sticky md:top-0 md:h-screen md:self-start md:translate-x-0 md:flex-shrink-0
           ${isCollapsed ? "md:w-20" : "md:w-64"}
           w-72
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
