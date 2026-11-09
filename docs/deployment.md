@@ -2,6 +2,8 @@
 
 Konfigurasi ini menjalankan Main-ERP sebagai satu container Next.js di jaringan Docker eksternal `proxy`. Traefik VPS 1 menangani HTTPS untuk `erp.kotagedejewellery.tech` dan meneruskan request ke port internal `3000`; aplikasi tidak membuka port host sendiri. Database, Auth, Storage, Realtime, dan RLS tetap memakai Supabase Cloud ERP.
 
+Font aplikasi dibundel dari `app/fonts/` melalui `next/font/local`; build produksi tidak mengunduh font dari Google Fonts.
+
 ## Prasyarat
 
 - DNS `erp.kotagedejewellery.tech` sudah mengarah ke IP VPS 1.

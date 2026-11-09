@@ -1,48 +1,59 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display, Inter, DM_Sans, DM_Serif_Display, Cormorant_Garamond } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import Providers from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: "./fonts/geist-latin.woff2",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "./fonts/geist-mono-latin.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
 });
 
-const playfairDisplay = Playfair_Display({
+const playfairDisplay = localFont({
+  src: "./fonts/playfair-display-latin.woff2",
   variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "400 700",
+  display: "swap",
 });
 
-const inter = Inter({
+const inter = localFont({
+  src: "./fonts/inter-latin.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: "400 600",
+  display: "swap",
 });
 
-const dmSans = DM_Sans({
+const dmSans = localFont({
+  src: "./fonts/dm-sans-latin.woff2",
   variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "300 700",
+  display: "swap",
 });
 
-const dmSerifDisplay = DM_Serif_Display({
+const dmSerifDisplay = localFont({
+  src: "./fonts/dm-serif-display-latin.woff2",
   variable: "--font-dm-serif",
-  subsets: ["latin"],
-  weight: ["400"],
+  weight: "400",
+  display: "swap",
 });
 
-const cormorantGaramond = Cormorant_Garamond({
+// shortcut: local bundle contains the Latin subset, add language subsets if customer data needs them.
+const cormorantGaramond = localFont({
+  src: [
+    { path: "./fonts/cormorant-garamond-latin.woff2", weight: "300 700", style: "normal" },
+    { path: "./fonts/cormorant-garamond-latin-italic.woff2", weight: "300 700", style: "italic" },
+  ],
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
