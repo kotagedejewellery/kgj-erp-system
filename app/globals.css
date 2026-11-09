@@ -96,6 +96,47 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.inventory-management :is(button, a[href], select:not(:disabled)) {
+  cursor: pointer;
+}
+
+.inventory-management :is(button, a[href], input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-gold-bright);
+  outline-offset: 2px;
+}
+
+.inventory-management :is(button, a[href], input, select, textarea) {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.inventory-management :is(button, a[href]):not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+.inventory-management :is(button, a[href]):not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.inventory-management :is(button, select):disabled {
+  cursor: not-allowed;
+}
+
+.inventory-management :is(input, select, textarea):focus {
+  border-color: var(--color-gold-bright);
+}
+
+.inventory-management td :is(button, a[href]) {
+  margin: -0.125rem;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inventory-management :is(button, a[href], input, select, textarea) {
+    transition: none;
+  }
+}
+
 /* app/globals.css - Tambahkan animasi */
 @keyframes slide-down {
   from {

@@ -44,7 +44,7 @@ export default function MutationHistoryPage() {
   );
 
   return (
-    <div className="flex h-screen bg-night">
+    <div className="inventory-management flex h-screen bg-night">
       <Sidebar role="management" />
       <div className="min-w-0 flex-1 overflow-y-auto">
         <Header userEmail="" role="management" />

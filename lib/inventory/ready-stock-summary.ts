@@ -33,6 +33,19 @@ export type ReadyStockModelSummary = {
   allocation_count: number;
 };
 
+export type ReadyStockGallerySummary = {
+  source_product_id: number;
+  brand_id: number | null;
+  label: string;
+  cover_image_url: string | null;
+  available_units: number;
+  allocated_units: number;
+  inspection_units: number;
+  total_units: number;
+  allocation_count: number;
+  variations: ReadyStockModelSummary[];
+};
+
 export function buildReadyStockModelSummaries(
   units: StockUnit[],
   products: CatalogProduct[],
@@ -75,6 +88,38 @@ export function buildReadyStockModelSummaries(
   }
 
   return [...summaries.values()].sort((left, right) =>
+    right.allocation_count - left.allocation_count || left.label.localeCompare(right.label, "id"),
+  );
+}
+
+export function buildReadyStockGallerySummaries(
+  summaries: ReadyStockModelSummary[],
+): ReadyStockGallerySummary[] {
+  const cards = new Map<string, ReadyStockGallerySummary>();
+  for (const summary of summaries) {
+    const key = [summary.source_product_id, summary.brand_id ?? ""].join(":");
+    const card = cards.get(key) ?? {
+      source_product_id: summary.source_product_id,
+      brand_id: summary.brand_id,
+      label: summary.label,
+      cover_image_url: summary.cover_image_url,
+      available_units: 0,
+      allocated_units: 0,
+      inspection_units: 0,
+      total_units: 0,
+      allocation_count: 0,
+      variations: [],
+    };
+    card.available_units += summary.available_units;
+    card.allocated_units += summary.allocated_units;
+    card.inspection_units += summary.inspection_units;
+    card.total_units += summary.total_units;
+    card.allocation_count += summary.allocation_count;
+    card.variations.push(summary);
+    cards.set(key, card);
+  }
+
+  return [...cards.values()].sort((left, right) =>
     right.allocation_count - left.allocation_count || left.label.localeCompare(right.label, "id"),
   );
 }

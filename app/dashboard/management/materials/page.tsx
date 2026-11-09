@@ -24,9 +24,10 @@ export default function MaterialsPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>, url: string, method: "POST" | "PATCH" = "POST") => {
     event.preventDefault();
+    const form = event.currentTarget;
     try {
-      await mutator(url, { method, body: Object.fromEntries(new FormData(event.currentTarget)) });
-      event.currentTarget.reset();
+      await mutator(url, { method, body: Object.fromEntries(new FormData(form)) });
+      form.reset();
       setEditingMaterial(null);
       setMessage("Data inventory disimpan.");
       refetch();
@@ -56,7 +57,7 @@ export default function MaterialsPage() {
   const sourceStatus = (material: Material) => material.source_material_id === null ? "Belum terhubung" : material.source_material_name ? `Terhubung ke ${material.source_material_name}` : "Referensi order tidak ditemukan";
 
   return (
-    <div className="flex min-h-screen bg-night">
+    <div className="inventory-management flex min-h-screen bg-night">
       <Sidebar role="management" />
       <div className="min-w-0 flex-1">
         <Header userEmail="" role="management" />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReadyStockModelSummaries } from "@/lib/inventory/ready-stock-summary";
+import { buildReadyStockGallerySummaries, buildReadyStockModelSummaries } from "@/lib/inventory/ready-stock-summary";
 
 describe("buildReadyStockModelSummaries", () => {
   it("groups physical units by catalog model and counts allocations", () => {
@@ -121,5 +121,36 @@ describe("buildReadyStockModelSummaries", () => {
       [{ source_product_id: 123, sku: "S-02", name: "Cincin S-02", cover_image_url: null }],
       [],
     )).toMatchObject([{ available_units: 2, total_units: 2, size: "16" }]);
+  });
+});
+
+describe("buildReadyStockGallerySummaries", () => {
+  it("shows one catalog card per model and brand while retaining its physical variations", () => {
+    expect(buildReadyStockGallerySummaries([
+      {
+        source_product_id: 123, brand_id: 1, source_material_id: 10, material_description: "Emas 12K", size: "16",
+        label: "S-02 â€” Cincin S-02", cover_image_url: "https://yii.example.test/s-02.jpg",
+        available_units: 2, allocated_units: 0, inspection_units: 0, total_units: 2, allocation_count: 0,
+      },
+      {
+        source_product_id: 123, brand_id: 1, source_material_id: 10, material_description: "Emas 12K", size: "17",
+        label: "S-02 â€” Cincin S-02", cover_image_url: "https://yii.example.test/s-02.jpg",
+        available_units: 1, allocated_units: 1, inspection_units: 0, total_units: 2, allocation_count: 1,
+      },
+    ])).toEqual([{
+      source_product_id: 123,
+      brand_id: 1,
+      label: "S-02 â€” Cincin S-02",
+      cover_image_url: "https://yii.example.test/s-02.jpg",
+      available_units: 3,
+      allocated_units: 1,
+      inspection_units: 0,
+      total_units: 4,
+      allocation_count: 1,
+      variations: [
+        expect.objectContaining({ size: "16", available_units: 2 }),
+        expect.objectContaining({ size: "17", available_units: 1 }),
+      ],
+    }]);
   });
 });

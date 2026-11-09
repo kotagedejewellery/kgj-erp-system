@@ -90,7 +90,7 @@ export default function InventoryDashboardPage() {
   };
 
   return (
-    <div className="flex h-screen bg-night">
+    <div className="inventory-management flex h-screen bg-night">
       <Sidebar role="management" />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header userEmail={clientUser?.email ?? ""} role="management" />

@@ -19,9 +19,10 @@ export default function LocationsPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
     try {
-      await mutator(editingLocation ? `/api/inventory/locations/${editingLocation.id}` : "/api/inventory/locations", { method: editingLocation ? "PATCH" : "POST", body: Object.fromEntries(new FormData(event.currentTarget)) });
-      event.currentTarget.reset();
+      await mutator(editingLocation ? `/api/inventory/locations/${editingLocation.id}` : "/api/inventory/locations", { method: editingLocation ? "PATCH" : "POST", body: Object.fromEntries(new FormData(form)) });
+      form.reset();
       setMessage(editingLocation ? "Gudang diperbarui." : "Gudang ditambahkan.");
       setEditingLocation(null);
       refetch();
@@ -46,7 +47,7 @@ export default function LocationsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-night">
+    <div className="inventory-management flex min-h-screen bg-night">
       <Sidebar role="management" />
       <div className="min-w-0 flex-1">
         <Header userEmail="" role="management" />
