@@ -138,6 +138,7 @@ export const SUPERVISOR_ROUTES = {
 } as const;
 
 export const AFTER_SALES_ROUTES = {
+  DASHBOARD: "/dashboard/after-sales",
   GARANSI: "/dashboard/after-sales/garansi",
   AKTIVASI: "/dashboard/after-sales/aktivasi",
 } as const;
@@ -242,7 +243,7 @@ export function getDashboardPath(role: unknown): string | null {
         return SUPERVISOR_ROUTES.DASHBOARD;
 
       case "after_sales":
-        return AFTER_SALES_ROUTES.GARANSI;
+        return AFTER_SALES_ROUTES.DASHBOARD;
 
       default: {
         const _exhaustive: never = role;

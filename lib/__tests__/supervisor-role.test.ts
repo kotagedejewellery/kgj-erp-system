@@ -37,7 +37,8 @@ describe("retired dashboard roles", () => {
 
 describe("after sales role", () => {
   it("masuk hanya ke workspace After Sales", () => {
-    expect(getDashboardPath("after_sales")).toBe("/dashboard/after-sales/garansi");
+    expect(getDashboardPath("after_sales")).toBe("/dashboard/after-sales");
+    expect(canAccessPath("after_sales", "/dashboard/after-sales")).toBe(true);
     expect(canAccessPath("after_sales", "/dashboard/after-sales/garansi")).toBe(true);
     expect(canAccessPath("after_sales", "/dashboard/after-sales/aktivasi")).toBe(true);
     expect(canAccessPath("after_sales", "/dashboard/supervisor/approval")).toBe(false);

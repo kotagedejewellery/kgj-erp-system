@@ -128,6 +128,7 @@ const menuItems: Record<string, MenuItem[]> = {
     { name: "Exception Garansi", icon: "approval", href: SUPERVISOR_ROUTES.WARRANTY_EXCEPTIONS },
   ],
   after_sales: [
+    { name: "Dashboard Garansi", icon: "dashboard", href: AFTER_SALES_ROUTES.DASHBOARD },
     { name: "Aktivasi Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.AKTIVASI },
     { name: "Cari Garansi", icon: "warranty", href: AFTER_SALES_ROUTES.GARANSI },
   ],
@@ -434,7 +435,7 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <h2 className="text-base font-bold bg-gradient-to-r from-[#e8e2d4] to-[#c9a227] bg-clip-text text-transparent whitespace-nowrap">
+            <h2 className="text-base font-bold text-[#e8e2d4] whitespace-nowrap">
                 KGJ Dashboard
               </h2>
             </div>

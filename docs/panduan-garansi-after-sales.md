@@ -20,7 +20,7 @@ Sebelum pengguna mulai, Superadmin/administrator memastikan:
 
 | Role | Login | Menu | Tugas |
 | --- | --- | --- | --- |
-| After Sales | Buka **/login**, pilih **After Sales**, lalu masukkan email dan password. | Aktivasi Garansi, Garansi | Menyiapkan unit, mengaktifkan Contract, membuat Claim, menyelesaikan Claim non-workshop, membatalkan Claim, dan mengajukan Exception. |
+| After Sales | Buka **/login**, pilih **After Sales**, lalu masukkan email dan password. | Dashboard Garansi, Aktivasi Garansi, Cari Garansi | Memantau pekerjaan Garansi tim, menyiapkan unit, mengaktifkan Contract, membuat Claim, menyelesaikan Claim non-workshop, membatalkan Claim, dan mengajukan Exception. |
 | Workshop: jewelry expert finishing, lebur bahan, pembentukan awal, poles, laser, racik, packing | Buka **/workshop/login**, pilih user dan PIN; gunakan login manual bila diperlukan. | Warranty Work | Memulai Work, menjadi PIC, mengerjakan cincin, mengunggah bukti, dan mengirim Work ke QC. |
 | QC 1 / QC 2 | Buka **/workshop/login**, pilih user dan PIN; gunakan login manual bila diperlukan. | Warranty Work | Memeriksa QC dan menyelesaikan Work. |
 | SPV Operational | Buka **/workshop/login**, gunakan login manual dengan username/email dan password. | Garansi, Exception Garansi | Membaca Garansi dan menyetujui atau menolak Exception kuota. |
@@ -40,6 +40,12 @@ Order selesai
 → Workshop: PIC mengerjakan → QC memeriksa → Yii2 menutup Claim
 → Jika kuota tidak ada: After Sales ajukan Exception → SPV memutuskan
 ~~~
+
+## Dashboard Garansi
+
+Setelah login, After Sales masuk ke **Dashboard Garansi**. Halaman ini menampilkan ringkasan seluruh tim: Contract aktif, aktivasi yang masih antre, Claim berjalan, serta Contract yang berakhir dalam 30 hari. Gunakan **Muat ulang** untuk mengambil angka terbaru.
+
+Bagian **Aktivasi perlu diperiksa** menampilkan hingga lima nomor order terbaru yang masih antre. Klik nomor order untuk membuka Aktivasi Garansi dengan nomor order terisi otomatis. Gunakan tombol **Aktivasi Garansi** untuk pekerjaan lain, dan **Cari Contract dan Claim** untuk memeriksa detail Contract atau melanjutkan Claim. Dashboard tidak menampilkan keputusan Exception SPV maupun error integrasi teknis; keduanya tetap berada pada workspace SPV Operational dan Superadmin.
 
 ## 1. Aktivasi Garansi per Cincin
 
@@ -75,7 +81,7 @@ Hasilnya adalah satu Warranty Contract aktif untuk setiap cincin. Paket, benefit
 
 **Pelaku: After Sales**
 
-1. Buka menu **Garansi**.
+1. Buka menu **Cari Garansi**.
 2. Cari berdasarkan nama pelanggan, telepon, nomor order, atau referensi Contract.
 3. Buka Contract yang sesuai dan periksa unit, masa berlaku, benefit, kuota, serta riwayat Claim.
 4. Pilih benefit yang akan digunakan.

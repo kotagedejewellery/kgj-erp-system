@@ -1,9 +1,9 @@
 # Delivery Warranty Yii2 ↔ Main-ERP
 
 > Status: **Accepted — schema version 1.** Migration `027` dan `028` telah
-> dijalankan manual oleh pemilik database. Aktivasi integrasi menunggu
-> konfigurasi secret, migration `029`, deployment kedua aplikasi, dan satu
-> pilot order baru.
+> dijalankan manual oleh pemilik database. Migration `027` sampai `042` adalah
+> prasyarat dashboard/workflow Garansi. Aktivasi integrasi menunggu
+> konfigurasi secret, deployment kedua aplikasi, dan satu pilot order baru.
 
 Dokumen ini adalah runbook delivery Main-ERP untuk kontrak Warranty v1 yang
 diterima bersama Yii2. Kontrak wire dan aturan domain kanonik tetap berada di
@@ -24,7 +24,8 @@ Main-ERP sudah menyediakan:
   dengan receipt `request_id` yang dipakai ulang pada retry.
 - Plan Version pada Warranty Preparation dibatasi ke brand order KGJ/Hijaz dan
   durasi 1, 2, 3, 5, atau 10 tahun yang disetujui.
-- After Sales memiliki menu **Aktivasi Garansi** untuk mencari nomor order,
+- After Sales memiliki **Dashboard Garansi** sebagai ringkasan operasional tim,
+  serta menu **Aktivasi Garansi** untuk mencari nomor order,
   mengelola Preparation, memvalidasi Candidate, dan mengaktifkan Contract tanpa
   memasuki workspace SPV.
 
@@ -43,6 +44,10 @@ permission `warranty.contract.read`. Operator dapat membuka detail Contract,
 benefit/kuota, dan riwayat Claim. Detail Claim beserta lampiran dan audit hanya
 ditampilkan bila operator juga memiliki `warranty.claim.read`. Seluruh data
 dibaca langsung dari query kanonik Yii2 dan tidak disimpan sebagai state lokal.
+
+**Dashboard Garansi** hanya dapat dibaca After Sales yang memiliki kedua
+permission tersebut. Ringkasannya berasal dari projection/outbox Main-ERP dan
+tidak membuka data Exception SPV atau error delivery teknis.
 
 Integrasi ini tidak mengubah order, workflow 20 stage, `tracking_stages`,
 `stage_history`, `legacy_orders`, maupun modul klaim Yii2 lama.

@@ -23,6 +23,13 @@ export default function AfterSalesActivationPage() {
   const [orderReference, setOrderReference] = useState("");
 
   useEffect(() => {
+    const reference = new URLSearchParams(window.location.search).get("order_reference")?.trim();
+    if (!reference) return;
+    setInput(reference);
+    setOrderReference(reference);
+  }, []);
+
+  useEffect(() => {
     fetch("/api/me")
       .then(async (response) => response.ok ? response.json() : null)
       .then((result) => {

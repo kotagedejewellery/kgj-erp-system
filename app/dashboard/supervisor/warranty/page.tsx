@@ -168,7 +168,7 @@ function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" | "afte
               </section>
             )}
 
-            <form onSubmit={submit} className="flex max-w-5xl gap-2">
+            <form onSubmit={submit} className="flex gap-2">
               <label className="sr-only" htmlFor="warranty-search">Cari Contract</label>
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
@@ -186,7 +186,7 @@ function WarrantyWorklist({ role = "supervisor" }: { role?: "supervisor" | "afte
             </form>
 
             {!term && (
-              <div className="max-w-5xl rounded-lg border border-dashed border-white/15 bg-[#1C1917] px-4 py-8 text-center sm:px-6">
+              <div className="rounded-lg border border-dashed border-white/15 bg-[#1C1917] px-4 py-8 text-center sm:px-6">
                 <h2 className="text-sm font-semibold text-[#e8e2d4]">Cari Contract aktif</h2>
                 <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-white/65">
                   Contract dapat dicari setelah order selesai dan aktivasi berhasil diproses oleh Warranty Core.
