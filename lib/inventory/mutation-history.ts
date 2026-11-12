@@ -28,6 +28,11 @@ export function inventoryMutationLabel(value: string): string {
   return INVENTORY_MUTATION_LABELS[value] ?? value;
 }
 
+export function formatMutationQuantity(value: number | string | null): string {
+  if (value === null) return "Unit tanpa timbang";
+  return `${Number(value).toLocaleString("id-ID", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} g`;
+}
+
 export function filterMutationHistory<T extends MutationHistoryRecord>(
   records: readonly T[],
   filters: { type: string; query: string },

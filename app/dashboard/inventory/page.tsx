@@ -7,7 +7,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { getClientUser, type ClientUser } from "@/lib/auth/session";
 import { fetcher } from "@/lib/api";
-import { inventoryMutationLabel } from "@/lib/inventory/mutation-history";
+import { formatMutationQuantity, inventoryMutationLabel } from "@/lib/inventory/mutation-history";
 
 type InventorySummary = {
   warehouse_grams: number;
@@ -19,7 +19,7 @@ type InventorySummary = {
 type Mutation = {
   id: string;
   mutation_type: string;
-  quantity_grams: number | string;
+  quantity_grams: number | string | null;
   reason: string | null;
   created_at: string;
 };
@@ -144,7 +144,7 @@ export default function InventoryDashboardPage() {
                           <p className="truncate text-xs text-white/45">{mutation.reason || "—"}</p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold tabular-nums text-ivory">{formatGrams(Number(mutation.quantity_grams))}</p>
+                          <p className="text-sm font-semibold tabular-nums text-ivory">{formatMutationQuantity(mutation.quantity_grams)}</p>
                           <p className="text-xs text-white/45">{new Date(mutation.created_at).toLocaleString("id-ID")}</p>
                         </div>
                       </div>

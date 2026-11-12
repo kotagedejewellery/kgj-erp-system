@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
 import { hasSourceMaterialId } from "@/lib/inventory/source-materials";
+import { canRequireUnitWeight } from "@/lib/inventory/ready-stock-weight";
 
 function parseMaterial(body: Record<string, unknown>) {
   const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const sourceMaterialId = body.source_material_id === "" || body.source_material_id === undefined ? null : Number(body.source_material_id);
   const wastePercent = body.waste_percent === "" || body.waste_percent === undefined ? 0 : Number(body.waste_percent);
+  const requiresUnitWeight = body.requires_unit_weight === undefined ? true : body.requires_unit_weight === true || body.requires_unit_weight === "true" || body.requires_unit_weight === "on";
   if (!code || !name || (sourceMaterialId !== null && (!Number.isInteger(sourceMaterialId) || sourceMaterialId <= 0)) || !Number.isFinite(wastePercent) || wastePercent < 0) return null;
-  return { code, name, sourceMaterialId, wastePercent };
+  return { code, name, sourceMaterialId, wastePercent, requiresUnitWeight };
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ materialId: string }> }) {
@@ -20,7 +22,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
   if (!material) return NextResponse.json({ error: "Data material tidak valid" }, { status: 400 });
 
   const { data: current, error: currentError } = await auth.admin
-    .from("inventory_materials").select("id, source_material_id").eq("id", materialId).maybeSingle();
+    .from("inventory_materials").select("id, source_material_id, requires_unit_weight").eq("id", materialId).maybeSingle();
   if (currentError || !current) return NextResponse.json({ error: "Material tidak ditemukan" }, { status: 404 });
 
   if (material.sourceMaterialId !== current.source_material_id) {
@@ -46,11 +48,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
     }
   }
 
+  if (material.requiresUnitWeight && !current.requires_unit_weight && current.source_material_id !== null) {
+    const { data: unweighedUnits, error: unweighedUnitsError } = await auth.admin
+      .from("inventory_stock_units")
+      .select("id")
+      .eq("source_material_id", current.source_material_id)
+      .in("status", ["available", "inspection"])
+      .is("actual_weight_grams", null);
+    if (unweighedUnitsError) return NextResponse.json({ error: "Unit tanpa timbang belum dapat diverifikasi" }, { status: 409 });
+    if (!canRequireUnitWeight(unweighedUnits?.length ?? 0)) {
+      return NextResponse.json({ error: "Berat per cincin belum dapat diwajibkan karena masih ada unit aktif tanpa timbang" }, { status: 409 });
+    }
+  }
+
   const { error } = await auth.admin.from("inventory_materials").update({
     code: material.code,
     name: material.name,
     source_material_id: material.sourceMaterialId,
     waste_percent: material.wastePercent,
+    requires_unit_weight: material.requiresUnitWeight,
     updated_at: new Date().toISOString(),
   }).eq("id", materialId);
   if (error) return NextResponse.json({ error: error.code === "23505" ? "Kode atau mapping bahan sudah digunakan" : "Gagal memperbarui material" }, { status: 409 });

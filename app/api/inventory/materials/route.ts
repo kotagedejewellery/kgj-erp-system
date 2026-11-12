@@ -9,7 +9,7 @@ export async function GET() {
   const auth = await requireInventoryManagement();
   if ("error" in auth) return auth.error;
   const [materials, locations, balances, orderComponents] = await Promise.all([
-    auth.admin.from("inventory_materials").select("id, code, name, source_material_id, waste_percent, is_active").order("code"),
+    auth.admin.from("inventory_materials").select("id, code, name, source_material_id, waste_percent, requires_unit_weight, is_active").order("code"),
     auth.admin.from("inventory_locations").select("id, code, name, location_type, is_default, is_active").order("code"),
     auth.admin.from("inventory_material_balances").select("location_id, material_id, quantity_grams"),
     auth.admin.from("legacy_orders").select("komponen").is("deleted_at", null),
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const sourceMaterialId = body.source_material_id === "" || body.source_material_id === undefined ? null : Number(body.source_material_id);
   const wastePercent = body.waste_percent === "" || body.waste_percent === undefined ? 0 : Number(body.waste_percent);
+  const requiresUnitWeight = body.requires_unit_weight === undefined ? true : body.requires_unit_weight === true || body.requires_unit_weight === "true" || body.requires_unit_weight === "on";
   if (!code || !name || (sourceMaterialId !== null && (!Number.isInteger(sourceMaterialId) || sourceMaterialId <= 0)) || !Number.isFinite(wastePercent) || wastePercent < 0) {
     return NextResponse.json({ error: "Data material tidak valid" }, { status: 400 });
   }
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     }
   }
   const { data, error } = await auth.admin.from("inventory_materials")
-    .insert({ code, name, source_material_id: sourceMaterialId, waste_percent: wastePercent }).select("id, code, name").single();
+    .insert({ code, name, source_material_id: sourceMaterialId, waste_percent: wastePercent, requires_unit_weight: requiresUnitWeight }).select("id, code, name").single();
   if (error) return NextResponse.json({ error: error.code === "23505" ? "Kode atau mapping bahan sudah digunakan" : "Gagal menambah material" }, { status: 409 });
   return NextResponse.json({ data }, { status: 201 });
 }

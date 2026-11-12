@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
-import { parsePositiveGrams } from "@/lib/inventory/grams";
+import { parseReadyStockWeight } from "@/lib/inventory/ready-stock-weight";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ unitId: string }> }) {
   const auth = await requireInventoryManagement();
@@ -10,11 +10,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ un
   const brandId = Number(body.brand_id);
   const productId = Number(body.source_product_id);
   const materialId = Number(body.source_material_id);
-  const weight = parsePositiveGrams(body.actual_weight_grams);
   const condition = typeof body.condition === "string" ? body.condition.trim() : "";
-  if (typeof body.unit_code !== "string" || !body.unit_code.trim() || typeof body.location_id !== "string" || typeof body.size !== "string" || !body.size.trim() || typeof body.material_description !== "string" || !body.material_description.trim() || !Number.isInteger(brandId) || brandId <= 0 || !Number.isInteger(productId) || productId <= 0 || !Number.isInteger(materialId) || materialId <= 0 || weight === null || !condition) {
+  if (typeof body.unit_code !== "string" || !body.unit_code.trim() || typeof body.location_id !== "string" || typeof body.size !== "string" || !body.size.trim() || typeof body.material_description !== "string" || !body.material_description.trim() || !Number.isInteger(brandId) || brandId <= 0 || !Number.isInteger(productId) || productId <= 0 || !Number.isInteger(materialId) || materialId <= 0 || !condition) {
     return NextResponse.json({ error: "Data unit ready-stock tidak valid" }, { status: 400 });
   }
+  const { data: material } = await auth.admin.from("inventory_materials").select("requires_unit_weight").eq("source_material_id", materialId).eq("is_active", true).maybeSingle();
+  if (!material) return NextResponse.json({ error: "Bahan ready-stock tidak tersedia" }, { status: 409 });
+  const weight = parseReadyStockWeight(body.actual_weight_grams, material.requires_unit_weight);
+  if ("error" in weight) return NextResponse.json({ error: weight.error }, { status: 400 });
   const { error } = await auth.admin.rpc("inventory_update_ready_stock_unit", {
     p_unit_id: unitId,
     p_unit_code: body.unit_code,
@@ -24,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ un
     p_location_id: body.location_id,
     p_size: body.size,
     p_material_description: body.material_description,
-    p_actual_weight_grams: weight,
+    p_actual_weight_grams: weight.value,
     p_condition: condition,
     p_actor_id: auth.actorId,
   });

@@ -109,6 +109,7 @@ export const MANAGEMENT_ROUTES = {
   LOCATIONS: "/dashboard/management/locations",
   READY_STOCK: "/dashboard/management/ready-stock",
   READY_STOCK_NEW: "/dashboard/management/ready-stock/new",
+  READY_STOCK_IMPORT: "/dashboard/management/ready-stock/import",
   RETURNS: "/dashboard/management/returns",
   MUTATIONS: "/dashboard/management/mutations",
 } as const;

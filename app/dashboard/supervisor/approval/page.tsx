@@ -1245,7 +1245,7 @@ function PendingCard({
                       <option value="">Pilih unit cincin tersedia</option>
                       {stockUnits.map((unit) => (
                         <option key={unit.id} value={unit.id}>
-                          {unit.unit_code} — {unit.size ?? "ukuran tidak ada"} — {unit.actual_weight_grams ?? "-"} g
+                          {unit.unit_code} — {unit.size ?? "ukuran tidak ada"} — {unit.actual_weight_grams === null ? "tanpa timbang" : `${unit.actual_weight_grams} g`}
                         </option>
                       ))}
                     </select>
