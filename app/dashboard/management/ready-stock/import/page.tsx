@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetcher, mutator } from "@/lib/api";
 import { getReadyStockImportTotal, parseReadyStockImportCsv, type ReadyStockImportRow } from "@/lib/inventory/ready-stock-import";
+import { BRANDS } from "@/lib/legacy/brands";
 import { MANAGEMENT_ROUTES } from "@/lib/routes";
 
 type Data = {
@@ -36,7 +37,11 @@ type Preview = {
 };
 
 const inputClass = "mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream";
-const HIJAZ_BRAND_ID = "2";
+const brandOptions = Object.entries(BRANDS).map(([id, brand]) => ({ id, ...brand }));
+
+function suggestedBatchCode(brandId: string): string {
+  return `${BRANDS[Number(brandId)]?.code ?? "STOK"}-AWAL-2026`;
+}
 
 export default function ReadyStockImportPage() {
   const [rows, setRows] = useState<ReadyStockImportRow[]>([]);
@@ -44,9 +49,11 @@ export default function ReadyStockImportPage() {
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({});
+  const [brandId, setBrandId] = useState("2");
   const [locationId, setLocationId] = useState("");
   const [materialId, setMaterialId] = useState("");
-  const [batchCode, setBatchCode] = useState("HJZ-AWAL-2026");
+  const [batchCode, setBatchCode] = useState(suggestedBatchCode("2"));
+  const [batchCodeIsSuggested, setBatchCodeIsSuggested] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data, error, isLoading } = useQuery<Data>({
     queryKey: ["ready-stock"],
@@ -77,7 +84,7 @@ export default function ReadyStockImportPage() {
         method: "POST",
         body: {
           action: "preview",
-          brand_id: HIJAZ_BRAND_ID,
+          brand_id: brandId,
           location_id: locationId,
           source_material_id: materialId,
           model_selections: modelSelectionsPayload,
@@ -103,7 +110,7 @@ export default function ReadyStockImportPage() {
       const result = await mutator<{ data: { created: number } }>("/api/inventory/ready-stock/import", {
         method: "POST",
         body: {
-          brand_id: HIJAZ_BRAND_ID,
+          brand_id: brandId,
           location_id: locationId,
           source_material_id: materialId,
           batch_code: batchCode,
@@ -127,11 +134,11 @@ export default function ReadyStockImportPage() {
       <Sidebar role="management" />
       <div className="min-w-0 flex-1">
         <Header userEmail="" role="management" />
-        <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
+        <main className="space-y-6 p-4 sm:p-6 xl:p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-ivory">Impor stok awal ready-stock</h1>
-              <p className="mt-1 text-sm text-white/50">Untuk stok yang dikelola per jumlah unit tanpa timbang, seperti cincin Perak Hijaz.</p>
+              <p className="mt-1 text-sm text-white/50">Untuk stok yang dikelola per jumlah unit tanpa timbang, seperti cincin Perak.</p>
             </div>
             <Link href={MANAGEMENT_ROUTES.READY_STOCK} className="text-sm font-medium text-gold underline underline-offset-4">Kembali ke Ready-stock</Link>
           </div>
@@ -140,16 +147,16 @@ export default function ReadyStockImportPage() {
             <section className="space-y-4 rounded-lg border border-gold/15 bg-cocoa p-4">
               <div>
                 <h2 className="font-semibold text-cream">1. Unggah dan validasi file</h2>
-                <p className="mt-1 text-sm text-white/50">Perbarui katalog di halaman Ready-stock sebelum mengunggah CSV. Gunakan tab Stock Hijaz dengan kolom: Kode, Bahan, Ukuran, Sisa Stok. Baris dengan stok 0 diabaikan.</p>
+                <p className="mt-1 text-sm text-white/50">Perbarui katalog di halaman Ready-stock sebelum mengunggah CSV. CSV harus memuat: Kode, Bahan, Ukuran, Sisa Stok. Baris dengan stok 0 diabaikan.</p>
               </div>
               <input type="file" accept=".csv,text/csv" onChange={loadFile} className="block w-full text-sm text-cream file:mr-3 file:rounded file:border-0 file:bg-gold file:px-3 file:py-2 file:text-sm file:font-medium file:text-night" />
               {csvErrors.length > 0 && <ul className="list-disc space-y-1 pl-5 text-sm text-rose-200">{csvErrors.map((item) => <li key={item}>{item}</li>)}</ul>}
               {rows.length > 0 && <p className="text-sm text-emerald-200">{rows.length} kombinasi model/ukuran, total {getReadyStockImportTotal(rows)} unit, siap divalidasi.</p>}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <p className="text-sm text-cream">Brand<span className="mt-1 block rounded border border-gold/20 bg-night p-2 text-cream">Hijaz</span></p>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <label className="text-sm text-cream">Brand<select value={brandId} onChange={(event) => { const nextBrandId = event.target.value; setBrandId(nextBrandId); if (batchCodeIsSuggested) setBatchCode(suggestedBatchCode(nextBrandId)); setPreview(null); }} className={inputClass}>{brandOptions.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select><span className="mt-1 block text-xs text-white/45">Menentukan brand pemilik unit stok yang akan dibuat.</span></label>
                 <label className="text-sm text-cream">Gudang tujuan<select value={locationId} onChange={(event) => { setLocationId(event.target.value); setPreview(null); }} className={inputClass}><option value="">Pilih gudang</option>{data?.locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
                 <label className="text-sm text-cream">Bahan<select value={materialId} onChange={(event) => { setMaterialId(event.target.value); setPreview(null); }} className={inputClass}><option value="">Pilih bahan</option>{eligibleMaterials.map((material) => <option key={material.source_material_id} value={material.source_material_id}>{material.code} — {material.name}</option>)}</select><span className="mt-1 block text-xs text-white/45">Hanya bahan dengan berat unit tidak wajib yang dapat memakai impor ini.</span></label>
-                <label className="text-sm text-cream">Kode batch impor<input value={batchCode} onChange={(event) => { setBatchCode(event.target.value.toUpperCase()); setPreview(null); }} className={inputClass} /><span className="mt-1 block text-xs text-white/45">Gunakan sekali. Kode yang sama tidak dapat diimpor ulang.</span></label>
+                <label className="text-sm text-cream">Kode batch impor<input value={batchCode} onChange={(event) => { setBatchCode(event.target.value.toUpperCase()); setBatchCodeIsSuggested(false); setPreview(null); }} className={inputClass} /><span className="mt-1 block text-xs text-white/45">Gunakan sekali. Kode yang sama tidak dapat diimpor ulang.</span></label>
               </div>
               <button type="button" onClick={previewImport} disabled={isSubmitting || !rows.length || csvErrors.length > 0 || !locationId || !materialId} className="rounded bg-gold px-3 py-2 text-sm font-medium text-night disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? "Memvalidasi..." : "Tampilkan preview"}</button>
             </section>

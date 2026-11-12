@@ -6,6 +6,7 @@ import {
   type ReadyStockModelSelection,
 } from "@/lib/inventory/ready-stock-catalog-mapping";
 import { getReadyStockImportTotal, validateReadyStockImportTotal } from "@/lib/inventory/ready-stock-import";
+import { BRANDS } from "@/lib/legacy/brands";
 
 type ImportRow = { modelCode?: unknown; materialCode?: unknown; size?: unknown; quantity?: unknown };
 type CatalogProduct = { source_product_id: number; sku: string | null; name: string; cover_image_url: string | null };
@@ -55,7 +56,7 @@ async function validateImport(auth: { admin: any }, body: Record<string, unknown
   }
   const totalError = validateReadyStockImportTotal(parsed.rows);
   if (totalError) return { error: totalError } as const;
-  if (brandId !== 2) return { error: "Impor stok awal ini khusus untuk brand Hijaz" } as const;
+  if (!BRANDS[brandId]) return { error: "Brand impor tidak tersedia" } as const;
   const [{ data: material }, { data: location }] = await Promise.all([
     auth.admin.from("inventory_materials").select("code, name, requires_unit_weight").eq("source_material_id", sourceMaterialId).eq("is_active", true).maybeSingle(),
     auth.admin.from("inventory_locations").select("id").eq("id", locationId).eq("location_type", "warehouse").eq("is_active", true).maybeSingle(),
