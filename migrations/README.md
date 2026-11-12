@@ -34,6 +34,7 @@ Schema Main-ERP saat ini memakai model integrasi Yii2: `legacy_orders` sebagai d
 - Migration `047` memperketat kecocokan ready-stock terhadap produk, bahan, dan ukuran order serta menambahkan retur stok immutable dari WIP/alokasi kembali ke gudang.
 - Migration `049` menambah referensi katalog Yii2 read-only serta RPC pencatatan stok awal ready-stock yang atomik dengan mutation ledger. Ia tidak mengubah order, stage, approval, rework, maupun webhook legacy.
 - Migration `051` membedakan bahan ready-stock yang wajib ditimbang per unit dari bahan yang dikelola per jumlah unit. Ia menambahkan impor stok awal atomik untuk Perak Hijaz dan tidak mengubah order, stage, approval, rework, atau webhook legacy.
+- Migration `052` menambah perubahan jumlah ready-stock untuk bahan yang tidak wajib ditimbang per unit. Perubahan tetap membuat unit fisik dan mutation ledger; tidak membuat saldo ready-stock kedua atau mengubah order, stage, approval, rework, maupun webhook legacy.
 
 ## Tabel inti aktif
 

@@ -16,7 +16,7 @@ export async function GET() {
     typeof unit.source_product_id === "number" ? [unit.source_product_id] : [],
   ))];
   const products = sourceProductIds.length > 0
-    ? await auth.admin.from("inventory_catalog_products").select("source_product_id, sku, name, cover_image_url").eq("source_system", "yii2").in("source_product_id", sourceProductIds)
+    ? await auth.admin.from("inventory_catalog_products").select("source_product_id, sku, name, cover_image_url, source_available, is_published").eq("source_system", "yii2").in("source_product_id", sourceProductIds)
     : { data: [], error: null };
   const failed = [units, locations, materials, allocations, products].find((result) => result.error);
   if (failed?.error) return NextResponse.json({ error: "Inventory belum diinisialisasi" }, { status: 409 });
@@ -35,6 +35,7 @@ export async function GET() {
     }),
     locations: locations.data ?? [],
     materials: materials.data ?? [],
+    active_catalog_product_ids: (products.data ?? []).flatMap((product) => product.source_available && product.is_published ? [product.source_product_id] : []),
     models: buildReadyStockModelSummaries(
       unitData,
       products.data ?? [],
