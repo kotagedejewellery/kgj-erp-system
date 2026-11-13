@@ -110,6 +110,7 @@ export const MANAGEMENT_ROUTES = {
   READY_STOCK: "/dashboard/management/ready-stock",
   READY_STOCK_NEW: "/dashboard/management/ready-stock/new",
   READY_STOCK_VARIATIONS: "/dashboard/management/ready-stock/variations",
+  READY_STOCK_UNITS: "/dashboard/management/ready-stock/units",
   READY_STOCK_IMPORT: "/dashboard/management/ready-stock/import",
   RETURNS: "/dashboard/management/returns",
   MUTATIONS: "/dashboard/management/mutations",

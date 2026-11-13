@@ -4,52 +4,20 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Gem, Plus, RefreshCw } from "lucide-react";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetcher, mutator } from "@/lib/api";
-import { BRANDS, getBrandName } from "@/lib/legacy/brands";
-import { buildReadyStockGallerySummaries, type ReadyStockGallerySummary, type ReadyStockModelSummary } from "@/lib/inventory/ready-stock-summary";
+import { getBrandName } from "@/lib/legacy/brands";
+import { type ReadyStockGallerySummary, type ReadyStockModelSummary } from "@/lib/inventory/ready-stock-summary";
 import { readyStockGenderLabel } from "@/lib/inventory/ready-stock-gender";
 import { MANAGEMENT_ROUTES } from "@/lib/routes";
 
-type Unit = {
-  id: string;
-  unit_code: string;
-  brand_id: number;
-  source_product_id: number | null;
-  source_material_id: number | null;
-  location_id: string;
-  size: string | null;
-  material_description: string | null;
-  actual_weight_grams: number | string | null;
-  condition: string;
-  ring_gender: string;
-  status: string;
-  product_label: string;
-  cover_image_url: string | null;
-  material_label: string;
-};
+type Data = { models: ReadyStockGallerySummary[]; meta: { page: number; page_size: number; total: number } };
 
-type Data = {
-  units: Unit[];
-  locations: { id: string; name: string }[];
-  materials: { source_material_id: number; requires_unit_weight: boolean }[];
-  active_catalog_product_ids: number[];
-  models: ReadyStockModelSummary[];
-};
-
-type SelectedModel = Pick<ReadyStockGallerySummary, "source_product_id" | "brand_id" | "label">;
-
-const brandOptions = Object.entries(BRANDS).map(([id, brand]) => ({ id, ...brand }));
 const inputClass = "mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream";
-
-function statusLabel(status: string) {
-  return ({ available: "Tersedia", allocated: "Dialokasikan", inspection: "Dalam pemeriksaan", retired: "Dinonaktifkan" } as Record<string, string>)[status] ?? status;
-}
 
 function variationLabel(model: ReadyStockModelSummary) {
   const detail = [model.material_description, model.size ? `Ukuran ${model.size}` : null, readyStockGenderLabel(model.ring_gender)].filter(Boolean).join(" · ");
@@ -61,22 +29,16 @@ export default function ReadyStockPage() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("");
   const [isRefreshingCatalog, setIsRefreshingCatalog] = useState(false);
-  const [retiringUnit, setRetiringUnit] = useState<Unit | null>(null);
-  const [isRetiring, setIsRetiring] = useState(false);
   const [modelSearch, setModelSearch] = useState("");
   const [modelPage, setModelPage] = useState(1);
-  const [unitSearch, setUnitSearch] = useState("");
-  const [unitBrand, setUnitBrand] = useState("");
-  const [unitStatus, setUnitStatus] = useState("");
-  const [selectedModel, setSelectedModel] = useState<SelectedModel | null>(null);
-  const [adjustingModel, setAdjustingModel] = useState<ReadyStockModelSummary | null>(null);
-  const [adjustmentDirection, setAdjustmentDirection] = useState<"add" | "remove">("add");
-  const [adjustmentQuantity, setAdjustmentQuantity] = useState("1");
-  const [adjustmentReason, setAdjustmentReason] = useState("");
-  const [isAdjusting, setIsAdjusting] = useState(false);
+  const requestUrl = useMemo(() => {
+    const parameters = new URLSearchParams({ page: String(modelPage), page_size: "12" });
+    if (modelSearch.trim()) parameters.set("q", modelSearch.trim());
+    return `/api/inventory/ready-stock/models?${parameters.toString()}`;
+  }, [modelPage, modelSearch]);
   const { data, error, isLoading, refetch } = useQuery<Data>({
-    queryKey: ["ready-stock"],
-    queryFn: () => fetcher("/api/inventory/ready-stock"),
+    queryKey: ["ready-stock-models", requestUrl],
+    queryFn: () => fetcher(requestUrl),
   });
 
   useEffect(() => {
@@ -86,31 +48,9 @@ export default function ReadyStockPage() {
     router.replace(MANAGEMENT_ROUTES.READY_STOCK);
   }, [router, searchParams]);
 
-  const modelCards = useMemo(() => {
-    const query = modelSearch.trim().toLowerCase();
-    return buildReadyStockGallerySummaries(data?.models ?? []).filter((model) =>
-      !query || [model.label, ...model.variations.flatMap((variation) => [variation.material_description ?? "", variation.size ?? ""])].join(" ").toLowerCase().includes(query),
-    );
-  }, [data?.models, modelSearch]);
-  const modelPageSize = 12;
-  const modelPageCount = Math.max(1, Math.ceil(modelCards.length / modelPageSize));
+  const modelPageCount = Math.max(1, Math.ceil((data?.meta.total ?? 0) / (data?.meta.page_size ?? 12)));
   const activeModelPage = Math.min(modelPage, modelPageCount);
-  const visibleModels = modelCards.slice((activeModelPage - 1) * modelPageSize, activeModelPage * modelPageSize);
-
-  const visibleUnits = useMemo(() => {
-    const query = unitSearch.trim().toLowerCase();
-    return (data?.units ?? []).filter((unit) =>
-      (!selectedModel || (unit.source_product_id === selectedModel.source_product_id && unit.brand_id === selectedModel.brand_id)) &&
-      (!query || `${unit.unit_code} ${unit.product_label} ${unit.material_label}`.toLowerCase().includes(query)) &&
-      (!unitBrand || unit.brand_id === Number(unitBrand)) &&
-      (!unitStatus || unit.status === unitStatus),
-    );
-  }, [data?.units, selectedModel, unitBrand, unitSearch, unitStatus]);
-  const locationName = (locationId: string) => data?.locations.find((location) => location.id === locationId)?.name ?? "Gudang tidak tersedia";
-  const canAdjustModel = (model: ReadyStockModelSummary) => Boolean(model.source_material_id !== null && data?.materials.some((material) => material.source_material_id === model.source_material_id && !material.requires_unit_weight));
-  const canAddModel = (model: ReadyStockModelSummary) => canAdjustModel(model)
-    && model.ring_gender !== "unspecified"
-    && Boolean(data?.active_catalog_product_ids.includes(model.source_product_id));
+  const visibleModels = data?.models ?? [];
 
   const refreshCatalog = async () => {
     setIsRefreshingCatalog(true);
@@ -125,131 +65,33 @@ export default function ReadyStockPage() {
     }
   };
 
-  const retire = async () => {
-    if (!retiringUnit) return;
-    setIsRetiring(true);
-    try {
-      await mutator(`/api/inventory/ready-stock/${retiringUnit.id}`, { method: "DELETE" });
-      setMessage(`Unit ${retiringUnit.unit_code} dinonaktifkan dan tetap tersimpan pada riwayat mutasi.`);
-      setRetiringUnit(null);
-      refetch();
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : "Gagal menonaktifkan unit");
-    } finally {
-      setIsRetiring(false);
-    }
-  };
+  return <div className="inventory-management flex min-h-screen bg-night">
+    <Sidebar role="management" />
+    <div className="min-w-0 flex-1">
+      <Header userEmail="" role="management" />
+      <main className="space-y-6 p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div><h1 className="text-2xl font-semibold text-ivory">Ready-stock</h1><p className="mt-1 text-sm text-white/50">Temukan model cincin jadi dan jumlah stok yang tersedia. Pengelolaan variasi dan unit fisik tersedia pada halaman terpisah.</p></div>
+          <div className="flex flex-wrap gap-2"><button type="button" onClick={refreshCatalog} disabled={isRefreshingCatalog} className="inline-flex items-center gap-2 rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${isRefreshingCatalog ? "animate-spin" : ""}`} />{isRefreshingCatalog ? "Memperbarui..." : "Perbarui katalog"}</button><Link href={MANAGEMENT_ROUTES.READY_STOCK_VARIATIONS} className="inline-flex items-center gap-2 rounded bg-gold px-3 py-2 text-sm font-medium text-night"><Plus className="h-4 w-4" />Kelola stok per ukuran</Link><Link href={MANAGEMENT_ROUTES.READY_STOCK_NEW} className="inline-flex items-center gap-2 rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold"><Plus className="h-4 w-4" />Tambah unit timbang</Link><Link href={MANAGEMENT_ROUTES.READY_STOCK_IMPORT} className="inline-flex items-center gap-2 rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold">Impor stok awal</Link></div>
+        </div>
 
-  const showUnits = (model: ReadyStockGallerySummary) => {
-    setSelectedModel({ source_product_id: model.source_product_id, brand_id: model.brand_id, label: model.label });
-    setUnitSearch("");
-    setUnitBrand("");
-    setUnitStatus("");
-    requestAnimationFrame(() => document.getElementById("unit-fisik")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  };
+        <nav aria-label="Navigasi ready-stock" className="flex flex-wrap gap-2 border-b border-gold/15 pb-3 text-sm"><span className="rounded bg-gold/15 px-3 py-2 font-medium text-gold">Model ready-stock</span><Link href={MANAGEMENT_ROUTES.READY_STOCK_VARIATIONS} className="rounded px-3 py-2 text-cream hover:bg-white/5">Kelola variasi</Link><Link href={MANAGEMENT_ROUTES.READY_STOCK_UNITS} className="rounded px-3 py-2 text-cream hover:bg-white/5">Daftar unit fisik</Link></nav>
+        {message && <p role="status" className="rounded-lg border border-gold/20 bg-cocoa p-3 text-sm text-cream">{message}</p>}
 
-  const openAdjustment = (model: ReadyStockModelSummary, direction: "add" | "remove") => {
-    setAdjustingModel(model);
-    setAdjustmentDirection(direction);
-    setAdjustmentQuantity("1");
-    setAdjustmentReason("");
-  };
-
-  const adjustQuantity = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!adjustingModel || adjustingModel.source_material_id === null || adjustingModel.location_id === null) return;
-    setIsAdjusting(true);
-    try {
-      const changed = Number(adjustmentQuantity);
-      await mutator("/api/inventory/ready-stock/quantity", {
-        method: "POST",
-        body: {
-          brand_id: adjustingModel.brand_id,
-          source_product_id: adjustingModel.source_product_id,
-          source_material_id: adjustingModel.source_material_id,
-          location_id: adjustingModel.location_id,
-          size: adjustingModel.size,
-          condition: adjustingModel.condition,
-          ring_gender: adjustingModel.ring_gender,
-          quantity_change: adjustmentDirection === "add" ? changed : -changed,
-          reason: adjustmentReason,
-        },
-      });
-      setMessage(`${adjustmentDirection === "add" ? "Penambahan" : "Pengurangan"} jumlah stok berhasil dicatat.`);
-      setAdjustingModel(null);
-      refetch();
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : "Gagal mengubah jumlah stok");
-    } finally {
-      setIsAdjusting(false);
-    }
-  };
-
-  return (
-    <div className="inventory-management flex min-h-screen bg-night">
-      <Sidebar role="management" />
-      <div className="min-w-0 flex-1">
-        <Header userEmail="" role="management" />
-        <main className="space-y-6 p-4 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-ivory">Ready-stock</h1>
-              <p className="mt-1 text-sm text-white/50">Lihat model cincin jadi, spesifikasi, dan jumlah unit fisik yang tersedia.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={refreshCatalog} disabled={isRefreshingCatalog} className="inline-flex items-center gap-2 rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold disabled:cursor-not-allowed disabled:opacity-60">
-                <RefreshCw className={`h-4 w-4 ${isRefreshingCatalog ? "animate-spin" : ""}`} />
-                {isRefreshingCatalog ? "Memperbarui..." : "Perbarui katalog"}
-              </button>
-              <Link href={MANAGEMENT_ROUTES.READY_STOCK_VARIATIONS} className="inline-flex items-center gap-2 rounded bg-gold px-3 py-2 text-sm font-medium text-night"><Plus className="h-4 w-4" />Tambah stok per ukuran</Link>
-              <Link href={MANAGEMENT_ROUTES.READY_STOCK_NEW} className="inline-flex items-center gap-2 rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold"><Plus className="h-4 w-4" />Tambah unit timbang</Link>
-              <Link href={MANAGEMENT_ROUTES.READY_STOCK_IMPORT} className="inline-flex items-center gap-2 rounded border border-gold/40 px-3 py-2 text-sm font-medium text-gold">Impor stok awal</Link>
-            </div>
-          </div>
-
-          {message && <p role="status" className="rounded-lg border border-gold/20 bg-cocoa p-3 text-sm text-cream">{message}</p>}
-
-          {error ? (
-            <p className="rounded-lg border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">{error instanceof Error ? error.message : "Gagal memuat ready-stock"}</p>
-          ) : isLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-80 animate-pulse rounded-lg bg-cocoa" />)}</div>
-          ) : (
-            <>
-              <section>
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div><h2 className="font-semibold text-cream">Model tersedia</h2><p className="mt-1 text-sm text-white/50">Satu kartu untuk satu model dan brand. Variasi ukuran atau bahan tetap dihitung di dalamnya.</p></div>
-                  <label className="w-full text-sm text-cream sm:max-w-xs">Cari model, bahan, atau ukuran<input value={modelSearch} onChange={(event) => { setModelSearch(event.target.value); setModelPage(1); }} className={inputClass} /></label>
-                </div>
-                {visibleModels.length ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{visibleModels.map((model) => (
-                  <article key={`${model.source_product_id}-${model.brand_id ?? ""}`} className="overflow-hidden rounded-lg border border-gold/15 bg-cocoa">
-                    <div className="aspect-[4/3] bg-carbon">{model.cover_image_url ? <img src={model.cover_image_url} alt={`Foto ${model.label}`} loading="lazy" className="h-full w-full object-cover" /> : <div aria-hidden="true" className="flex h-full items-center justify-center text-gold/50"><Gem className="h-10 w-10" /></div>}</div>
-                    <div className="space-y-3 p-4">
-                      <div><p className="text-sm font-semibold text-cream">{model.label}</p><p className="mt-1 text-xs text-white/50">{model.brand_id ? getBrandName(model.brand_id) : "Brand belum dicatat"}</p></div>
-                      <div className="flex items-baseline justify-between"><span className="text-xs text-white/50">Unit tersedia</span><strong className="text-xl tabular-nums text-gold">{model.available_units}</strong></div>
-                      <ul className="space-y-1 text-xs text-white/60">{model.variations.slice(0, 2).map((variation) => <li key={`${variation.source_material_id ?? ""}-${variation.location_id ?? ""}-${variation.size ?? ""}-${variation.condition ?? ""}-${variation.ring_gender ?? ""}`}>{variationLabel(variation)}</li>)}{model.variations.length > 2 && <li>+{model.variations.length - 2} variasi lain</li>}</ul>
-                      <button type="button" onClick={() => showUnits(model)} className="w-full rounded border border-gold/30 px-3 py-2 text-sm font-medium text-gold">Lihat unit fisik ({model.total_units})</button>
-                    </div>
-                  </article>
-                ))}</div> : <div className="rounded-lg border border-gold/15 bg-cocoa p-8 text-center text-sm text-white/50">Belum ada model ready-stock yang sesuai.</div>}
-                {modelPageCount > 1 && <div className="mt-4 flex items-center justify-end gap-3 text-sm text-cream"><button type="button" disabled={activeModelPage === 1} onClick={() => setModelPage((page) => Math.max(1, page - 1))} className="rounded border border-gold/30 px-3 py-1 disabled:opacity-40">Sebelumnya</button><span>{activeModelPage} / {modelPageCount}</span><button type="button" disabled={activeModelPage === modelPageCount} onClick={() => setModelPage((page) => Math.min(modelPageCount, page + 1))} className="rounded border border-gold/30 px-3 py-1 disabled:opacity-40">Berikutnya</button></div>}
-              </section>
-
-              <section className="overflow-hidden rounded-lg border border-gold/15 bg-cocoa">
-                <div className="border-b border-gold/10 p-4"><h2 className="font-semibold text-cream">Stok per variasi</h2><p className="mt-1 text-sm text-white/50">Ukuran bersifat dinamis. Jumlah hanya dapat ditambah atau dikurangi untuk bahan yang tidak wajib ditimbang per cincin. Stok Belum diklasifikasikan harus diperbarui per unit sebelum ditambah.</p></div>
-                <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-left text-white/45"><tr><th className="p-3">Model</th><th>Brand</th><th>Gudang</th><th>Bahan</th><th>Ukuran</th><th>Jenis cincin</th><th>Kondisi</th><th>Tersedia</th><th>Dialokasikan</th><th>Pemeriksaan</th><th>Total</th><th>Aksi</th></tr></thead><tbody>{data?.models.length ? data.models.map((model) => <tr key={`${model.source_product_id}-${model.brand_id ?? ""}-${model.source_material_id ?? ""}-${model.location_id ?? ""}-${model.size ?? ""}-${model.condition ?? ""}-${model.ring_gender ?? ""}`} className="border-t border-white/5 text-cream"><td className="p-3">{model.label}</td><td>{getBrandName(model.brand_id)}</td><td>{model.location_id ? locationName(model.location_id) : "—"}</td><td>{model.material_description ?? "—"}</td><td>{model.size ?? "—"}</td><td>{readyStockGenderLabel(model.ring_gender)}</td><td>{model.condition ?? "—"}</td><td className="tabular-nums">{model.available_units}</td><td className="tabular-nums">{model.allocated_units}</td><td className="tabular-nums">{model.inspection_units}</td><td className="tabular-nums">{model.total_units}</td><td><div className="flex gap-2 whitespace-nowrap">{canAdjustModel(model) ? <>{canAddModel(model) ? <button type="button" onClick={() => openAdjustment(model, "add")} className="text-gold underline underline-offset-4">Tambah</button> : <span className="text-xs text-white/40">{model.ring_gender === "unspecified" ? "Klasifikasikan unit dulu" : "Katalog tidak aktif"}</span>}<button type="button" onClick={() => openAdjustment(model, "remove")} disabled={model.available_units === 0} className="text-rose-200 underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-40">Kurangi</button></> : <span className="text-xs text-white/40">Kelola per unit</span>}</div></td></tr>) : <tr><td colSpan={12} className="p-6 text-center text-sm text-white/50">Belum ada variasi ready-stock tercatat.</td></tr>}</tbody></table></div>
-              </section>
-
-              {adjustingModel && <section className="rounded-lg border border-gold/25 bg-cocoa p-4"><div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="font-semibold text-cream">{adjustmentDirection === "add" ? "Tambah" : "Kurangi"} jumlah stok</h2><p className="mt-1 text-sm text-white/50">{adjustingModel.label} · ukuran {adjustingModel.size} · {locationName(adjustingModel.location_id ?? "")}</p></div><button type="button" onClick={() => setAdjustingModel(null)} className="self-start text-sm text-gold underline underline-offset-4">Batal</button></div><form onSubmit={adjustQuantity} className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)_auto] sm:items-end"><label className="text-sm text-cream">Jumlah<input inputMode="numeric" min="1" max="1000" required value={adjustmentQuantity} onChange={(event) => setAdjustmentQuantity(event.target.value)} className={inputClass} /></label><label className="text-sm text-cream">Alasan<input required value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} placeholder="Contoh: tambahan stok hasil opname" className={inputClass} /></label><button type="submit" disabled={isAdjusting} className="rounded bg-gold px-4 py-2 text-sm font-medium text-night disabled:cursor-not-allowed disabled:opacity-60">{isAdjusting ? "Menyimpan..." : "Simpan perubahan"}</button></form></section>}
-
-              <section id="unit-fisik" className="scroll-mt-6 overflow-hidden rounded-lg border border-gold/15 bg-cocoa">
-                <div className="border-b border-gold/10 p-4"><h2 className="font-semibold text-cream">Daftar unit fisik</h2><p className="mt-1 text-sm text-white/50">Kelola unit satu per satu, termasuk perubahan gudang sebelum unit dialokasikan.</p>{selectedModel && <div className="mt-3 flex items-center justify-between gap-3 rounded border border-gold/20 bg-carbon px-3 py-2 text-sm text-cream"><span>Menampilkan unit: {selectedModel.label}</span><button type="button" onClick={() => setSelectedModel(null)} className="shrink-0 text-gold underline underline-offset-4">Tampilkan semua</button></div>}<div className="mt-4 grid gap-3 sm:grid-cols-3"><label className="text-sm text-cream">Cari unit atau model<input value={unitSearch} onChange={(event) => setUnitSearch(event.target.value)} className={inputClass} /></label><label className="text-sm text-cream">Brand<select value={unitBrand} onChange={(event) => setUnitBrand(event.target.value)} className={inputClass}><option value="">Semua brand</option>{brandOptions.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label><label className="text-sm text-cream">Status<select value={unitStatus} onChange={(event) => setUnitStatus(event.target.value)} className={inputClass}><option value="">Semua status</option><option value="available">Tersedia</option><option value="allocated">Dialokasikan</option><option value="inspection">Dalam pemeriksaan</option><option value="retired">Dinonaktifkan</option></select></label></div></div>
-                <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-left text-white/45"><tr><th className="p-3">Unit</th><th>Brand</th><th>Model</th><th>Gudang</th><th>Bahan</th><th>Ukuran</th><th>Jenis cincin</th><th>Berat</th><th>Status</th><th>Aksi</th></tr></thead><tbody>{visibleUnits.length ? visibleUnits.map((unit) => <tr key={unit.id} className="border-t border-white/5 text-cream"><td className="p-3">{unit.unit_code}</td><td>{getBrandName(unit.brand_id)}</td><td><div className="flex items-center gap-2">{unit.cover_image_url && <img src={unit.cover_image_url} alt="" loading="lazy" className="h-9 w-9 rounded object-cover" />}<span>{unit.product_label}</span></div></td><td>{locationName(unit.location_id)}</td><td>{unit.material_label}</td><td>{unit.size ?? "â€”"}</td><td>{readyStockGenderLabel(unit.ring_gender)}</td><td>{unit.actual_weight_grams === null ? "Tidak ditimbang" : `${Number(unit.actual_weight_grams).toFixed(3)} g`}</td><td>{statusLabel(unit.status)}</td><td><div className="flex gap-2">{["available", "inspection"].includes(unit.status) ? <><Link href={`${MANAGEMENT_ROUTES.READY_STOCK_NEW}?unit=${unit.id}`} className="text-gold underline underline-offset-4">Ubah</Link><button type="button" onClick={() => setRetiringUnit(unit)} className="text-rose-200 underline underline-offset-4">Nonaktifkan</button></> : <span className="text-xs text-white/40">Terkunci oleh status</span>}</div></td></tr>) : <tr><td colSpan={10} className="p-6 text-center text-sm text-white/50">Tidak ada unit yang sesuai filter.</td></tr>}</tbody></table></div>
-              </section>
-            </>
-          )}
-        </main>
-      </div>
-      <ConfirmDialog isOpen={Boolean(retiringUnit)} title="Nonaktifkan unit ready-stock?" message={retiringUnit ? `Unit ${retiringUnit.unit_code} tidak akan dihapus. Riwayat mutasinya tetap tersimpan.` : ""} confirmText="Nonaktifkan" variant="warning" isLoading={isRetiring} onConfirm={retire} onCancel={() => setRetiringUnit(null)} />
+        {error ? <p className="rounded-lg border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">{error instanceof Error ? error.message : "Gagal memuat ready-stock"}</p>
+          : isLoading ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-80 animate-pulse rounded-lg bg-cocoa" />)}</div>
+            : <section>
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="font-semibold text-cream">Model tersedia</h2><p className="mt-1 text-sm text-white/50">Satu kartu untuk satu model dan brand. Pilih kartu untuk melihat serta mengelola unit fisiknya.</p></div><label className="w-full text-sm text-cream sm:max-w-xs">Cari model<input value={modelSearch} onChange={(event) => { setModelSearch(event.target.value); setModelPage(1); }} className={inputClass} /></label></div>
+              {visibleModels.length ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{visibleModels.map((model) => <ModelCard key={`${model.source_product_id}-${model.brand_id ?? ""}`} model={model} />)}</div> : <div className="rounded-lg border border-gold/15 bg-cocoa p-8 text-center text-sm text-white/50">Belum ada model ready-stock yang sesuai.</div>}
+              {modelPageCount > 1 && <div className="mt-4 flex items-center justify-end gap-3 text-sm text-cream"><button type="button" disabled={activeModelPage === 1} onClick={() => setModelPage((page) => Math.max(1, page - 1))} className="rounded border border-gold/30 px-3 py-1 disabled:opacity-40">Sebelumnya</button><span>{activeModelPage} / {modelPageCount}</span><button type="button" disabled={activeModelPage === modelPageCount} onClick={() => setModelPage((page) => Math.min(modelPageCount, page + 1))} className="rounded border border-gold/30 px-3 py-1 disabled:opacity-40">Berikutnya</button></div>}
+            </section>}
+      </main>
     </div>
-  );
+  </div>;
+}
+
+function ModelCard({ model }: { model: ReadyStockGallerySummary }) {
+  const unitQuery = new URLSearchParams({ source_product_id: String(model.source_product_id), brand_id: String(model.brand_id) });
+  const variationQuery = new URLSearchParams({ source_product_id: String(model.source_product_id), brand_id: String(model.brand_id) });
+  return <article className="overflow-hidden rounded-lg border border-gold/15 bg-cocoa"><div className="aspect-[4/3] bg-carbon">{model.cover_image_url ? <img src={model.cover_image_url} alt={`Foto ${model.label}`} loading="lazy" className="h-full w-full object-cover" /> : <div aria-hidden="true" className="flex h-full items-center justify-center text-gold/50"><Gem className="h-10 w-10" /></div>}</div><div className="space-y-3 p-4"><div><p className="text-sm font-semibold text-cream">{model.label}</p><p className="mt-1 text-xs text-white/50">{model.brand_id ? getBrandName(model.brand_id) : "Brand belum dicatat"}</p></div><div className="flex items-baseline justify-between"><span className="text-xs text-white/50">Unit tersedia</span><strong className="text-xl tabular-nums text-gold">{model.available_units}</strong></div><ul className="space-y-1 text-xs text-white/60">{model.variations.slice(0, 2).map((variation) => <li key={`${variation.source_material_id ?? ""}-${variation.location_id ?? ""}-${variation.size ?? ""}-${variation.condition ?? ""}-${variation.ring_gender ?? ""}`}>{variationLabel(variation)}</li>)}{model.variations.length > 2 && <li>+{model.variations.length - 2} variasi lain</li>}</ul><div className="grid gap-2"><Link href={`${MANAGEMENT_ROUTES.READY_STOCK_VARIATIONS}?${variationQuery.toString()}`} className="block w-full rounded bg-gold px-3 py-2 text-center text-sm font-medium text-night">Kelola stok per ukuran</Link><Link href={`${MANAGEMENT_ROUTES.READY_STOCK_UNITS}?${unitQuery.toString()}`} className="block w-full rounded border border-gold/30 px-3 py-2 text-center text-sm font-medium text-gold">Lihat unit fisik ({model.total_units})</Link></div></div></article>;
 }

@@ -3,9 +3,9 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -29,10 +29,13 @@ const inputClass = "mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text
 
 export default function ReadyStockVariationsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialProductId = Number(searchParams.get("source_product_id"));
   const [message, setMessage] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
-  const [brandId, setBrandId] = useState("");
+  const [prefilledProductId, setPrefilledProductId] = useState(Number.isInteger(initialProductId) && initialProductId > 0 ? initialProductId : null);
+  const [brandId, setBrandId] = useState(searchParams.get("brand_id") ?? "");
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | "">("");
   const [locationId, setLocationId] = useState("");
   const [condition, setCondition] = useState("good");
@@ -44,11 +47,19 @@ export default function ReadyStockVariationsPage() {
   const [removalReason, setRemovalReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const { data, error, isLoading, refetch } = useQuery<Data>({ queryKey: ["ready-stock"], queryFn: () => fetcher("/api/inventory/ready-stock") });
+  const catalogRequest = productSearch.trim().length >= 2
+    ? `/api/inventory/catalog-products?q=${encodeURIComponent(productSearch)}`
+    : prefilledProductId ? `/api/inventory/catalog-products?id=${prefilledProductId}` : null;
   const { data: catalogData, isFetching: isProductSearching } = useQuery<{ products: CatalogProduct[] }>({
-    queryKey: ["inventory-catalog-products", productSearch],
-    queryFn: () => fetcher(`/api/inventory/catalog-products?q=${encodeURIComponent(productSearch)}`),
-    enabled: productSearch.trim().length >= 2,
+    queryKey: ["inventory-catalog-products", catalogRequest],
+    queryFn: () => fetcher(catalogRequest as string),
+    enabled: Boolean(catalogRequest),
   });
+  useEffect(() => {
+    if (!prefilledProductId || selectedProduct) return;
+    const product = catalogData?.products.find((item) => item.id === prefilledProductId);
+    if (product) setSelectedProduct(product);
+  }, [catalogData?.products, prefilledProductId, selectedProduct]);
   const selectedMaterial = data?.materials.find((material) => material.source_material_id === selectedMaterialId);
   const quantityMaterials = data?.materials.filter((material) => !material.requires_unit_weight) ?? [];
   const catalogProducts = selectedProduct && !catalogData?.products.some((product) => product.id === selectedProduct.id)
@@ -155,8 +166,8 @@ export default function ReadyStockVariationsPage() {
               <div className="grid gap-4 lg:grid-cols-2">
                 <label className="text-sm text-cream">Brand<select required value={brandId} onChange={(event) => setBrandId(event.target.value)} className={inputClass}><option value="" disabled>Pilih brand</option>{brandOptions.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
                 <label className="text-sm text-cream">Bahan / kadar<select required value={selectedMaterialId} onChange={(event) => setSelectedMaterialId(event.target.value ? Number(event.target.value) : "")} className={inputClass}><option value="">Pilih bahan</option>{quantityMaterials.map((material) => <option key={material.source_material_id} value={material.source_material_id}>{material.code} — {material.name}</option>)}</select><span className="mt-1 block text-xs text-white/45">Bahan wajib timbang dicatat melalui Tambah unit timbang.</span></label>
-                <label className="text-sm text-cream">Cari model<input value={productSearch} onChange={(event) => { setProductSearch(event.target.value); setSelectedProduct(null); }} placeholder="Contoh: S-02 atau Palladium" className={inputClass} /><span className="mt-1 block text-xs text-white/45">Ketik minimal 2 karakter kode atau nama model.</span></label>
-                <label className="text-sm text-cream">Pilih model<select required value={selectedProduct?.id ?? ""} onChange={(event) => setSelectedProduct(catalogProducts.find((product) => product.id === Number(event.target.value)) ?? null)} disabled={productSearch.trim().length < 2 || isProductSearching} className={inputClass}><option value="">{productSearch.trim().length < 2 ? "Ketik minimal 2 karakter pada kolom cari" : isProductSearching ? "Mencari model..." : catalogProducts.length ? "Pilih model cincin" : "Model aktif tidak ditemukan"}</option>{catalogProducts.map((product) => <option key={product.id} value={product.id}>{product.label}</option>)}</select>{selectedProduct?.cover_image_url && <img src={selectedProduct.cover_image_url} alt={`Foto ${selectedProduct.label}`} className="mt-2 h-24 w-24 rounded object-cover" />}</label>
+                <label className="text-sm text-cream">Cari model<input value={productSearch} onChange={(event) => { setProductSearch(event.target.value); setSelectedProduct(null); setPrefilledProductId(null); }} placeholder="Contoh: S-02 atau Palladium" className={inputClass} /><span className="mt-1 block text-xs text-white/45">Ketik minimal 2 karakter kode atau nama model.</span></label>
+                <label className="text-sm text-cream">Pilih model<select required value={selectedProduct?.id ?? ""} onChange={(event) => setSelectedProduct(catalogProducts.find((product) => product.id === Number(event.target.value)) ?? null)} disabled={!catalogRequest || isProductSearching} className={inputClass}><option value="">{!catalogRequest ? "Ketik minimal 2 karakter pada kolom cari" : isProductSearching ? "Mencari model..." : catalogProducts.length ? "Pilih model cincin" : "Model aktif tidak ditemukan"}</option>{catalogProducts.map((product) => <option key={product.id} value={product.id}>{product.label}</option>)}</select>{selectedProduct?.cover_image_url && <img src={selectedProduct.cover_image_url} alt={`Foto ${selectedProduct.label}`} className="mt-2 h-24 w-24 rounded object-cover" />}</label>
                 <label className="text-sm text-cream">Gudang<select required value={locationId} onChange={(event) => setLocationId(event.target.value)} className={inputClass}><option value="">Pilih gudang</option>{data?.locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
                 <label className="text-sm text-cream">Kondisi fisik<select required value={condition} onChange={(event) => setCondition(event.target.value)} className={inputClass}>{getReadyStockConditionOptions().map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><span className="mt-1 block text-xs text-white/45">Pilih kondisi standar agar stok yang sama tidak terpecah pada laporan.</span></label>
                 <label className="text-sm text-cream">Untuk siapa cincin ini?<select required value={ringGender} onChange={(event) => setRingGender(event.target.value)} className={inputClass}><option value="" disabled>Pilih Pria, Wanita, atau Unisex</option>{getReadyStockGenderOptions().map((gender) => <option key={gender.value} value={gender.value}>{gender.label}</option>)}</select><span className="mt-1 block text-xs text-white/45">Tambahkan setiap jenis cincin sebagai stok terpisah.</span></label>
