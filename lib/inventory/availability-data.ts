@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildOrderAvailability } from "@/lib/inventory/availability";
+import { buildOrderAvailability, buildReadyStockAvailability } from "@/lib/inventory/availability";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -14,19 +14,20 @@ type InventoryOrder = {
 
 export async function loadInventoryAvailability(admin: AdminClient, orderId?: string) {
   const [locationsResult, materialsResult, balancesResult, unitsResult] = await Promise.all([
-    admin.from("inventory_locations").select("id, name, location_type, is_default").eq("is_active", true),
-    admin.from("inventory_materials").select("id, code, name, source_material_id, waste_percent").eq("is_active", true).order("code"),
+    admin.from("inventory_locations").select("id, name, location_type, is_default, is_active"),
+    admin.from("inventory_materials").select("id, code, name, source_material_id, waste_percent, material_family").eq("is_active", true).order("code"),
     admin.from("inventory_material_balances").select("location_id, material_id, quantity_grams"),
-    admin.from("inventory_stock_units").select("brand_id, source_product_id, source_material_id, size").eq("status", "available"),
+    admin.from("inventory_stock_units").select("brand_id, source_product_id, source_material_id, size, ring_gender, location_id").eq("status", "available"),
   ]);
 
   const failed = [locationsResult, materialsResult, balancesResult, unitsResult].find((result) => result.error);
   if (failed?.error) throw new Error("Gagal membaca ketersediaan stok");
 
-  const warehouseIds = new Set((locationsResult.data ?? [])
+  const activeLocations = (locationsResult.data ?? []).filter((location) => location.is_active);
+  const warehouseIds = new Set(activeLocations
     .filter((location) => location.location_type === "warehouse")
     .map((location) => location.id));
-  const defaultWarehouseId = (locationsResult.data ?? []).find((location) => location.location_type === "warehouse" && location.is_default)?.id ?? null;
+  const defaultWarehouseId = activeLocations.find((location) => location.location_type === "warehouse" && location.is_default)?.id ?? null;
   const materials = (materialsResult.data ?? []).flatMap((material) => {
     const sourceMaterialId = Number(material.source_material_id);
     return Number.isInteger(sourceMaterialId) && sourceMaterialId > 0 ? [{
@@ -35,6 +36,7 @@ export async function loadInventoryAvailability(admin: AdminClient, orderId?: st
       name: material.name,
       sourceMaterialId,
       wastePercent: material.waste_percent,
+      materialFamily: material.material_family,
     }] : [];
   });
   const warehouseBalanceByMaterialId = new Map<string, number>();
@@ -61,35 +63,23 @@ export async function loadInventoryAvailability(admin: AdminClient, orderId?: st
     ? await admin.from("inventory_catalog_products").select("source_product_id, sku, name, cover_image_url").eq("source_system", "yii2").in("source_product_id", productIds)
     : { data: [], error: null };
   if (productsResult.error) throw new Error("Gagal membaca referensi katalog");
-  const products = new Map((productsResult.data ?? []).map((product) => [product.source_product_id, product]));
-  const readyGroups = new Map<string, {
-    brand_id: number;
-    source_product_id: number | null;
-    source_material_id: number | null;
-    size: string | null;
-    available_units: number;
-  }>();
-  for (const unit of unitsResult.data ?? []) {
-    const key = [unit.brand_id, unit.source_product_id ?? "", unit.source_material_id ?? "", unit.size ?? ""].join(":");
-    const group = readyGroups.get(key) ?? {
-      brand_id: unit.brand_id,
-      source_product_id: unit.source_product_id,
-      source_material_id: unit.source_material_id,
+  const readyStock = buildReadyStockAvailability({
+    units: (unitsResult.data ?? []).map((unit) => ({
+      brandId: unit.brand_id,
+      productId: unit.source_product_id,
+      sourceMaterialId: unit.source_material_id,
       size: unit.size,
-      available_units: 0,
-    };
-    group.available_units += 1;
-    readyGroups.set(key, group);
-  }
-  const readyStock = [...readyGroups.values()].map((group) => {
-    const product = group.source_product_id === null ? null : products.get(group.source_product_id);
-    const material = materials.find((item) => item.sourceMaterialId === group.source_material_id);
-    return {
-      ...group,
-      product_label: product ? (product.sku ? `${product.sku} — ${product.name}` : product.name) : "Model katalog belum tersedia",
-      cover_image_url: product?.cover_image_url ?? null,
-      material_label: material ? `${material.code} — ${material.name}` : "Bahan belum dipetakan",
-    };
+      ringGender: unit.ring_gender,
+      locationId: unit.location_id,
+    })),
+    products: (productsResult.data ?? []).map((product) => ({
+      sourceProductId: product.source_product_id,
+      sku: product.sku,
+      name: product.name,
+      coverImageUrl: product.cover_image_url,
+    })),
+    materials,
+    locations: (locationsResult.data ?? []).map((location) => ({ id: location.id, name: location.name })),
   });
 
   let orderAvailability = null;
@@ -121,6 +111,7 @@ export async function loadInventoryAvailability(admin: AdminClient, orderId?: st
         productId: unit.source_product_id,
         sourceMaterialId: unit.source_material_id,
         size: unit.size,
+        ringGender: unit.ring_gender,
       })),
     });
   }

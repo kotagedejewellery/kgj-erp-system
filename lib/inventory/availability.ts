@@ -1,4 +1,5 @@
 import { buildCustomIssueLines } from "@/lib/inventory/custom-issue";
+import { parseMaterialFamily } from "@/lib/inventory/material-family";
 
 type Component = {
   id_gender: number | string | null;
@@ -24,6 +25,35 @@ type ReadyStockUnit = {
   productId: number | null;
   sourceMaterialId: number | null;
   size: string | null;
+  ringGender?: string | null;
+};
+
+type AvailabilityReadyStockUnit = {
+  brandId: number | string | null;
+  productId: number | string | null;
+  sourceMaterialId: number | string | null;
+  size: string | null;
+  ringGender: string | null;
+  locationId: string | null;
+};
+
+type AvailabilityCatalogProduct = {
+  sourceProductId: number;
+  sku: string | null;
+  name: string;
+  coverImageUrl: string | null;
+};
+
+type AvailabilityMaterial = {
+  sourceMaterialId: number;
+  code: string;
+  name: string;
+  materialFamily: string | null;
+};
+
+type AvailabilityLocation = {
+  id: string;
+  name: string;
 };
 
 export type OrderAvailabilityInput = {
@@ -48,6 +78,64 @@ function formatGrams(value: number): string {
 function positiveInteger(value: number | string | null): number | null {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function ringType(value: string | null): "pria" | "wanita" | "unisex" | null {
+  return value === "pria" || value === "wanita" || value === "unisex" ? value : null;
+}
+
+export function buildReadyStockAvailability(input: {
+  units: AvailabilityReadyStockUnit[];
+  products: AvailabilityCatalogProduct[];
+  materials: AvailabilityMaterial[];
+  locations: AvailabilityLocation[];
+}) {
+  const productsById = new Map(input.products.map((product) => [product.sourceProductId, product]));
+  const materialsBySourceId = new Map(input.materials.map((material) => [material.sourceMaterialId, material]));
+  const locationsById = new Map(input.locations.map((location) => [location.id, location.name]));
+  const groups = new Map<string, {
+    brand_id: number;
+    source_product_id: number;
+    source_material_id: number | null;
+    size: string | null;
+    ring_gender: string | null;
+    ring_type: "pria" | "wanita" | "unisex" | null;
+    location_label: string | null;
+    available_units: number;
+  }>();
+
+  for (const unit of input.units) {
+    const brandId = positiveInteger(unit.brandId);
+    const productId = positiveInteger(unit.productId);
+    if (!brandId || !productId) continue;
+    const sourceMaterialId = positiveInteger(unit.sourceMaterialId);
+    const normalizedRingType = ringType(unit.ringGender);
+    const key = [brandId, productId, sourceMaterialId ?? "", unit.size ?? "", normalizedRingType ?? "", unit.locationId ?? ""].join(":");
+    const group = groups.get(key) ?? {
+      brand_id: brandId,
+      source_product_id: productId,
+      source_material_id: sourceMaterialId,
+      size: unit.size,
+      ring_gender: unit.ringGender ?? "unspecified",
+      ring_type: normalizedRingType,
+      location_label: unit.locationId ? locationsById.get(unit.locationId) ?? null : null,
+      available_units: 0,
+    };
+    group.available_units += 1;
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].map((group) => {
+    const product = productsById.get(group.source_product_id);
+    const material = group.source_material_id === null ? null : materialsBySourceId.get(group.source_material_id) ?? null;
+    return {
+      ...group,
+      material_family: parseMaterialFamily(material?.materialFamily) ?? null,
+      product_label: product ? (product.sku ? `${product.sku} — ${product.name}` : product.name) : "Model katalog belum tersedia",
+      cover_image_url: product?.coverImageUrl ?? null,
+      material_label: material ? `${material.code} — ${material.name}` : "Bahan belum dipetakan",
+    };
+  });
 }
 
 function isReadyStockInputComplete(order: OrderAvailabilityInput["order"]): {

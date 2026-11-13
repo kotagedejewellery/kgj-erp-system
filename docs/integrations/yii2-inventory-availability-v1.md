@@ -40,6 +40,21 @@ Main-ERP; `order.readyStock` menghitung unit yang cocok berdasarkan brand,
 produk katalog, bahan, dan ukuran. Yii2 hanya menampilkan hasilnya dan tidak
 menentukan sumber issue.
 
+Setiap variasi `ready_stock` juga membawa metadata filter dari inventori fisik:
+
+```json
+{
+  "material_family": "perak",
+  "ring_type": "pria",
+  "location_label": "Gudang Hijaz"
+}
+```
+
+`material_family` berasal dari master Bahan Baku, `ring_type` berasal dari
+klasifikasi unit fisik (`pria`, `wanita`, atau `unisex`), dan `location_label`
+berasal dari gudang unit. Nilai `null` berarti data lama belum diklasifikasikan;
+Yii2 tidak boleh menebak nilainya dari nama bahan atau model.
+
 ## Batasan
 
 - Tidak ada write, reservasi, pengurangan, retur, atau perubahan stage.

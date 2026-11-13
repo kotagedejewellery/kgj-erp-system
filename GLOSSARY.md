@@ -5,9 +5,21 @@
 Jumlah material tersedia pada satu lokasi. Saldo berubah hanya melalui mutasi
 inventory yang dicatat di Main-ERP.
 
+## Material family
+
+Kelompok bahan utama yang ditetapkan pada master Bahan Baku, misalnya Perak
+atau Palladium. Ini hanya metadata filter baca-saja untuk Ketersediaan Stok
+Yii2; bukan kadar, saldo, maupun harga.
+
 ## Stock unit
 
 Satu cincin jadi fisik yang dapat dialokasikan paling banyak kepada satu order.
+
+## Ring classification
+
+Penanda fisik ready-stock untuk Pria, Wanita, atau Unisex. Stok historis yang
+belum diperiksa memakai nilai Belum diklasifikasikan dan tidak diartikan sebagai
+Unisex.
 
 ## WIP
 

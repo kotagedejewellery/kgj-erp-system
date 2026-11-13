@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
 import { parseReadyStockQuantityChange } from "@/lib/inventory/ready-stock-quantity";
+import { parseStoredReadyStockGender } from "@/lib/inventory/ready-stock-gender";
 import { BRANDS } from "@/lib/legacy/brands";
 
 function text(value: unknown) {
@@ -19,8 +20,9 @@ export async function POST(request: Request) {
   const locationId = text(body.location_id);
   const size = text(body.size);
   const condition = text(body.condition);
+  const ringGender = parseStoredReadyStockGender(body.ring_gender);
   const reason = text(body.reason);
-  if (!BRANDS[brandId] || !Number.isInteger(productId) || productId <= 0 || !Number.isInteger(materialId) || materialId <= 0 || quantityChange === null || !locationId || !size || !condition || !reason) {
+  if (!BRANDS[brandId] || !Number.isInteger(productId) || productId <= 0 || !Number.isInteger(materialId) || materialId <= 0 || quantityChange === null || !locationId || !size || !condition || !ringGender || !reason) {
     return NextResponse.json({ error: "Data perubahan jumlah stok tidak valid" }, { status: 400 });
   }
 
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
     p_location_id: locationId,
     p_size: size,
     p_condition: condition,
+    p_ring_gender: ringGender,
     p_quantity_change: quantityChange,
     p_reason: reason,
     p_actor_id: auth.actorId,

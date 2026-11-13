@@ -7,6 +7,7 @@ type StockUnit = {
   size?: string | null;
   material_description?: string | null;
   condition?: string | null;
+  ring_gender?: string | null;
   status: string;
   catalog_product_name?: string | null;
   catalog_product_sku?: string | null;
@@ -28,6 +29,7 @@ export type ReadyStockModelSummary = {
   size: string | null;
   material_description: string | null;
   condition: string | null;
+  ring_gender: string | null;
   label: string;
   cover_image_url: string | null;
   available_units: number;
@@ -68,7 +70,7 @@ export function buildReadyStockModelSummaries(
     if (!product && !unit.catalog_product_name) continue;
     const productName = product?.name ?? unit.catalog_product_name as string;
     const productSku = product?.sku ?? unit.catalog_product_sku ?? null;
-    const key = JSON.stringify([unit.source_product_id, unit.brand_id ?? null, unit.source_material_id ?? null, unit.location_id ?? null, unit.size ?? null, unit.condition ?? null]);
+    const key = JSON.stringify([unit.source_product_id, unit.brand_id ?? null, unit.source_material_id ?? null, unit.location_id ?? null, unit.size ?? null, unit.condition ?? null, unit.ring_gender ?? "unspecified"]);
     const existing = summaries.get(key) ?? {
       source_product_id: unit.source_product_id,
       brand_id: unit.brand_id ?? null,
@@ -77,6 +79,7 @@ export function buildReadyStockModelSummaries(
       size: unit.size ?? null,
       material_description: unit.material_description ?? null,
       condition: unit.condition ?? null,
+      ring_gender: unit.ring_gender ?? "unspecified",
       label: productSku ? `${productSku} — ${productName}` : productName,
       cover_image_url: product?.cover_image_url ?? unit.catalog_cover_image_url ?? null,
       available_units: 0,

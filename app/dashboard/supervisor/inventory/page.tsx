@@ -1,10 +1,13 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetcher } from "@/lib/api";
+import { readyStockGenderLabel } from "@/lib/inventory/ready-stock-gender";
 import { getBrandName } from "@/lib/legacy/brands";
 
 type Availability = {
@@ -15,6 +18,7 @@ type Availability = {
     source_product_id: number | null;
     source_material_id: number | null;
     size: string | null;
+    ring_gender: string;
     available_units: number;
     product_label: string;
     cover_image_url: string | null;
@@ -37,7 +41,7 @@ export default function SupervisorInventoryAvailabilityPage() {
     !keyword || `${material.code} ${material.name}`.toLowerCase().includes(keyword),
   ), [data?.materials, keyword]);
   const readyStock = useMemo(() => (data?.ready_stock ?? []).filter((unit) =>
-    !keyword || `${unit.product_label} ${unit.material_label} ${unit.size ?? ""} ${getBrandName(unit.brand_id)}`.toLowerCase().includes(keyword),
+    !keyword || `${unit.product_label} ${unit.material_label} ${unit.size ?? ""} ${readyStockGenderLabel(unit.ring_gender)} ${getBrandName(unit.brand_id)}`.toLowerCase().includes(keyword),
   ), [data?.ready_stock, keyword]);
 
   return (
@@ -52,7 +56,7 @@ export default function SupervisorInventoryAvailabilityPage() {
           </div>
 
           <label className="block max-w-xl text-sm text-cream">
-            Cari bahan, model, brand, ukuran, atau kadar
+            Cari bahan, model, brand, ukuran, jenis cincin, atau kadar
             <input value={query} onChange={(event) => setQuery(event.target.value)} className="mt-1 w-full rounded border border-gold/20 bg-carbon p-2 text-sm text-cream" />
           </label>
 
@@ -67,7 +71,12 @@ export default function SupervisorInventoryAvailabilityPage() {
                   <h2 className="font-semibold text-cream">Bahan baku di gudang</h2>
                   <p className="mt-1 text-xs text-white/50">Jumlah fisik per bahan di lokasi gudang, tidak termasuk bahan yang sudah berada di WIP.</p>
                 </div>
-                <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-left text-white/45"><tr><th className="p-3">Kode</th><th>Material</th><th className="text-right">Tersedia</th></tr></thead><tbody>{materials.length ? materials.map((material) => <tr key={material.code} className="border-t border-white/5 text-cream"><td className="p-3 font-mono text-xs">{material.code}</td><td>{material.name}</td><td className="pr-3 text-right tabular-nums">{formatGrams(material.available_grams)}</td></tr>) : <tr><td colSpan={3} className="p-6 text-center text-sm text-white/50">Tidak ada bahan yang sesuai.</td></tr>}</tbody></table></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-white/45"><tr><th className="p-3">Kode</th><th>Material</th><th className="text-right">Tersedia</th></tr></thead>
+                    <tbody>{materials.length ? materials.map((material) => <tr key={material.code} className="border-t border-white/5 text-cream"><td className="p-3 font-mono text-xs">{material.code}</td><td>{material.name}</td><td className="pr-3 text-right tabular-nums">{formatGrams(material.available_grams)}</td></tr>) : <tr><td colSpan={3} className="p-6 text-center text-sm text-white/50">Tidak ada bahan yang sesuai.</td></tr>}</tbody>
+                  </table>
+                </div>
               </section>
 
               <section className="overflow-hidden rounded-lg border border-gold/15 bg-cocoa">
@@ -75,10 +84,12 @@ export default function SupervisorInventoryAvailabilityPage() {
                   <h2 className="font-semibold text-cream">Cincin jadi ready-stock</h2>
                   <p className="mt-1 text-xs text-white/50">Hanya unit fisik dengan status tersedia. Jumlah dapat berubah saat approval diproses.</p>
                 </div>
-                <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-left text-white/45"><tr><th className="p-3">Model</th><th>Brand</th><th>Bahan / kadar</th><th>Ukuran</th><th className="text-right">Unit tersedia</th></tr></thead><tbody>{readyStock.length ? readyStock.map((unit) => <tr key={`${unit.brand_id}-${unit.source_product_id}-${unit.source_material_id}-${unit.size}`} className="border-t border-white/5 text-cream"><td className="p-3"><div className="flex items-center gap-2">{unit.cover_image_url ? <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={unit.cover_image_url} alt={`Foto ${unit.product_label}`} className="h-10 w-10 rounded object-cover" />
-                </> : <div aria-hidden="true" className="h-10 w-10 rounded bg-carbon" />}<span>{unit.product_label}</span></div></td><td>{getBrandName(unit.brand_id)}</td><td>{unit.material_label}</td><td>{unit.size ?? "—"}</td><td className="pr-3 text-right tabular-nums">{unit.available_units}</td></tr>) : <tr><td colSpan={5} className="p-6 text-center text-sm text-white/50">Tidak ada unit ready-stock yang sesuai.</td></tr>}</tbody></table></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-white/45"><tr><th className="p-3">Model</th><th>Brand</th><th>Bahan / kadar</th><th>Ukuran</th><th>Jenis cincin</th><th className="text-right">Unit tersedia</th></tr></thead>
+                    <tbody>{readyStock.length ? readyStock.map((unit) => <tr key={`${unit.brand_id}-${unit.source_product_id}-${unit.source_material_id}-${unit.size}-${unit.ring_gender}`} className="border-t border-white/5 text-cream"><td className="p-3"><div className="flex items-center gap-2">{unit.cover_image_url ? <img src={unit.cover_image_url} alt={`Foto ${unit.product_label}`} className="h-10 w-10 rounded object-cover" /> : <div aria-hidden="true" className="h-10 w-10 rounded bg-carbon" />}<span>{unit.product_label}</span></div></td><td>{getBrandName(unit.brand_id)}</td><td>{unit.material_label}</td><td>{unit.size ?? "—"}</td><td>{readyStockGenderLabel(unit.ring_gender)}</td><td className="pr-3 text-right tabular-nums">{unit.available_units}</td></tr>) : <tr><td colSpan={6} className="p-6 text-center text-sm text-white/50">Tidak ada unit ready-stock yang sesuai.</td></tr>}</tbody>
+                  </table>
+                </div>
               </section>
               <p className="text-xs text-white/40">Diperbarui: {data?.checked_at ? new Date(data.checked_at).toLocaleString("id-ID") : "—"}</p>
             </>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
 import { hasSourceMaterialId } from "@/lib/inventory/source-materials";
 import { canRequireUnitWeight } from "@/lib/inventory/ready-stock-weight";
+import { parseMaterialFamily } from "@/lib/inventory/material-family";
 
 function parseMaterial(body: Record<string, unknown>) {
   const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
@@ -9,8 +10,10 @@ function parseMaterial(body: Record<string, unknown>) {
   const sourceMaterialId = body.source_material_id === "" || body.source_material_id === undefined ? null : Number(body.source_material_id);
   const wastePercent = body.waste_percent === "" || body.waste_percent === undefined ? 0 : Number(body.waste_percent);
   const requiresUnitWeight = body.requires_unit_weight === undefined ? true : body.requires_unit_weight === true || body.requires_unit_weight === "true" || body.requires_unit_weight === "on";
-  if (!code || !name || (sourceMaterialId !== null && (!Number.isInteger(sourceMaterialId) || sourceMaterialId <= 0)) || !Number.isFinite(wastePercent) || wastePercent < 0) return null;
-  return { code, name, sourceMaterialId, wastePercent, requiresUnitWeight };
+  const rawMaterialFamily = typeof body.material_family === "string" ? body.material_family : "";
+  const materialFamily = rawMaterialFamily ? parseMaterialFamily(rawMaterialFamily) : null;
+  if (!code || !name || (!materialFamily && rawMaterialFamily) || (sourceMaterialId !== null && (!Number.isInteger(sourceMaterialId) || sourceMaterialId <= 0)) || !Number.isFinite(wastePercent) || wastePercent < 0) return null;
+  return { code, name, sourceMaterialId, wastePercent, requiresUnitWeight, materialFamily };
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ materialId: string }> }) {
@@ -67,6 +70,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
     source_material_id: material.sourceMaterialId,
     waste_percent: material.wastePercent,
     requires_unit_weight: material.requiresUnitWeight,
+    material_family: material.materialFamily,
     updated_at: new Date().toISOString(),
   }).eq("id", materialId);
   if (error) return NextResponse.json({ error: error.code === "23505" ? "Kode atau mapping bahan sudah digunakan" : "Gagal memperbarui material" }, { status: 409 });

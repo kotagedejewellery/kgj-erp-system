@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await admin
       .from("inventory_stock_units")
-      .select("id, unit_code, size, material_description, actual_weight_grams")
+      .select("id, unit_code, size, ring_gender, material_description, actual_weight_grams")
       .eq("brand_id", brandId)
       .eq("source_product_id", sourceProductId)
       .eq("status", "available")

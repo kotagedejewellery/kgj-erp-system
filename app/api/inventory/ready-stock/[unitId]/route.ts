@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireInventoryManagement } from "@/lib/inventory/management-auth";
 import { parseReadyStockWeight } from "@/lib/inventory/ready-stock-weight";
+import { parseStoredReadyStockGender } from "@/lib/inventory/ready-stock-gender";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ unitId: string }> }) {
   const auth = await requireInventoryManagement();
@@ -11,7 +12,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ un
   const productId = Number(body.source_product_id);
   const materialId = Number(body.source_material_id);
   const condition = typeof body.condition === "string" ? body.condition.trim() : "";
-  if (typeof body.unit_code !== "string" || !body.unit_code.trim() || typeof body.location_id !== "string" || typeof body.size !== "string" || !body.size.trim() || typeof body.material_description !== "string" || !body.material_description.trim() || !Number.isInteger(brandId) || brandId <= 0 || !Number.isInteger(productId) || productId <= 0 || !Number.isInteger(materialId) || materialId <= 0 || !condition) {
+  const ringGender = parseStoredReadyStockGender(body.ring_gender);
+  if (typeof body.unit_code !== "string" || !body.unit_code.trim() || typeof body.location_id !== "string" || typeof body.size !== "string" || !body.size.trim() || typeof body.material_description !== "string" || !body.material_description.trim() || !Number.isInteger(brandId) || brandId <= 0 || !Number.isInteger(productId) || productId <= 0 || !Number.isInteger(materialId) || materialId <= 0 || !condition || !ringGender) {
     return NextResponse.json({ error: "Data unit ready-stock tidak valid" }, { status: 400 });
   }
   const { data: material } = await auth.admin.from("inventory_materials").select("requires_unit_weight").eq("source_material_id", materialId).eq("is_active", true).maybeSingle();
@@ -29,6 +31,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ un
     p_material_description: body.material_description,
     p_actual_weight_grams: weight.value,
     p_condition: condition,
+    p_ring_gender: ringGender,
     p_actor_id: auth.actorId,
   });
   if (error) return NextResponse.json({ error: error.code === "23505" ? "Kode unit sudah digunakan" : error.message }, { status: 409 });

@@ -23,6 +23,7 @@ describe("buildReadyStockModelSummaries", () => {
         material_description: null,
         size: null,
         condition: null,
+        ring_gender: "unspecified",
         label: "S-02 \u2014 Cincin Perak S-02",
         cover_image_url: "https://yii.example.test/s-02.jpg",
         available_units: 1,
@@ -39,6 +40,7 @@ describe("buildReadyStockModelSummaries", () => {
         material_description: null,
         size: null,
         condition: null,
+        ring_gender: "unspecified",
         label: "G-03 \u2014 Cincin Perak G-03",
         cover_image_url: null,
         available_units: 1,
@@ -67,6 +69,7 @@ describe("buildReadyStockModelSummaries", () => {
       material_description: null,
       size: null,
       condition: null,
+        ring_gender: "unspecified",
       label: "S-09 \u2014 Cincin Perak S-09",
       cover_image_url: "https://yii.example.test/s-09.jpg",
       available_units: 1,
@@ -95,6 +98,7 @@ describe("buildReadyStockModelSummaries", () => {
         material_description: "Emas 12K",
         size: "16",
         condition: null,
+        ring_gender: "unspecified",
         label: "S-02 \u2014 Cincin S-02",
         cover_image_url: null,
         available_units: 2,
@@ -111,6 +115,7 @@ describe("buildReadyStockModelSummaries", () => {
         material_description: "Emas 12K",
         size: "17",
         condition: null,
+        ring_gender: "unspecified",
         label: "S-02 \u2014 Cincin S-02",
         cover_image_url: null,
         available_units: 0,
@@ -154,6 +159,22 @@ describe("buildReadyStockModelSummaries", () => {
     expect(summaries).toHaveLength(2);
   });
 
+  it("separates otherwise identical units for pria and wanita", () => {
+    const summaries = buildReadyStockModelSummaries(
+      [
+        { id: "unit-pria", source_product_id: 123, brand_id: 1, source_material_id: 10, location_id: "warehouse-a", size: "16", condition: "good", ring_gender: "pria", status: "available" },
+        { id: "unit-wanita", source_product_id: 123, brand_id: 1, source_material_id: 10, location_id: "warehouse-a", size: "16", condition: "good", ring_gender: "wanita", status: "available" },
+      ],
+      [{ source_product_id: 123, sku: "S-02", name: "Cincin S-02", cover_image_url: null }],
+      [],
+    );
+
+    expect(summaries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ring_gender: "pria", available_units: 1 }),
+      expect.objectContaining({ ring_gender: "wanita", available_units: 1 }),
+    ]));
+  });
+
   it("does not split the same physical variation because of its free-text description", () => {
     expect(buildReadyStockModelSummaries(
       [
@@ -170,12 +191,12 @@ describe("buildReadyStockGallerySummaries", () => {
   it("shows one catalog card per model and brand while retaining its physical variations", () => {
     expect(buildReadyStockGallerySummaries([
       {
-        source_product_id: 123, brand_id: 1, source_material_id: 10, location_id: "warehouse-a", material_description: "Emas 12K", size: "16", condition: "good",
+        source_product_id: 123, brand_id: 1, source_material_id: 10, location_id: "warehouse-a", material_description: "Emas 12K", size: "16", condition: "good", ring_gender: "pria",
         label: "S-02 â€” Cincin S-02", cover_image_url: "https://yii.example.test/s-02.jpg",
         available_units: 2, allocated_units: 0, inspection_units: 0, total_units: 2, allocation_count: 0,
       },
       {
-        source_product_id: 123, brand_id: 1, source_material_id: 10, location_id: "warehouse-a", material_description: "Emas 12K", size: "17", condition: "good",
+        source_product_id: 123, brand_id: 1, source_material_id: 10, location_id: "warehouse-a", material_description: "Emas 12K", size: "17", condition: "good", ring_gender: "wanita",
         label: "S-02 â€” Cincin S-02", cover_image_url: "https://yii.example.test/s-02.jpg",
         available_units: 1, allocated_units: 1, inspection_units: 0, total_units: 2, allocation_count: 1,
       },
