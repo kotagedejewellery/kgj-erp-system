@@ -427,7 +427,7 @@ function WorkshopLoginContent() {
   const stageLabel = stage ? stage.replace(/_/g, " ") : null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-[#1C1917] text-[#FAFAF9] font-[var(--font-dm-sans)]">
+    <div data-workshop-login className="fixed inset-0 z-20 overflow-y-auto bg-[#1C1917] text-[#FAFAF9] font-[var(--font-dm-sans)]">
         {/* Background - visible geometric pattern + orbs */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           {/* Crosshatch geometric texture */}
@@ -444,23 +444,23 @@ function WorkshopLoginContent() {
         {/* Back link - floating chip top-left */}
         <Link
           href="/"
-          className="absolute top-5 left-5 inline-flex items-center gap-1.5 text-xs text-white/35 bg-white/[0.04] border border-white/[0.07] rounded-full px-3.5 py-1.5 transition-all hover:text-[#e8e2d4] hover:bg-white/[0.07] hover:border-white/[0.12] z-20 no-underline"
+          className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.04] px-3.5 py-1.5 text-xs text-white/35 no-underline transition-all hover:border-white/[0.12] hover:bg-white/[0.07] hover:text-[#e8e2d4] sm:top-5 sm:left-5"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Kembali
         </Link>
 
         {/* Main content column */}
-        <div className="relative z-10 flex flex-col items-center w-full max-w-[580px] px-6 sm:px-12 pt-1 sm:pt-4 pb-4 gap-y-1 sm:gap-y-3">
+        <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[520px] flex-col items-center justify-center gap-y-2 px-5 py-5 sm:max-w-[560px] sm:gap-y-3 sm:px-8 sm:py-6">
           {/* Logo */}
-          <Image src="/logo.png" alt="KGJ" width={100} height={100} className="w-36 h-36 sm:w-44 sm:h-44 object-contain shrink-0" priority />
+          <Image src="/logo.png" alt="KGJ" width={100} height={100} className="h-24 w-24 shrink-0 object-contain sm:h-32 sm:w-32 lg:h-36 lg:w-36" priority />
 
           {/* Brand title */}
-          <h1 className="font-[var(--font-dm-serif)] text-base sm:text-lg md:text-2xl text-[#c9a227] tracking-[0.1em] mb-2">
+          <h1 className="mb-0 font-[var(--font-dm-serif)] text-base tracking-[0.1em] text-[#c9a227] sm:text-lg md:text-2xl">
             Kotagede Jewellery
           </h1>
 
-          <div className="hidden sm:block w-48 sm:w-56 h-4 opacity-50 mb-2 sm:mb-3">
+          <div className="hidden h-3 w-44 opacity-50 sm:block sm:h-4 sm:w-52">
             <svg viewBox="0 0 200 12" className="w-full h-full text-[#c9a227]" fill="none">
               <line x1="0" y1="6" x2="72" y2="6" stroke="currentColor" strokeWidth="0.5" />
               <path d="M72 6 Q80 0 88 6" stroke="currentColor" strokeWidth="0.5" />
@@ -481,9 +481,9 @@ function WorkshopLoginContent() {
            )}
 
            {/* Frosted glass card - gold border + true glassmorphism with inner border */}
-            <div className="w-full rounded-[20px] border border-[#c9a227]/30 px-4 sm:px-6 md:px-10 py-2.5 sm:py-5 md:py-8 bg-[#1C1917]/40 backdrop-blur-[20px] relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.35)]">
+            <div className="relative w-full rounded-2xl border border-[#c9a227]/30 bg-[#1C1917]/40 px-4 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-[20px] sm:px-7 sm:py-6">
             {/* Inner 1px border for glass refraction */}
-            <div className="absolute inset-[1px] rounded-[19px] border border-white/[0.03] pointer-events-none" />
+            <div className="pointer-events-none absolute inset-[1px] rounded-[15px] border border-white/[0.03]" />
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="rounded-full border border-[#c9a227]/40 bg-[#1C1917] px-3 sm:px-4 py-0.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] sm:tracking-[0.15em] text-[#c9a227] whitespace-nowrap">
                 Workshop Access
@@ -621,7 +621,7 @@ function WorkshopLoginContent() {
           )}
 
           {/* Footer */}
-          <p className="mt-0.5 sm:mt-3 text-center text-[11px] text-white leading-relaxed">
+          <p className="mt-0 text-center text-[11px] leading-relaxed text-white/65 sm:mt-1">
             Hanya staf workshop terdaftar. Hubungi admin jika kendala.
           </p>
         </div>
@@ -844,8 +844,11 @@ export default function WorkshopLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-screen bg-[#15130f]">
-          <div className="h-10 w-10 rounded-full border-2 border-[#c9a227]/[0.2] border-t-[#c9a227] animate-spin" />
+        <div data-workshop-login className="fixed inset-0 z-50 flex min-h-[100svh] items-center justify-center overflow-hidden bg-[#1C1917] text-[#FAFAF9]">
+          <div role="status" className="flex items-center gap-3 text-sm text-white/55">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#c9a227]/[0.2] border-t-[#c9a227]" />
+            <span>Memuat akses Workshop</span>
+          </div>
         </div>
       }
     >

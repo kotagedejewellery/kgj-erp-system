@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+main:has([data-workshop-login]) + footer {
+  display: none;
+}
+
 .select-chevron {
   appearance: none;
   cursor: pointer;

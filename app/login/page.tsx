@@ -173,7 +173,7 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-[#1C1917] text-[#FAFAF9] font-[var(--font-dm-sans)]">
+      <div data-dashboard-login className="fixed inset-0 overflow-y-auto bg-[#1C1917] text-[#FAFAF9] font-[var(--font-dm-sans)]">
         {/* Background - visible geometric pattern + orbs */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           {/* Crosshatch geometric texture */}
@@ -190,31 +190,31 @@ export default function LoginPage() {
         {/* Back link — floating chip top-left */}
         <Link
           href="/"
-          className="absolute top-5 left-5 inline-flex items-center gap-1.5 text-xs text-white/35 bg-white/[0.04] border border-white/[0.07] rounded-full px-3.5 py-1.5 transition-all hover:text-[#e8e2d4] hover:bg-white/[0.07] hover:border-white/[0.12] z-20 no-underline"
+          className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.04] px-3.5 py-1.5 text-xs text-white/35 no-underline transition-all hover:border-white/[0.12] hover:bg-white/[0.07] hover:text-[#e8e2d4] sm:top-5 sm:left-5"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Kembali
         </Link>
 
         {/* Main content column - larger spacing to fill page */}
-        <div className="relative z-10 flex flex-col items-center w-full max-w-[580px] px-6 sm:px-12 py-2 sm:py-4 gap-y-1.5 sm:gap-y-3">
+        <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[520px] flex-col items-center justify-center gap-y-2 px-5 py-5 sm:max-w-[560px] sm:gap-y-3 sm:px-8 sm:py-6">
           {/* Logo */}
           <Image
             src="/logo.png"
             alt="KGJ"
             width={100}
             height={100}
-            className="w-36 h-36 sm:w-44 sm:h-44 object-contain shrink-0"
+            className="h-20 w-20 shrink-0 object-contain sm:h-32 sm:w-32 lg:h-36 lg:w-36"
             priority
           />
 
           {/* Brand title */}
-          <h1 className="font-[var(--font-dm-serif)] text-base sm:text-lg md:text-2xl text-[#c9a227] tracking-[0.1em]">
+          <h1 className="font-[var(--font-dm-serif)] text-sm tracking-[0.1em] text-[#c9a227] sm:text-lg md:text-2xl">
             Kotagede Jewellery
           </h1>
 
           {/* Gold filigree ornament */}
-          <div className="w-48 sm:w-56 h-4 opacity-50 mb-1 sm:mb-3">
+          <div className="hidden h-4 w-52 opacity-50 sm:block">
             <svg viewBox="0 0 200 12" className="w-full h-full text-[#c9a227]" fill="none">
               <line x1="0" y1="6" x2="72" y2="6" stroke="currentColor" strokeWidth="0.5" />
               <path d="M72 6 Q80 0 88 6" stroke="currentColor" strokeWidth="0.5" />
@@ -227,13 +227,13 @@ export default function LoginPage() {
           </div>
 
           {/* Frosted glass card - gold border + true glassmorphism with inner border */}
-           <div className="w-full rounded-[20px] border border-[#c9a227]/30 px-5 sm:px-6 md:px-8 py-3 sm:py-5 md:py-6 bg-[#1C1917]/70 backdrop-blur-[20px] relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.35)]">
+           <div className="relative w-full rounded-2xl border border-[#c9a227]/30 bg-[#1C1917]/70 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-[20px] sm:px-6 sm:py-5 md:px-8 md:py-6">
             {/* Inner 1px border for glass refraction */}
-            <div className="absolute inset-[1px] rounded-[19px] border border-white/[0.03] pointer-events-none" />
-            <h2 className="font-[var(--font-dm-serif)] text-lg sm:text-2xl text-[#f0f4ff] text-center mb-2 tracking-[-0.01em] [text-wrap:balance]">
+            <div className="pointer-events-none absolute inset-[1px] rounded-[15px] border border-white/[0.03]" />
+            <h2 className="mb-1.5 text-center font-[var(--font-dm-serif)] text-lg tracking-[-0.01em] text-[#f0f4ff] [text-wrap:balance] sm:mb-2 sm:text-2xl">
               Selamat Datang
             </h2>
-            <p className="text-[13px] sm:text-base text-white/40 text-center mb-2 sm:mb-2">
+            <p className="mb-2 text-center text-[12px] text-white/40 sm:text-base">
               Login untuk mengakses dashboard
             </p>
 
@@ -245,14 +245,13 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleLogin}>
-              <p className="text-xs font-semibold text-white/35 text-center tracking-[0.06em] uppercase mb-2.5">
+              <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-[0.06em] text-white/35 sm:mb-2.5 sm:text-xs">
                 Pilih Role
               </p>
               {/* Role selection - responsive grid with per-role colors */}
-              <div className="grid grid-cols-2 gap-3 mb-3 min-[420px]:grid-cols-3">
-                {visibleRoles.map((config, index) => {
+              <div className="mb-3 grid grid-cols-3 gap-2 sm:gap-3">
+                {visibleRoles.map((config) => {
                   const isActive = role === config.value;
-                  const isFinalOddRole = visibleRoles.length % 2 !== 0 && index === visibleRoles.length - 1;
                   return (
                     <button
                       key={config.value}
@@ -260,7 +259,7 @@ export default function LoginPage() {
                       onClick={() => setRole(config.value)}
                       disabled={isLoading}
                       aria-pressed={isActive}
-                      className={`flex min-h-[84px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-4 py-2.5 text-[13px] font-medium transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-30 ${isFinalOddRole ? "col-span-2 min-[420px]:col-span-1" : ""} ${
+                      className={`flex min-h-[68px] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-2 text-[11px] font-medium transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-30 sm:min-h-[84px] sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-[13px] ${
                         isActive
                           ? "text-white"
                           : "border-white/10 bg-white/[0.03] text-white/50 hover:bg-white/[0.06]"
@@ -349,7 +348,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-xl bg-[#CA8A04] py-3.5 text-[15px] font-semibold text-[#1a1a1a] transition-all duration-200 hover:bg-[#d4ae3a] hover:shadow-[0_0_24px_rgba(202,138,4,0.3)] active:scale-[0.98] disabled:opacity-40 disabled:shadow-none flex items-center justify-center gap-2 mt-3"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#CA8A04] py-3 text-[14px] font-semibold text-[#1a1a1a] transition-all duration-200 hover:bg-[#d4ae3a] hover:shadow-[0_0_24px_rgba(202,138,4,0.3)] active:scale-[0.98] disabled:opacity-40 disabled:shadow-none sm:mt-3 sm:py-3.5 sm:text-[15px]"
               >
                 {isLoading ? (
                   <>

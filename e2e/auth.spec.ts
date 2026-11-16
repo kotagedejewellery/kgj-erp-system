@@ -24,6 +24,30 @@ test.describe("Unauthenticated access", () => {
 });
 
 test.describe("Login page content", () => {
+  test("keeps the dashboard submit button reachable on a short mobile screen", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.goto("/login");
+
+    const submitButton = page.getByRole("button", { name: "Masuk ke Dashboard" });
+    await expect(submitButton).toBeVisible();
+
+    const bounds = await submitButton.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThanOrEqual(640);
+  });
+
+  test("keeps the dashboard submit button reachable in mobile landscape", async ({ page }) => {
+    await page.setViewportSize({ width: 568, height: 320 });
+    await page.goto("/login");
+
+    const loginShell = page.locator("[data-dashboard-login]");
+    await loginShell.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+
+    const bounds = await page.getByRole("button", { name: "Masuk ke Dashboard" }).boundingBox();
+    expect(bounds).not.toBeNull();
+    expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThanOrEqual(320);
+  });
+
   test("has email and password fields", async ({ page }) => {
     await page.goto("/login");
 
