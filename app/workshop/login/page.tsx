@@ -453,7 +453,7 @@ function WorkshopLoginContent() {
         {/* Main content column */}
         <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[520px] flex-col items-center justify-center gap-y-2 px-5 py-5 sm:max-w-[560px] sm:gap-y-3 sm:px-8 sm:py-6">
           {/* Logo */}
-          <Image src="/logo.png" alt="KGJ" width={100} height={100} className="h-24 w-24 shrink-0 object-contain sm:h-32 sm:w-32 lg:h-36 lg:w-36" priority />
+          <Image src="/logo.png" alt="KGJ" width={100} height={100} className="h-24 w-24 shrink-0 object-contain sm:h-32 sm:w-32 lg:h-44 lg:w-44 lg:-translate-y-8" priority />
 
           {/* Brand title */}
           <h1 className="mb-0 font-[var(--font-dm-serif)] text-base tracking-[0.1em] text-[#c9a227] sm:text-lg md:text-2xl">

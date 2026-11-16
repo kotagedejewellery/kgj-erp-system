@@ -204,7 +204,7 @@ export default function LoginPage() {
             alt="KGJ"
             width={100}
             height={100}
-            className="h-20 w-20 shrink-0 object-contain sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+            className="h-20 w-20 shrink-0 object-contain sm:h-32 sm:w-32 lg:h-44 lg:w-44 lg:-translate-y-8"
             priority
           />
 
