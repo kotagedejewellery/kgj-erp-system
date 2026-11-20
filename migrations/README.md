@@ -41,6 +41,8 @@ Schema Main-ERP saat ini memakai model integrasi Yii2: `legacy_orders` sebagai d
 - Migration `056` menambah kelompok bahan eksplisit untuk filter Ketersediaan Stok Yii2. Nilainya opsional pada bahan lama dan tidak mengubah saldo, mutasi, order, stage, approval, rework, atau webhook legacy.
 - Migration `057` menambah RPC baca-saja untuk galeri model ready-stock dengan pagination. Ia hanya merangkum unit fisik dan mutasi alokasi yang sudah ada; tidak mengubah stok, mutasi, order, stage, approval, rework, maupun webhook legacy.
 
+- Migration `058` menonaktifkan validasi pra-penerimaan SPV CS untuk order MP baru yang diterima pada status penerimaan (`id_status` 9). Order tersebut memasuki `approval_penerimaan_order` dan menunggu approval SPV Operational; intake historis, lock Yii2, dan alur produksi lain tidak diubah.
+
 ## Tabel inti aktif
 
 - Identitas dan akses: `roles`, `users`, `activity_logs`, `notifications`, `qr_codes`, `stage_personnel`.

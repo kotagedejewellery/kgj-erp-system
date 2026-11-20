@@ -4,6 +4,8 @@
 
 Setelah Main-ERP menyetujui intake SPV CS untuk brand MP, Yii2 mengunci seluruh perubahan manual data order. Lock tidak mengubah `id_status`, stage, atau proses produksi.
 
+Mulai migration `058`, kontrak ini hanya berlaku untuk intake MP historis yang masih diproses. Order MP baru yang diterima pada status penerimaan (`id_status` 9) langsung menunggu approval SPV Operational dan tidak mengirim lock ini.
+
 ## Terima lock dari Main-ERP
 
 Tambahkan endpoint Yii2 `POST /api/order-lock/spv-approval` dengan header `X-API-Key` yang sama seperti endpoint `POST /api/order-sync/webhook`.

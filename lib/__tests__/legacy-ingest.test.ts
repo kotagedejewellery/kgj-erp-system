@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  notifySupervisors: vi.fn(),
+}));
+
+vi.mock("@/lib/notifications", () => ({
+  notifySupervisors: mocks.notifySupervisors,
+}));
+
 import {
+  ingestLegacyOrder,
   resolveIngestionStage,
   resolveInitialIngestionStage,
   resolveExistingTrackingTarget,
@@ -65,6 +75,72 @@ describe("resolveInitialIngestionStage", () => {
       stage: "approval_penerimaan_order",
       status: "waiting_approval",
     });
+  });
+});
+
+describe("ingestLegacyOrder", () => {
+  it("meneruskan order MP baru pada penerimaan ke approval SPV Operational ketika validasi pra-penerimaan nonaktif", async () => {
+    const existingOrder = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+    };
+    existingOrder.select.mockReturnValue(existingOrder);
+    existingOrder.eq.mockReturnValue(existingOrder);
+
+    const insertedOrder = {
+      insert: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn().mockResolvedValue({ data: { id: "order-mp" }, error: null }),
+    };
+    insertedOrder.insert.mockReturnValue(insertedOrder);
+    insertedOrder.select.mockReturnValue(insertedOrder);
+
+    const policy = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { brand_code: "MP", requires_pre_receipt_validation: false, is_active: true },
+        error: null,
+      }),
+    };
+    policy.select.mockReturnValue(policy);
+    policy.eq.mockReturnValue(policy);
+
+    const trackingInsert = vi.fn().mockResolvedValue({ error: null });
+    const historyInsert = vi.fn().mockResolvedValue({ error: null });
+    const db = {
+      from: vi.fn()
+        .mockReturnValueOnce(existingOrder)
+        .mockReturnValueOnce(insertedOrder)
+        .mockReturnValueOnce(policy)
+        .mockReturnValueOnce({ insert: trackingInsert })
+        .mockReturnValueOnce({ insert: historyInsert }),
+    };
+
+    await expect(ingestLegacyOrder(db as never, {
+      ...baseOrder,
+      kode_order: "MPM07264588",
+      id_brand: 3,
+      id_status: 9,
+    })).resolves.toMatchObject({
+      action: "inserted",
+      stage: "approval_penerimaan_order",
+      stageChanged: true,
+    });
+
+    expect(trackingInsert).toHaveBeenCalledWith(expect.objectContaining({
+      order_id: "order-mp",
+      current_stage: "approval_penerimaan_order",
+      stage_status: "waiting_approval",
+    }));
+    expect(mocks.notifySupervisors).toHaveBeenCalledWith(
+      "operational_supervisor",
+      expect.any(String),
+      expect.stringContaining("MPM07264588"),
+      "info",
+      "/dashboard/supervisor/approval",
+    );
   });
 });
 

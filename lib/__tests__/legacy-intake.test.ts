@@ -8,13 +8,13 @@ import {
 
 describe("legacy intake policy", () => {
   const policies = [
-    { brand_code: "MP", requires_pre_receipt_validation: true, is_active: true },
+    { brand_code: "MP", requires_pre_receipt_validation: false, is_active: true },
     { brand_code: "KGJ", requires_pre_receipt_validation: false, is_active: true },
     { brand_code: "HJZ", requires_pre_receipt_validation: false, is_active: true },
   ];
 
-  it("menahan brand MP sebelum tracking penerimaan order", () => {
-    expect(requiresPreReceiptValidation(policies, "MP")).toBe(true);
+  it("meneruskan brand MP tanpa validasi pra-penerimaan", () => {
+    expect(requiresPreReceiptValidation(policies, "MP")).toBe(false);
   });
 
   it("mempertahankan alur KGJ dan HJZ", () => {
